@@ -21,7 +21,11 @@ import {
 } from "#app/lib/crypto.ts";
 import { DotweaveError, wrapUnknownError } from "#app/lib/error.ts";
 import { pathExists, writeTextFileAtomically } from "#app/lib/filesystem.ts";
-import { initializeRepository, verifyIsGitRepository } from "#app/lib/git.ts";
+import {
+  initializeRepository,
+  isMissingGitExecutableError,
+  verifyIsGitRepository,
+} from "#app/lib/git.ts";
 import { validateJsoncConfigPath } from "#app/lib/jsonc.ts";
 import {
   resolveAgeFromSyncConfig,
@@ -230,28 +234,42 @@ export const initializeSyncDirectory = async (
     try {
       gitResult = await initializeRepository(syncDirectory, gitSourceInput);
     } catch (error: unknown) {
-      throw wrapUnknownError(
+      const errorMessage =
         gitSourceInput === undefined
           ? "Failed to initialize the sync directory."
-          : "Failed to clone the sync directory.",
-        error,
-        {
-          code:
-            gitSourceInput === undefined
-              ? "SYNC_INIT_GIT_FAILED"
-              : "SYNC_CLONE_FAILED",
+          : "Failed to clone the sync directory.";
+      const errorCode =
+        gitSourceInput === undefined
+          ? "SYNC_INIT_GIT_FAILED"
+          : "SYNC_CLONE_FAILED";
+      const details = [
+        `Sync directory: ${syncDirectory}`,
+        ...(gitSourceInput === undefined
+          ? []
+          : [`Repository source: ${gitSourceInput}`]),
+      ];
+
+      if (isMissingGitExecutableError(error)) {
+        throw new DotweaveError(errorMessage, {
+          code: errorCode,
           details: [
-            `Sync directory: ${syncDirectory}`,
-            ...(gitSourceInput === undefined
-              ? []
-              : [`Repository source: ${gitSourceInput}`]),
+            ...details,
+            error instanceof Error
+              ? error.message
+              : "Git is not installed or not on PATH.",
           ],
-          hint:
-            gitSourceInput === undefined
-              ? "Check that git is installed and the sync directory is writable."
-              : "Check that the repository source is reachable and you have access to it.",
-        },
-      );
+          hint: "Install Git and ensure the git executable is available on PATH, then run dotweave init again.",
+        });
+      }
+
+      throw wrapUnknownError(errorMessage, error, {
+        code: errorCode,
+        details,
+        hint:
+          gitSourceInput === undefined
+            ? "Check that git is installed and the sync directory is writable."
+            : "Check that the repository source is reachable and you have access to it.",
+      });
     }
 
     gitAction = gitResult.action;

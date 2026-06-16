@@ -41,6 +41,14 @@ const createGitError = (
   return error;
 };
 
+const createEnoentError = () => {
+  const error = new Error("spawn git ENOENT") as Error & { code: string };
+
+  error.code = "ENOENT";
+
+  return error;
+};
+
 const createStreamingChild = () => {
   const child = new EventEmitter() as EventEmitter & {
     stderr: EventEmitter & { setEncoding: (encoding: BufferEncoding) => void };
@@ -119,6 +127,20 @@ describe("git helpers", () => {
         }),
       ).rejects.toThrow("git failed.");
     });
+
+    it("reports a missing git executable from execFile", async () => {
+      await expect(
+        runGitCommandWithDependencies(["status"], undefined, {
+          execFileAsync: async () => {
+            throw createEnoentError();
+          },
+        }),
+      ).rejects.toMatchObject({
+        code: "GIT_EXECUTABLE_NOT_FOUND",
+        hint: expect.stringContaining("PATH"),
+        message: "Git is not installed or not on PATH.",
+      });
+    });
   });
 
   describe("runStreamingGitCommandWithDependencies", () => {
@@ -134,6 +156,24 @@ describe("git helpers", () => {
           spawnGit: () => child,
         }),
       ).rejects.toThrow("spawn failed");
+    });
+
+    it("reports a missing git executable from spawn", async () => {
+      const child = createStreamingChild();
+
+      setTimeout(() => {
+        child.emit("error", createEnoentError());
+      }, 0);
+
+      await expect(
+        runStreamingGitCommandWithDependencies(["status"], undefined, {
+          spawnGit: () => child,
+        }),
+      ).rejects.toMatchObject({
+        code: "GIT_EXECUTABLE_NOT_FOUND",
+        hint: expect.stringContaining("PATH"),
+        message: "Git is not installed or not on PATH.",
+      });
     });
 
     it("reports an unknown code when the child process closes without a code", async () => {

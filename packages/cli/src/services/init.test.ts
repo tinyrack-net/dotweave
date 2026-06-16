@@ -143,6 +143,72 @@ describe("init service", () => {
     ).rejects.toThrowError(/Invalid age private key/u);
   });
 
+  it("reports a missing git executable during local initialization", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const ageKeys = await createAgeKeyPair();
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    setEnvironment(homeDirectory, xdgConfigHome);
+
+    try {
+      vi.stubEnv("PATH", "");
+
+      await expect(
+        initializeSyncDirectory({
+          recipients: [ageKeys.recipient],
+        }),
+      ).rejects.toMatchObject({
+        code: "SYNC_INIT_GIT_FAILED",
+        hint: expect.stringContaining("Git"),
+        message: "Failed to initialize the sync directory.",
+      });
+      await expect(
+        initializeSyncDirectory({
+          recipients: [ageKeys.recipient],
+        }),
+      ).rejects.toMatchObject({
+        details: expect.arrayContaining([
+          expect.stringContaining("not installed or not on PATH"),
+        ]),
+        hint: expect.stringContaining("PATH"),
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("reports a missing git executable during repository cloning", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const ageKeys = await createAgeKeyPair();
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    setEnvironment(homeDirectory, xdgConfigHome);
+
+    try {
+      vi.stubEnv("PATH", "");
+
+      await expect(
+        initializeSyncDirectory({
+          recipients: [ageKeys.recipient],
+          repository: "https://example.invalid/dotfiles.git",
+        }),
+      ).rejects.toMatchObject({
+        code: "SYNC_CLONE_FAILED",
+        details: expect.arrayContaining([
+          expect.stringContaining("not installed or not on PATH"),
+        ]),
+        hint: expect.not.stringContaining("repository source is reachable"),
+        message: "Failed to clone the sync directory.",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("clones a configured repository source during initialization", async () => {
     const workspace = await createWorkspace();
     const homeDirectory = join(workspace, "home");

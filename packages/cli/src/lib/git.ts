@@ -1,6 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { wrapUnknownError } from "#app/lib/error.ts";
+import { DotweaveError, wrapUnknownError } from "#app/lib/error.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,6 +51,29 @@ type StreamingGitCommandDependencies = Readonly<{
   spawnGit: GitSpawn;
 }>;
 
+const missingGitExecutableCode = "GIT_EXECUTABLE_NOT_FOUND";
+
+const isEnoentError = (error: unknown) => {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error as Error & { code?: unknown }).code === "ENOENT"
+  );
+};
+
+const createMissingGitExecutableError = () => {
+  return new DotweaveError("Git is not installed or not on PATH.", {
+    code: missingGitExecutableCode,
+    hint: "Install Git and ensure the git executable is available on PATH, then run dotweave again.",
+  });
+};
+
+export const isMissingGitExecutableError = (error: unknown) => {
+  return (
+    error instanceof DotweaveError && error.code === missingGitExecutableCode
+  );
+};
+
 /**
  * @description
  * Runs a git command and normalizes failures into concise errors.
@@ -72,6 +95,10 @@ export const runGitCommandWithDependencies = async (
       stdout: result.stdout,
     };
   } catch (error: unknown) {
+    if (isEnoentError(error)) {
+      throw createMissingGitExecutableError();
+    }
+
     if (error instanceof Error && "stderr" in error) {
       const stderr =
         typeof error.stderr === "string" ? error.stderr.trim() : undefined;
@@ -138,7 +165,9 @@ export const runStreamingGitCommandWithDependencies = async (
     child.on("error", (error) => {
       finish(() => {
         reject(
-          new Error(error instanceof Error ? error.message : "git failed."),
+          isEnoentError(error)
+            ? createMissingGitExecutableError()
+            : new Error(error instanceof Error ? error.message : "git failed."),
         );
       });
     });

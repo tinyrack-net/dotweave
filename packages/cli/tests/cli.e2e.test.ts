@@ -149,4 +149,25 @@ describe("CLI sync cycle e2e", () => {
     expect(out).toContain("Push changes");
     expect(out).toContain("Add");
   });
+
+  it("reports missing git during repository import without blaming reachability", async () => {
+    const ageKeys = await ctx.createAgeKeyPair();
+    const keyFile = await ctx.writeIdentityFile(ageKeys.identity);
+
+    const result = await ctx.runCli(
+      ["init", "https://example.invalid/dotfiles.git", "--key-file", keyFile],
+      {
+        env: { PATH: "", Path: "" },
+        reject: false,
+      },
+    );
+    const stderr = stripAnsi(result.stderr);
+
+    expect(result.exitCode).toBe(1);
+    expect(stderr).toContain("Git is not installed or not on PATH.");
+    expect(stderr).toContain(
+      "Install Git and ensure the git executable is available on PATH",
+    );
+    expect(stderr).not.toContain("repository source is reachable");
+  });
 });
