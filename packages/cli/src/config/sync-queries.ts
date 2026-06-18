@@ -1,3 +1,4 @@
+import { isAbsolute, posix, relative } from "node:path";
 import { AppConstants } from "#app/config/constants.ts";
 import type {
   PlatformSyncMode,
@@ -39,18 +40,65 @@ export const findOwningSyncEntry = (
   return best;
 };
 
+type ChildEntryParent =
+  | string
+  | Pick<ResolvedSyncConfigEntry, "kind" | "localPath" | "repoPath">;
+
+const isNestedRelativePath = (path: string) => {
+  return (
+    path !== "" &&
+    !isAbsolute(path) &&
+    path !== ".." &&
+    !path.startsWith("../") &&
+    !path.startsWith("..\\")
+  );
+};
+
+const resolveLocalChildRepoPath = (
+  parent: Pick<ResolvedSyncConfigEntry, "kind" | "localPath" | "repoPath">,
+  child: Pick<ResolvedSyncConfigEntry, "localPath">,
+) => {
+  if (parent.kind !== "directory") {
+    return undefined;
+  }
+
+  const relativeLocalPath = relative(parent.localPath, child.localPath);
+
+  if (!isNestedRelativePath(relativeLocalPath)) {
+    return undefined;
+  }
+
+  return posix.join(parent.repoPath, relativeLocalPath.replaceAll("\\", "/"));
+};
+
 export const collectChildEntryPaths = (
   config: Pick<ResolvedSyncConfig, "entries">,
-  repoPath: string,
+  parent: ChildEntryParent,
 ): ReadonlySet<string> => {
-  return new Set(
-    config.entries.flatMap((entry) => {
-      return entry.repoPath !== repoPath &&
-        entry.repoPath.startsWith(`${repoPath}/`)
-        ? [entry.repoPath]
-        : [];
-    }),
-  );
+  const parentRepoPath = typeof parent === "string" ? parent : parent.repoPath;
+  const parentEntry = typeof parent === "string" ? undefined : parent;
+  const childPaths = new Set<string>();
+
+  for (const entry of config.entries) {
+    if (
+      entry.repoPath !== parentRepoPath &&
+      entry.repoPath.startsWith(`${parentRepoPath}/`)
+    ) {
+      childPaths.add(entry.repoPath);
+    }
+
+    if (parentEntry === undefined || entry === parentEntry) {
+      continue;
+    }
+
+    const localChildRepoPath = resolveLocalChildRepoPath(parentEntry, entry);
+
+    if (localChildRepoPath !== undefined) {
+      childPaths.add(localChildRepoPath);
+    }
+  }
+
+  return childPaths;
 };
 
 export const resolveEntryRelativeRepoPath = (

@@ -120,6 +120,33 @@ describe("sync-entry", () => {
         new Set(),
       );
     });
+    it("collects local-path shadow paths for platform-specific child repo paths", () => {
+      const parent = makeEntry(".config/zsh", "directory", {
+        localPath: "/home/user/.config/zsh",
+      });
+      const child = makeEntry(".config/zsh/platform.wsl.zsh", "file", {
+        localPath: "/home/user/.config/zsh/platform.zsh",
+      });
+
+      expect(
+        collectChildEntryPaths(makeConfig([parent, child]), parent),
+      ).toEqual(
+        new Set([".config/zsh/platform.wsl.zsh", ".config/zsh/platform.zsh"]),
+      );
+    });
+
+    it("does not collect local-path shadow paths for sibling local paths", () => {
+      const parent = makeEntry(".config/zsh", "directory", {
+        localPath: "/home/user/.config/zsh",
+      });
+      const sibling = makeEntry(".config/zsh-other/platform.wsl.zsh", "file", {
+        localPath: "/home/user/.config/zsh-other/platform.zsh",
+      });
+
+      expect(
+        collectChildEntryPaths(makeConfig([parent, sibling]), parent),
+      ).toEqual(new Set());
+    });
   });
 
   describe("resolveEntryRelativeRepoPath", () => {

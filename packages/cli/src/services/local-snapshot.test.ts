@@ -101,6 +101,35 @@ describe("local snapshot", () => {
     ]);
   });
 
+  it("does not collect a directory child through its default repo path when the child resolves to a platform-specific repo path", async () => {
+    const workspace = await createWorkspace();
+    const zshDirectory = join(workspace, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const otherFile = join(zshDirectory, "other.zsh");
+
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "wsl platform\n", "utf8");
+    await writeFile(otherFile, "other\n", "utf8");
+
+    const snapshot = await buildLocalSnapshot(
+      createConfig([
+        createEntry("directory", zshDirectory, ".config/zsh", "normal"),
+        createEntry(
+          "file",
+          platformFile,
+          ".config/zsh/platform.wsl.zsh",
+          "normal",
+        ),
+      ]),
+    );
+
+    expect([...snapshot.keys()].sort()).toEqual([
+      ".config/zsh",
+      ".config/zsh/other.zsh",
+      ".config/zsh/platform.wsl.zsh",
+    ]);
+  });
+
   it("still captures explicit child overrides under ignored directories", async () => {
     const workspace = await createWorkspace();
     const opencodeDirectory = join(workspace, ".config", "opencode");

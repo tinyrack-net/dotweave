@@ -1265,6 +1265,562 @@ describe("sync service", () => {
     );
   });
 
+  it("pushes only the platform-specific child artifact when a directory parent contains the source file", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const otherFile = join(zshDirectory, "other.zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "wsl platform\n");
+    await writeFile(otherFile, "other\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    const manifestPath = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "manifest.jsonc",
+    );
+
+    await writeFile(
+      manifestPath,
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          profiles: [],
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "normal" },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const repositoryZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "default",
+      ".config",
+      "zsh",
+    );
+    const defaultArtifact = join(repositoryZshDirectory, "platform.zsh");
+    const wslArtifact = join(repositoryZshDirectory, "platform.wsl.zsh");
+    const otherArtifact = join(repositoryZshDirectory, "other.zsh");
+
+    await mkdir(repositoryZshDirectory, { recursive: true });
+    await writeFile(defaultArtifact, "stale default artifact\n");
+
+    platformSpy.mockReturnValue("wsl");
+    const result = await pushChanges({ dryRun: false });
+
+    expect(result.plainFileCount).toBe(2);
+    expect(result.deletedArtifactCount).toBe(1);
+    expect(await readFile(wslArtifact, "utf8")).toBe("wsl platform\n");
+    expect(await readFile(otherArtifact, "utf8")).toBe("other\n");
+    await expect(lstat(defaultArtifact)).rejects.toThrow();
+  });
+
+  it("pushes only the platform-specific child artifact when no default artifact exists yet", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const otherFile = join(zshDirectory, "other.zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "wsl platform\n");
+    await writeFile(otherFile, "other\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "normal" },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    platformSpy.mockReturnValue("wsl");
+    const result = await pushChanges({ dryRun: false });
+
+    const repositoryZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "default",
+      ".config",
+      "zsh",
+    );
+    expect(result.plainFileCount).toBe(2);
+    expect(result.deletedArtifactCount).toBe(0);
+    expect(
+      await readFile(join(repositoryZshDirectory, "platform.wsl.zsh"), "utf8"),
+    ).toBe("wsl platform\n");
+    expect(
+      await readFile(join(repositoryZshDirectory, "other.zsh"), "utf8"),
+    ).toBe("other\n");
+    await expect(
+      lstat(join(repositoryZshDirectory, "platform.zsh")),
+    ).rejects.toThrow();
+  });
+
+  it("pushes only the platform-specific secret child artifact when a directory parent contains the source file", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const otherFile = join(zshDirectory, "other.zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "secret wsl platform\n");
+    await writeFile(otherFile, "other\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "secret" },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const repositoryZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "default",
+      ".config",
+      "zsh",
+    );
+    const defaultPlainArtifact = join(repositoryZshDirectory, "platform.zsh");
+    const defaultSecretArtifact = join(
+      repositoryZshDirectory,
+      "platform.zsh.dotweave.secret",
+    );
+    const wslSecretArtifact = join(
+      repositoryZshDirectory,
+      "platform.wsl.zsh.dotweave.secret",
+    );
+
+    await mkdir(repositoryZshDirectory, { recursive: true });
+    await writeFile(defaultPlainArtifact, "stale plain\n");
+    await writeFile(defaultSecretArtifact, "stale secret\n");
+
+    platformSpy.mockReturnValue("wsl");
+    const result = await pushChanges({ dryRun: false });
+
+    expect(result.plainFileCount).toBe(1);
+    expect(result.encryptedFileCount).toBe(1);
+    expect(result.deletedArtifactCount).toBe(2);
+    expect(await readFile(wslSecretArtifact, "utf8")).toContain(
+      "BEGIN AGE ENCRYPTED FILE",
+    );
+    expect(
+      await readFile(join(repositoryZshDirectory, "other.zsh"), "utf8"),
+    ).toBe("other\n");
+    await expect(lstat(defaultPlainArtifact)).rejects.toThrow();
+    await expect(lstat(defaultSecretArtifact)).rejects.toThrow();
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "pushes only the platform-specific symlink child artifact when a directory parent contains the link",
+    async () => {
+      const workspace = await createWorkspace();
+      const homeDirectory = join(workspace, "home");
+      const xdgConfigHome = join(workspace, "xdg");
+      const zshDirectory = join(homeDirectory, ".config", "zsh");
+      const platformFile = join(zshDirectory, "platform.zsh");
+      const otherFile = join(zshDirectory, "other.zsh");
+      const ageKeys = await createAgeKeyPair();
+      setEnvironment(homeDirectory, xdgConfigHome);
+      const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+      await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+      await mkdir(zshDirectory, { recursive: true });
+      await createSymlink(".platform-target", platformFile);
+      await writeFile(otherFile, "other\n");
+
+      await initializeSyncDirectory({
+        identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+        recipients: [ageKeys.recipient],
+      });
+
+      await writeFile(
+        join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+        JSON.stringify(
+          {
+            version: 8,
+            age: { recipients: [ageKeys.recipient] },
+            entries: [
+              {
+                kind: "directory",
+                localPath: { default: "~/.config/zsh" },
+                mode: { default: "normal" },
+              },
+              {
+                kind: "file",
+                localPath: { default: "~/.config/zsh/platform.zsh" },
+                repoPath: {
+                  default: ".config/zsh/platform.zsh",
+                  wsl: ".config/zsh/platform.wsl.zsh",
+                },
+                mode: { default: "ignore", wsl: "normal" },
+              },
+            ],
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const repositoryZshDirectory = join(
+        xdgConfigHome,
+        "dotweave",
+        "repository",
+        "profiles",
+        "default",
+        ".config",
+        "zsh",
+      );
+      const defaultArtifact = join(repositoryZshDirectory, "platform.zsh");
+      const wslArtifact = join(repositoryZshDirectory, "platform.wsl.zsh");
+
+      await mkdir(repositoryZshDirectory, { recursive: true });
+      await writeFile(defaultArtifact, "stale default artifact\n");
+
+      platformSpy.mockReturnValue("wsl");
+      const result = await pushChanges({ dryRun: false });
+
+      expect(result.plainFileCount).toBe(1);
+      expect(result.symlinkCount).toBe(1);
+      expect(result.deletedArtifactCount).toBe(1);
+      expect((await lstat(wslArtifact)).isSymbolicLink()).toBe(true);
+      expect(await readlink(wslArtifact)).toBe(".platform-target");
+      await expect(lstat(defaultArtifact)).rejects.toThrow();
+    },
+  );
+
+  it("reports platform-specific child artifact changes in status without adding the default-path artifact", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(join(zshDirectory, "platform.zsh"), "wsl platform\n");
+    await writeFile(join(zshDirectory, "other.zsh"), "other\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "normal" },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const repositoryZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "default",
+      ".config",
+      "zsh",
+    );
+    await mkdir(repositoryZshDirectory, { recursive: true });
+    await writeFile(join(repositoryZshDirectory, "platform.zsh"), "stale\n");
+
+    platformSpy.mockReturnValue("wsl");
+    const status = await getStatus();
+
+    expect(status.push.changes.added).toContain(".config/zsh/platform.wsl.zsh");
+    expect(status.push.changes.added).toContain(".config/zsh/other.zsh");
+    expect(status.push.changes.added).not.toContain(".config/zsh/platform.zsh");
+    expect(status.push.changes.deleted).toContain(
+      "default/.config/zsh/platform.zsh",
+    );
+  });
+
+  it("pull applies the platform-specific child artifact instead of the parent default-path artifact", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "local before\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "normal" },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const repositoryZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "default",
+      ".config",
+      "zsh",
+    );
+    await mkdir(repositoryZshDirectory, { recursive: true });
+    await writeFile(
+      join(repositoryZshDirectory, "platform.zsh"),
+      "default artifact\n",
+    );
+    await writeFile(
+      join(repositoryZshDirectory, "platform.wsl.zsh"),
+      "wsl artifact\n",
+    );
+    await writeFile(join(repositoryZshDirectory, "other.zsh"), "other\n");
+
+    platformSpy.mockReturnValue("wsl");
+    const result = await pullChanges({ dryRun: false });
+
+    expect(result.plainFileCount).toBe(2);
+    expect(await readFile(platformFile, "utf8")).toBe("wsl artifact\n");
+    expect(await readFile(join(zshDirectory, "other.zsh"), "utf8")).toBe(
+      "other\n",
+    );
+  });
+
+  it("keeps a profiled platform-specific child out of the parent default-path artifact when pushing that profile", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const zshDirectory = join(homeDirectory, ".config", "zsh");
+    const platformFile = join(zshDirectory, "platform.zsh");
+    const otherFile = join(zshDirectory, "other.zsh");
+    const ageKeys = await createAgeKeyPair();
+    setEnvironment(homeDirectory, xdgConfigHome);
+    const platformSpy = vi.spyOn(platformConfig, "detectCurrentPlatformKey");
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(zshDirectory, { recursive: true });
+    await writeFile(platformFile, "work platform\n");
+    await writeFile(otherFile, "other\n");
+
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", "manifest.jsonc"),
+      JSON.stringify(
+        {
+          version: 8,
+          age: { recipients: [ageKeys.recipient] },
+          profiles: ["work"],
+          entries: [
+            {
+              kind: "directory",
+              localPath: { default: "~/.config/zsh" },
+              mode: { default: "normal" },
+              profiles: ["work"],
+            },
+            {
+              kind: "file",
+              localPath: { default: "~/.config/zsh/platform.zsh" },
+              repoPath: {
+                default: ".config/zsh/platform.zsh",
+                wsl: ".config/zsh/platform.wsl.zsh",
+              },
+              mode: { default: "ignore", wsl: "normal" },
+              profiles: ["work"],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const workZshDirectory = join(
+      xdgConfigHome,
+      "dotweave",
+      "repository",
+      "profiles",
+      "work",
+      ".config",
+      "zsh",
+    );
+    const defaultArtifact = join(workZshDirectory, "platform.zsh");
+    const wslArtifact = join(workZshDirectory, "platform.wsl.zsh");
+
+    await mkdir(workZshDirectory, { recursive: true });
+    await writeFile(defaultArtifact, "stale work default artifact\n");
+
+    platformSpy.mockReturnValue("wsl");
+    const result = await pushChanges({ dryRun: false, profile: "work" });
+
+    expect(result.plainFileCount).toBe(2);
+    expect(result.deletedArtifactCount).toBe(1);
+    expect(await readFile(join(workZshDirectory, "other.zsh"), "utf8")).toBe(
+      "other\n",
+    );
+    expect(await readFile(wslArtifact, "utf8")).toBe("work platform\n");
+    await expect(lstat(defaultArtifact)).rejects.toThrow();
+  });
+
   it("does not delete artifacts for platform-ignored entries with different repo paths", async () => {
     const workspace = await createWorkspace();
     const homeDirectory = join(workspace, "home");

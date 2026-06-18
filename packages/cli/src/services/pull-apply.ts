@@ -129,6 +129,7 @@ export const buildEntryMaterialization = (
 
   const nodes = new Map<string, FileLikeSnapshotNode>();
   const desiredKeys = new Set<string>();
+  const childEntryPaths = collectChildEntryPaths(config, entry);
 
   for (const [repoPath, node] of snapshot.entries()) {
     if (!repoPath.startsWith(`${entry.repoPath}/`)) {
@@ -136,6 +137,10 @@ export const buildEntryMaterialization = (
     }
 
     if (node.type === "directory") {
+      continue;
+    }
+
+    if (childEntryPaths.has(repoPath)) {
       continue;
     }
 
@@ -475,7 +480,7 @@ export const countDeletedLocalNodes = async (
 
   const childEntryPaths =
     entry.kind === "directory"
-      ? collectChildEntryPaths(config, entry.repoPath)
+      ? collectChildEntryPaths(config, entry)
       : new Set<string>();
 
   const rootStats =

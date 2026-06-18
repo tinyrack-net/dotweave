@@ -183,9 +183,7 @@ export const buildLocalSnapshot = async (config: EffectiveSyncConfig) => {
       );
     }
 
-    const childEntryPaths = new Set(
-      collectChildEntryPaths(config, entry.repoPath),
-    );
+    const childEntryPaths = new Set(collectChildEntryPaths(config, entry));
 
     if (entryMode === "ignore") {
       continue;

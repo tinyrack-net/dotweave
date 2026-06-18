@@ -11,6 +11,7 @@ import { createSymlink } from "#app/lib/filesystem.ts";
 import { buildDirectoryKey } from "#app/lib/path.ts";
 import type { FileLikeSnapshotNode } from "#app/services/local-snapshot.ts";
 import {
+  buildEntryMaterialization,
   collectChangedLocalPaths,
   countDeletedLocalNodes,
 } from "#app/services/pull-apply.ts";
@@ -449,6 +450,65 @@ describe("local materialization", () => {
     ).toEqual([staleFile]);
   });
 
+  it("does not materialize a parent default-path artifact for a platform-specific child repo path", () => {
+    const rootEntry = createEntry(
+      "directory",
+      "/home/user/.config/zsh",
+      ".config/zsh",
+      "normal",
+    );
+    const childEntry = createEntry(
+      "file",
+      "/home/user/.config/zsh/platform.zsh",
+      ".config/zsh/platform.wsl.zsh",
+      "normal",
+    );
+    const materialization = buildEntryMaterialization(
+      rootEntry,
+      new Map([
+        [buildDirectoryKey(".config/zsh"), { type: "directory" }],
+        [
+          ".config/zsh/platform.zsh",
+          {
+            contents: Buffer.from("default artifact\n"),
+            executable: false,
+            secret: false,
+            type: "file",
+          },
+        ],
+        [
+          ".config/zsh/platform.wsl.zsh",
+          {
+            contents: Buffer.from("wsl artifact\n"),
+            executable: false,
+            secret: false,
+            type: "file",
+          },
+        ],
+        [
+          ".config/zsh/other.zsh",
+          {
+            contents: Buffer.from("other\n"),
+            executable: false,
+            secret: false,
+            type: "file",
+          },
+        ],
+      ]),
+      createConfig([rootEntry, childEntry]),
+    );
+
+    expect(materialization).toMatchObject({ type: "directory" });
+    expect(materialization.desiredKeys).toEqual(
+      new Set([buildDirectoryKey(".config/zsh"), ".config/zsh/other.zsh"]),
+    );
+    expect(
+      materialization.type === "directory"
+        ? [...materialization.nodes.keys()]
+        : [],
+    ).toEqual(["other.zsh"]);
+  });
+
   it("does not count explicit child entry paths as stale parent paths", async () => {
     const workspace = await createWorkspace();
     const rootDirectory = join(workspace, ".config", "zsh");
@@ -488,6 +548,50 @@ describe("local materialization", () => {
       new Set([buildDirectoryKey(".config/zsh"), ".config/zsh/.zshrc"]),
     );
     expect(keyToLocalPath.has(".config/zsh/plugins/plugin.zsh")).toBe(false);
+  });
+
+  it("does not count a platform-specific child local file as a stale parent path", async () => {
+    const workspace = await createWorkspace();
+    const rootDirectory = join(workspace, ".config", "zsh");
+    const platformFile = join(rootDirectory, "platform.zsh");
+    const otherFile = join(rootDirectory, "other.zsh");
+
+    await mkdir(rootDirectory, { recursive: true });
+    await writeFile(platformFile, "local platform\n", "utf8");
+    await writeFile(otherFile, "other\n", "utf8");
+
+    const rootEntry = createEntry(
+      "directory",
+      rootDirectory,
+      ".config/zsh",
+      "normal",
+    );
+    const childEntry = createEntry(
+      "file",
+      platformFile,
+      ".config/zsh/platform.wsl.zsh",
+      "normal",
+    );
+    const existingKeys = new Set<string>();
+    const keyToLocalPath = new Map<string, string>();
+
+    const deletedLocalCount = await countDeletedLocalNodes(
+      rootEntry,
+      new Set([
+        buildDirectoryKey(".config/zsh"),
+        ".config/zsh/other.zsh",
+        ".config/zsh/platform.wsl.zsh",
+      ]),
+      createConfig([rootEntry, childEntry]),
+      existingKeys,
+      keyToLocalPath,
+    );
+
+    expect(deletedLocalCount).toBe(0);
+    expect(existingKeys).toEqual(
+      new Set([buildDirectoryKey(".config/zsh"), ".config/zsh/other.zsh"]),
+    );
+    expect(keyToLocalPath.has(".config/zsh/platform.zsh")).toBe(false);
   });
 
   it("should not throw EINVAL when a symlink node in snapshot exists as a directory locally", async () => {
