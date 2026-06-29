@@ -263,6 +263,84 @@ describe("sync service", () => {
     await expect(lstat(oldLayoutArtifactPath)).rejects.toThrow();
   });
 
+  it("keeps generated secret directory artifacts visible to git when ignore rules match secret artifacts", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const vividentDirectory = join(homeDirectory, ".vivident");
+    const ageKeys = await createAgeKeyPair();
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(vividentDirectory, { recursive: true });
+    await writeFile(
+      join(vividentDirectory, "config.json"),
+      '{"theme":"dark"}\n',
+    );
+    await writeFile(join(vividentDirectory, "state.txt"), "window=main\n");
+
+    setEnvironment(homeDirectory, xdgConfigHome);
+
+    const syncDirectory = join(xdgConfigHome, "dotweave", "repository");
+    await initializeSyncDirectory({
+      identityFile: "$XDG_CONFIG_HOME/dotweave/keys.txt",
+      recipients: [ageKeys.recipient],
+    });
+    await writeFile(join(syncDirectory, ".gitignore"), "*.dotweave.secret\n");
+
+    await trackTarget(
+      {
+        mode: "secret",
+        target: vividentDirectory,
+      },
+      homeDirectory,
+    );
+    await pushChanges({ dryRun: false });
+
+    const configArtifactPath = join(
+      syncDirectory,
+      "profiles",
+      "default",
+      ".vivident",
+      "config.json.dotweave.secret",
+    );
+    const stateArtifactPath = join(
+      syncDirectory,
+      "profiles",
+      "default",
+      ".vivident",
+      "state.txt.dotweave.secret",
+    );
+
+    expect(await readFile(configArtifactPath, "utf8")).toContain(
+      "BEGIN AGE ENCRYPTED FILE",
+    );
+    expect(await readFile(stateArtifactPath, "utf8")).toContain(
+      "BEGIN AGE ENCRYPTED FILE",
+    );
+
+    const ignoredStatus = await runGit(
+      ["status", "--ignored", "--short", "--untracked-files=all"],
+      syncDirectory,
+    );
+    expect(ignoredStatus.stdout).not.toContain(
+      "!! profiles/default/.vivident/config.json.dotweave.secret",
+    );
+    expect(ignoredStatus.stdout).not.toContain(
+      "!! profiles/default/.vivident/state.txt.dotweave.secret",
+    );
+
+    const status = await runGit(
+      ["status", "--short", "--untracked-files=all"],
+      syncDirectory,
+    );
+    expect(status.stdout).toContain(
+      "?? profiles/default/.vivident/config.json.dotweave.secret",
+    );
+    expect(status.stdout).toContain(
+      "?? profiles/default/.vivident/state.txt.dotweave.secret",
+    );
+  });
+
   it("keeps repository artifact bytes stable under core.autocrlf before repeated pull", async () => {
     const workspace = await createWorkspace();
     const homeDirectory = join(workspace, "home");

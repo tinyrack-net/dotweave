@@ -469,6 +469,100 @@ describe("sync CLI e2e", () => {
     expect(await readFile(secretsFile, "utf8")).toContain("TOKEN=work");
   }, 15_000);
 
+  it("restores secret directory files on another checkout when secret artifacts match repository ignore rules", async () => {
+    const sourceRepository = join(ctx.workspace, "remote-sync.git");
+    const keyFile = join(ctx.workspace, "vivident.agekey");
+    const syncDirectory = join(ctx.xdgDir, "dotweave", "repository");
+    const vividentDirectory = join(ctx.homeDir, ".vivident");
+    const secondHomeDirectory = join(ctx.workspace, "home-second");
+    const secondXdgDirectory = join(ctx.workspace, "xdg-second");
+    const secondLocalAppDataDirectory = join(
+      ctx.workspace,
+      "local-appdata-second",
+    );
+    const ageKeys = await ctx.createAgeKeyPair();
+
+    await ctx.runGit(["init", "--bare", "-b", "main", sourceRepository]);
+    await ctx.writeIdentityFile(ageKeys.identity);
+    await writeFile(keyFile, `${ageKeys.identity}\n`, "utf8");
+    await mkdir(vividentDirectory, { recursive: true });
+    await mkdir(secondHomeDirectory, { recursive: true });
+    await writeFile(
+      join(vividentDirectory, "config.json"),
+      '{"theme":"dark"}\n',
+    );
+    await writeFile(join(vividentDirectory, "state.txt"), "window=main\n");
+
+    await ctx.runCli(["init", sourceRepository]);
+    await writeFile(join(syncDirectory, ".gitignore"), "*.dotweave.secret\n");
+    await ctx.runCli(["track", vividentDirectory, "--mode", "secret"]);
+    await ctx.runCli(["push"]);
+
+    expect(
+      await readFile(
+        join(
+          syncDirectory,
+          "profiles",
+          "default",
+          ".vivident",
+          "config.json.dotweave.secret",
+        ),
+        "utf8",
+      ),
+    ).toContain("BEGIN AGE ENCRYPTED FILE");
+    expect(
+      await readFile(
+        join(
+          syncDirectory,
+          "profiles",
+          "default",
+          ".vivident",
+          "state.txt.dotweave.secret",
+        ),
+        "utf8",
+      ),
+    ).toContain("BEGIN AGE ENCRYPTED FILE");
+
+    const ignoredStatus = await ctx.runGit(
+      ["status", "--ignored", "--short", "--untracked-files=all"],
+      syncDirectory,
+    );
+    expect(ignoredStatus.stdout).not.toContain(
+      "!! profiles/default/.vivident/config.json.dotweave.secret",
+    );
+    expect(ignoredStatus.stdout).not.toContain(
+      "!! profiles/default/.vivident/state.txt.dotweave.secret",
+    );
+
+    await ctx.runGit(["add", "."], syncDirectory);
+    await ctx.runGit(
+      ["commit", "-m", "sync vivident directory"],
+      syncDirectory,
+    );
+    await ctx.runGit(["push", "-u", "origin", "main"], syncDirectory);
+
+    const secondEnv = {
+      ...ctx.baseEnv,
+      APPDATA: secondXdgDirectory,
+      HOME: secondHomeDirectory,
+      LOCALAPPDATA: secondLocalAppDataDirectory,
+      USERPROFILE: secondHomeDirectory,
+      XDG_CONFIG_HOME: secondXdgDirectory,
+    };
+
+    await ctx.runCli(["init", sourceRepository, "--key-file", keyFile], {
+      env: secondEnv,
+    });
+    await ctx.runCli(["pull", "-y"], { env: secondEnv });
+
+    await expect(
+      readFile(join(secondHomeDirectory, ".vivident", "config.json"), "utf8"),
+    ).resolves.toBe('{"theme":"dark"}\n');
+    await expect(
+      readFile(join(secondHomeDirectory, ".vivident", "state.txt"), "utf8"),
+    ).resolves.toBe("window=main\n");
+  }, 20_000);
+
   it("status reports a removed default entry artifact before push", async () => {
     const configDir = join(ctx.homeDir, ".config", "prune-status");
     const configFile = join(configDir, "config.toml");

@@ -17,6 +17,7 @@ import {
   resolveArtifactRelativePath,
   writeArtifactsToDirectory,
 } from "./repo-artifacts.ts";
+import { ensureManagedSecretArtifactIgnoreRules } from "./repository-ignore.ts";
 import {
   type EffectiveSyncConfig,
   loadSyncConfig,
@@ -248,6 +249,8 @@ export const pushChanges = async (
   const plan = await buildPushPlan(config, syncDirectory, fullConfig);
 
   if (!request.dryRun) {
+    await ensureManagedSecretArtifactIgnoreRules(syncDirectory);
+
     await limitConcurrency(
       AppConstants.SYNC.DEFAULT_CONCURRENCY,
       plan.staleReplacementDirectoryRoots ?? [],

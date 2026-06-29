@@ -27,6 +27,7 @@ import {
   verifyIsGitRepository,
 } from "#app/lib/git.ts";
 import { validateJsoncConfigPath } from "#app/lib/jsonc.ts";
+import { ensureManagedSecretArtifactIgnoreRules } from "./repository-ignore.ts";
 import {
   resolveAgeFromSyncConfig,
   resolveSyncConfigResolutionContext,
@@ -278,6 +279,7 @@ export const initializeSyncDirectory = async (
 
   await mkdir(syncDirectory, { recursive: true });
   await ensureManagedRepositoryAttributes(syncDirectory);
+  await ensureManagedSecretArtifactIgnoreRules(syncDirectory);
 
   if (await pathExists(await validateJsoncConfigPath(configPath))) {
     const config = await readSyncConfig(syncDirectory, context);

@@ -137,6 +137,47 @@ describe("sync dry runs", () => {
     });
   });
 
+  it("does not repair managed secret artifact ignore rules during push dry-run", async () => {
+    const workspace = await createWorkspace();
+    const homeDirectory = join(workspace, "home");
+    const xdgConfigHome = join(workspace, "xdg");
+    const secretDirectory = join(homeDirectory, ".vivident");
+    const ageKeys = await createAgeKeyPair();
+
+    await writeIdentityFile(xdgConfigHome, ageKeys.identity);
+    await mkdir(secretDirectory, { recursive: true });
+    await writeFile(join(secretDirectory, "config.json"), "{}\n", "utf8");
+
+    setEnvironment(homeDirectory, xdgConfigHome);
+    await initializeSyncDirectory({
+      recipients: [ageKeys.recipient],
+    });
+    await writeFile(
+      join(xdgConfigHome, "dotweave", "repository", ".gitignore"),
+      "*.dotweave.secret\n",
+      "utf8",
+    );
+    await trackTarget(
+      {
+        mode: "secret",
+        target: secretDirectory,
+      },
+      homeDirectory,
+    );
+
+    const result = await pushChanges({
+      dryRun: true,
+    });
+
+    expect(result.dryRun).toBe(true);
+    expect(
+      await readFile(
+        join(xdgConfigHome, "dotweave", "repository", ".gitignore"),
+        "utf8",
+      ),
+    ).toBe("*.dotweave.secret\n");
+  });
+
   it("reports pull changes without mutating local files", async () => {
     const workspace = await createWorkspace();
     const homeDirectory = join(workspace, "home");
