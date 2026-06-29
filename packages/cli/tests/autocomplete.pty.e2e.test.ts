@@ -488,6 +488,7 @@ describe.skipIf(!shouldRunPtyShell("powershell", isPowerShellAvailable))(
         expect(output).toContain("profile");
       } finally {
         session.close();
+        await session.waitForExit();
       }
     }, 20_000);
   },

@@ -72,6 +72,7 @@ export type PtySession = Readonly<{
     predicate: (output: string) => boolean,
     timeoutMs?: number,
   ) => Promise<string>;
+  waitForExit: (timeoutMs?: number) => Promise<void>;
   write: (value: string) => void;
 }>;
 
@@ -158,9 +159,13 @@ export const createPtySession = (options: {
   });
 
   let output = "";
+  let exitCode: number | undefined;
 
   terminal.onData((chunk) => {
     output += chunk;
+  });
+  terminal.onExit((event) => {
+    exitCode = event.exitCode;
   });
 
   const getOutput = () => {
@@ -198,6 +203,25 @@ export const createPtySession = (options: {
       });
     },
     waitForOutput: outputWaiter.waitForOutput,
+    waitForExit: (timeoutMs = 10_000) => {
+      return new Promise((resolve, reject) => {
+        if (exitCode !== undefined) {
+          resolve();
+          return;
+        }
+
+        let subscription: { dispose: () => void } | undefined;
+        const timeout = setTimeout(() => {
+          subscription?.dispose();
+          reject(new Error("Timed out waiting for terminal exit."));
+        }, timeoutMs);
+        subscription = terminal.onExit(() => {
+          clearTimeout(timeout);
+          subscription?.dispose();
+          resolve();
+        });
+      });
+    },
     write: (value) => {
       terminal.write(value);
     },
