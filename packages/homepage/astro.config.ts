@@ -21,6 +21,10 @@ export default defineConfig({
     allowedHosts: true,
   },
   vite: {
+    build: {
+      // lightningcss rejects some Starlight/Tailwind generated selectors on Vite 8.
+      cssMinify: "esbuild",
+    },
     server: {
       strictPort: true,
     },

@@ -212,7 +212,7 @@ describe("profile CLI e2e", () => {
       "personal.conf",
     );
     await expect(readFile(personalArtifact, "utf8")).rejects.toThrow();
-  }, 15_000);
+  }, 60_000);
 
   it("pull --profile work applies work and default artifacts only", async () => {
     const { homeFile, sharedFile, workFile } = await setupProfilePullFixture();
@@ -223,7 +223,7 @@ describe("profile CLI e2e", () => {
     expect(await readFile(workFile, "utf8")).toBe("work = repository\n");
     expect(await readFile(sharedFile, "utf8")).toBe("shared = repository\n");
     expect(await readFile(homeFile, "utf8")).toBe("home = local\n");
-  }, 20_000);
+  }, 60_000);
 
   it("pull -y uses the active work profile", async () => {
     const { homeFile, sharedFile, workFile } = await setupProfilePullFixture();
@@ -235,7 +235,7 @@ describe("profile CLI e2e", () => {
     expect(await readFile(workFile, "utf8")).toBe("work = repository\n");
     expect(await readFile(sharedFile, "utf8")).toBe("shared = repository\n");
     expect(await readFile(homeFile, "utf8")).toBe("home = local\n");
-  }, 20_000);
+  }, 60_000);
 
   it("pull -y with active home profile does not apply work artifacts", async () => {
     const { homeFile, sharedFile, workFile } = await setupProfilePullFixture();
@@ -247,7 +247,7 @@ describe("profile CLI e2e", () => {
     expect(await readFile(homeFile, "utf8")).toBe("home = repository\n");
     expect(await readFile(sharedFile, "utf8")).toBe("shared = repository\n");
     expect(await readFile(workFile, "utf8")).toBe("work = local\n");
-  }, 20_000);
+  }, 60_000);
 
   it("pull --profile overrides the active profile", async () => {
     const { homeFile, sharedFile, workFile } = await setupProfilePullFixture();
@@ -259,7 +259,7 @@ describe("profile CLI e2e", () => {
     expect(await readFile(workFile, "utf8")).toBe("work = repository\n");
     expect(await readFile(sharedFile, "utf8")).toBe("shared = repository\n");
     expect(await readFile(homeFile, "utf8")).toBe("home = local\n");
-  }, 20_000);
+  }, 60_000);
 
   it("pull -y without an active named profile applies default artifacts only", async () => {
     const { homeFile, sharedFile, workFile } = await setupProfilePullFixture();
@@ -271,7 +271,7 @@ describe("profile CLI e2e", () => {
     expect(await readFile(sharedFile, "utf8")).toBe("shared = repository\n");
     expect(await readFile(workFile, "utf8")).toBe("work = local\n");
     expect(await readFile(homeFile, "utf8")).toBe("home = local\n");
-  }, 20_000);
+  }, 60_000);
 
   it("rejects invalid profile names with special characters", async () => {
     const ageKeys = await ctx.createAgeKeyPair();

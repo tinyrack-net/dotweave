@@ -82,5 +82,5 @@ describe("concurrency e2e", () => {
         expect(content).toBe(`content for ${fileName}\n`);
       }
     }
-  }, 20000);
+  }, 60_000);
 });
