@@ -15,10 +15,10 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 1. **dotweave 초기화**
 
    ```bash
-   dotweave init ~/dotfiles
+   dotweave init
    ```
 
-   `~/dotfiles`에 Git으로 관리되는 sync 디렉터리가 생성돼요.
+   dotweave 앱 데이터 디렉터리 안에 Git으로 관리되는 sync 디렉터리가 생성돼요.
 
 2. **파일 추적**
 
@@ -62,7 +62,7 @@ push나 pull 전에 `dotweave status`를 실행하면 어떤 변경이 있을지
 1. **리모트 URL로 초기화**
 
    ```bash
-   dotweave init ~/dotfiles --url git@github.com:you/dotfiles.git
+   dotweave init git@github.com:you/dotfiles.git
    ```
 
 2. **파일을 로컬 경로로 pull**

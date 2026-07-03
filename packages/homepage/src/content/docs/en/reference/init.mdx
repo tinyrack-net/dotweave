@@ -25,8 +25,8 @@ dotweave init [repository]
 
 | Flag                        | Description                                                    |
 | --------------------------- | -------------------------------------------------------------- |
-| `--key <age-private-key>`   | Persist an age private key into the identity file.             |
-| `--promptKey`               | Prompt to enter an age private key instead of generating one automatically. |
+| `--key-file <path>`         | Read an age private key from a file.                           |
+| `--force`                   | Replace existing local sync repository, identity, and settings before initializing. |
 
 ## Examples
 
@@ -39,15 +39,15 @@ dotweave init
 Clone a remote repository as the sync directory:
 
 ```bash
-dotweave init https://github.com/user/dotfiles.git --key "AGE-SECRET-KEY-1..."
+dotweave init https://github.com/user/dotfiles.git --key-file ~/dotweave.agekey
 ```
 
 Initialize with an existing age secret key:
 
 ```bash
-dotweave init --key "AGE-SECRET-KEY-1..."
+dotweave init --key-file ~/dotweave.agekey
 ```
 
 <Aside type="tip">
-If you pass a repository to `dotweave init`, you must also provide the existing age private key with `--key` or `--promptKey` so dotweave can decrypt your secret files.
+If you pass a repository to `dotweave init`, provide the existing age private key with `--key-file` or enter it at the interactive prompt so dotweave can decrypt your secret files.
 </Aside>

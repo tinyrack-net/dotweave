@@ -15,10 +15,10 @@ your first machine to keeping multiple devices in sync every day.
 1. **Initialize dotweave**
 
    ```bash
-   dotweave init ~/dotfiles
+   dotweave init
    ```
 
-   This creates a Git-backed sync directory at `~/dotfiles`.
+   This creates a Git-backed sync directory in dotweave's app-data directory.
 
 2. **Track your files**
 
@@ -62,7 +62,7 @@ actually push or pull.
 1. **Initialize from the remote URL**
 
    ```bash
-   dotweave init ~/dotfiles --url git@github.com:you/dotfiles.git
+   dotweave init git@github.com:you/dotfiles.git
    ```
 
 2. **Pull files to their local paths**

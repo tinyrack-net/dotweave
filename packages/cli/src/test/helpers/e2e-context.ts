@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,6 +17,48 @@ export interface RunCliOptions {
   input?: string;
   reject?: boolean;
 }
+
+export const createMachineEnv = (
+  workspace: string,
+  name: string,
+  baseEnv: NodeJS.ProcessEnv,
+) => {
+  const homeDir = join(workspace, `home-${name}`);
+  const xdgDir = join(workspace, `xdg-${name}`);
+  const localAppDataDir = join(workspace, `local-appdata-${name}`);
+
+  return {
+    env: {
+      ...baseEnv,
+      APPDATA: xdgDir,
+      HOME: homeDir,
+      LOCALAPPDATA: localAppDataDir,
+      USERPROFILE: homeDir,
+      XDG_CONFIG_HOME: xdgDir,
+    },
+    homeDir,
+    localAppDataDir,
+    xdgDir,
+  };
+};
+
+export const readRepositoryArtifact = (
+  xdgDir: string,
+  profile: string,
+  repoPath: string,
+) => {
+  return readFile(
+    join(
+      xdgDir,
+      "dotweave",
+      "repository",
+      "profiles",
+      profile,
+      ...repoPath.split("/"),
+    ),
+    "utf8",
+  );
+};
 
 export const createSyncE2EContext = async () => {
   const workspace = await mkdtemp(join(tmpdir(), "dotweave-e2e-"));
@@ -66,6 +108,7 @@ export const createSyncE2EContext = async () => {
     workspace,
     homeDir,
     xdgDir,
+    localAppDataDir,
     baseEnv,
     runCli,
     runGit,

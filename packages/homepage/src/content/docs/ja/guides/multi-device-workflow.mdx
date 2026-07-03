@@ -15,10 +15,10 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 1. **dotweaveを初期化する**
 
    ```bash
-   dotweave init ~/dotfiles
+   dotweave init
    ```
 
-   `~/dotfiles`にGitベースのsyncディレクトリが作成されます。
+   dotweaveのアプリデータディレクトリ内にGitベースのsyncディレクトリが作成されます。
 
 2. **ファイルをトラッキングする**
 
@@ -61,7 +61,7 @@ pushやpullの前にいつでも`dotweave status`を実行して、変更内容�
 1. **リモートURLから初期化する**
 
    ```bash
-   dotweave init ~/dotfiles --url git@github.com:you/dotfiles.git
+   dotweave init git@github.com:you/dotfiles.git
    ```
 
 2. **ファイルをローカルパスにpull**

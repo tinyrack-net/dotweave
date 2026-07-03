@@ -14,7 +14,7 @@ Every tracked entry has a **sync mode** that controls how dotweave handles it du
 | Mode | Stored in sync directory | Encrypted | Synced on push/pull |
 |---|---|---|---|
 | `normal` | Yes | No | Yes |
-| `secret` | Yes (`.age` suffix) | Yes (age) | Yes |
+| `secret` | Yes (`.dotweave.secret` suffix) | Yes (age) | Yes |
 | `ignore` | No | — | No |
 
 ---
@@ -35,7 +35,7 @@ dotweave track ~/.config/nvim
 
 ## secret
 
-Files are encrypted with [age](https://age-encryption.org/) before being stored in the sync directory. The stored file gets an `.age` suffix.
+Files are encrypted with [age](https://age-encryption.org/) before being stored in the sync directory. The stored file gets a `.dotweave.secret` suffix.
 
 ```bash
 dotweave track ~/.ssh/config --mode secret

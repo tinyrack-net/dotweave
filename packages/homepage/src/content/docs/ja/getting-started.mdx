@@ -112,10 +112,10 @@ dotweaveを初めて使う場合は、以下の手順で新しいsyncディレ�
    dotweave init <your-repo-url>
    ```
 
-   リポジトリがdotweaveのアプリデータディレクトリ内の`repository/`にcloneされ、新しいageのidentityが設定されます。別のマシンのageプライベートキーをすでにお持ちの場合は、`--key`で指定できます：
+   リポジトリがdotweaveのアプリデータディレクトリ内の`repository/`にcloneされます。既存のsyncリポジトリに接続する場合は、シークレットファイルの復号に使ったageプライベートキーを指定してください：
 
    ```bash
-   dotweave init <your-repo-url> --key "AGE-SECRET-KEY-1..."
+   dotweave init <your-repo-url> --key-file ~/dotweave.agekey
    ```
 
 2. **ファイルをpull**
