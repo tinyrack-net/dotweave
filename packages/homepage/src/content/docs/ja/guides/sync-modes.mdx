@@ -14,7 +14,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 | モード | syncディレクトリに保存 | 暗号化 | push/pullで同期 |
 |---|---|---|---|
 | `normal` | はい | なし | はい |
-| `secret` | はい（`.age`サフィックス付き） | はい（age） | はい |
+| `secret` | はい（`.dotweave.secret`サフィックス付き） | はい（age） | はい |
 | `ignore` | いいえ | — | いいえ |
 
 ---
@@ -35,7 +35,7 @@ dotweave track ~/.config/nvim
 
 ## secret
 
-ファイルはsyncディレクトリに保存される前に[age](https://age-encryption.org/)で暗号化されます。保存されたファイルには`.age`サフィックスが付きます。
+ファイルはsyncディレクトリに保存される前に[age](https://age-encryption.org/)で暗号化されます。保存されたファイルには`.dotweave.secret`サフィックスが付きます。
 
 ```bash
 dotweave track ~/.ssh/config --mode secret

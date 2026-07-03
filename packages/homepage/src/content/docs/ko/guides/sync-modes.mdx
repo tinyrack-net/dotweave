@@ -14,7 +14,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 | 모드 | sync 디렉터리에 저장 | 암호화 여부 | push/pull 시 동기화 |
 |---|---|---|---|
 | `normal` | 예 | 아니오 | 예 |
-| `secret` | 예 (`.age` 접미사) | 예 (age) | 예 |
+| `secret` | 예 (`.dotweave.secret` 접미사) | 예 (age) | 예 |
 | `ignore` | 아니오 | — | 아니오 |
 
 ---
@@ -35,7 +35,7 @@ dotweave track ~/.config/nvim
 
 ## secret
 
-파일이 sync 디렉터리에 저장되기 전에 [age](https://age-encryption.org/)로 암호화돼요. 저장된 파일에는 `.age` 접미사가 붙어요.
+파일이 sync 디렉터리에 저장되기 전에 [age](https://age-encryption.org/)로 암호화돼요. 저장된 파일에는 `.dotweave.secret` 접미사가 붙어요.
 
 ```bash
 dotweave track ~/.ssh/config --mode secret

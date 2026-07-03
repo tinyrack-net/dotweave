@@ -109,13 +109,13 @@ On a new machine, clone your existing sync directory:
 1. **Clone and initialize**
 
    ```bash
-   dotweave init <your-repo-url> --key "AGE-SECRET-KEY-1..."
+   dotweave init <your-repo-url> --key-file ~/dotweave.agekey
    ```
 
    This clones the repository into the dotweave app-data directory under `repository/`. When connecting an existing sync repository, you must provide the same age private key used to decrypt its secret files:
 
    ```bash
-   dotweave init <your-repo-url> --promptKey
+   dotweave init <your-repo-url>
    ```
 
 2. **Pull your files**

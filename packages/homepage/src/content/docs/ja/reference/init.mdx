@@ -25,8 +25,8 @@ dotweave init [repository]
 
 | Flag                        | Description                                                    |
 | --------------------------- | -------------------------------------------------------------- |
-| `--key <age-private-key>`   | ageの秘密鍵をidentityファイルに保存します。             |
-| `--promptKey`               | 自動生成ではなく、ageの秘密鍵を対話的に入力します。 |
+| `--key-file <path>`         | ファイルからageの秘密鍵を読み込みます。             |
+| `--force`                   | 既存のローカルsyncリポジトリ、identity、settingsを置き換えて初期化します。 |
 
 ## Examples
 
@@ -45,9 +45,9 @@ dotweave init https://github.com/user/dotfiles.git
 既存のageの秘密鍵を指定して初期化する:
 
 ```bash
-dotweave init --key "AGE-SECRET-KEY-1..."
+dotweave init --key-file ~/dotweave.agekey
 ```
 
 <Aside type="tip">
-別のマシンで使用しているage identityがある場合は、`--key` または `--promptKey` で指定すると、secretファイルを復号できます。
+別のマシンで使用しているage identityがある場合は、`--key-file`で指定するか、既存リポジトリを取り込むときの対話プロンプトに入力すると、secretファイルを復号できます。
 </Aside>

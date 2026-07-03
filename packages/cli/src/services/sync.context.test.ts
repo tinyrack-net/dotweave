@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { ResolvedSyncConfig } from "#app/config/sync-schema.ts";
+import type {
+  ResolvedSyncConfig,
+  ResolvedSyncConfigEntry,
+} from "#app/config/sync-schema.ts";
 import {
   buildEffectiveSyncConfig,
   type RuntimeAgeConfig,
@@ -10,6 +13,22 @@ const testAge: RuntimeAgeConfig = {
   identityFile: "/tmp/keys.txt",
   recipients: ["age1example"],
 };
+
+const createEntry = (
+  repoPath: string,
+  profiles: readonly string[] = [],
+): ResolvedSyncConfigEntry => ({
+  configuredMode: { default: "normal" },
+  configuredLocalPath: { default: `~/${repoPath}` },
+  kind: "file",
+  localPath: `/tmp/home/${repoPath}`,
+  profiles,
+  profilesExplicit: profiles.length > 0,
+  mode: "normal",
+  modeExplicit: false,
+  permissionExplicit: false,
+  repoPath,
+});
 
 describe("sync runtime", () => {
   it("attaches activeProfile from selection to the effective config", () => {
@@ -287,5 +306,45 @@ describe("sync runtime", () => {
 
     expect(effective.activeProfile).toBe("Work");
     expect(effective.entries).toHaveLength(1);
+  });
+
+  it("rejects unknown runtime profile selections instead of silently dropping named entries", () => {
+    const config = {
+      entries: [createEntry(".vimrc"), createEntry(".config/work", ["work"])],
+      profiles: ["work"],
+      version: 7 as const,
+    } satisfies ResolvedSyncConfig;
+
+    expect(() => {
+      buildEffectiveSyncConfig(
+        config,
+        { profile: "personal", mode: "single" },
+        testAge,
+      );
+    }).toThrow("Unknown profile 'personal'.");
+  });
+
+  it("treats explicit default profile selection like the default layer", () => {
+    const config = {
+      entries: [
+        createEntry(".bashrc"),
+        createEntry(".profile", ["default"]),
+        createEntry(".config/work", ["work"]),
+      ],
+      profiles: ["work"],
+      version: 7 as const,
+    } satisfies ResolvedSyncConfig;
+
+    const effective = buildEffectiveSyncConfig(
+      config,
+      { profile: "default", mode: "single" },
+      testAge,
+    );
+
+    expect(effective.activeProfile).toBe("default");
+    expect(effective.entries.map((entry) => entry.repoPath)).toEqual([
+      ".bashrc",
+      ".profile",
+    ]);
   });
 });

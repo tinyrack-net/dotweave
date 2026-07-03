@@ -109,13 +109,13 @@ dotweave를 처음 사용한다면, 아래 단계를 따라 새로운 sync 디�
 1. **Clone & 초기화**
 
    ```bash
-   dotweave init <your-repo-url> --key "AGE-SECRET-KEY-1..."
+   dotweave init <your-repo-url> --key-file ~/dotweave.agekey
    ```
 
    저장소를 dotweave 앱 데이터 디렉터리의 `repository/` 아래로 clone해요. 기존 sync 저장소에 연결할 때는 시크릿 파일 복호화에 사용했던 age 비밀 키를 반드시 제공해야 해요. 키를 직접 입력하는 대신 붙여넣기 프롬프트를 사용할 수도 있어요:
 
    ```bash
-   dotweave init <your-repo-url> --promptKey
+   dotweave init <your-repo-url>
    ```
 
 2. **파일 pull**
