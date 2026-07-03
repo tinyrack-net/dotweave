@@ -29,17 +29,17 @@
     "typecheck:watch": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
-    "@stricli/core": "^1.2.7",
-    "@yao-pkg/pkg": "^6.20.0",
+    "@stricli/core": "^1.2.8",
+    "@yao-pkg/pkg": "^6.21.0",
     "execa": "^9.6.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
-    "@types/node": "^24.13.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@biomejs/biome": "^2.5.2",
+    "@types/node": "^24.13.2",
+    "@vitest/coverage-v8": "^4.1.9",
     "typescript": "^6.0.3",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8"
+    "vite": "^8.1.3",
+    "vitest": "^4.1.9"
   }
 }

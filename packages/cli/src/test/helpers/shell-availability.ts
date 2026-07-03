@@ -2,12 +2,25 @@ import { execFileSync } from "node:child_process";
 
 const getShellPath = (shell: string): string | undefined => {
   const lookupCommand = process.platform === "win32" ? "where" : "which";
+  const isUnsupportedWindowsShell =
+    process.platform === "win32" && shell === "bash";
 
   try {
     return execFileSync(lookupCommand, [shell], { encoding: "utf8" })
       .split(/\r?\n/u)
       .map((line) => line.trim())
-      .find((line) => line.length > 0);
+      .find((line) => {
+        if (line.length === 0) {
+          return false;
+        }
+
+        return !(
+          isUnsupportedWindowsShell &&
+          /\\(?:Windows\\System32|Microsoft\\WindowsApps)\\bash\.exe$/iu.test(
+            line,
+          )
+        );
+      });
   } catch {
     return undefined;
   }

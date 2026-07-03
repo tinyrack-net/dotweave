@@ -1,11 +1,22 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 
 import { execa } from "execa";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { rootCommandRoutes } from "../src/cli/root-commands.ts";
-import { cliNodeOptions } from "../src/test/helpers/cli-entry.ts";
+import {
+  cliHookUrl,
+  cliNodeOptions,
+  cliPath,
+} from "../src/test/helpers/cli-entry.ts";
 import {
   fishPath,
   isBashAvailable,
@@ -14,6 +25,7 @@ import {
   isZshAvailable,
   powerShellPath,
 } from "../src/test/helpers/shell-availability.ts";
+import { stripAnsi } from "../src/test/helpers/sync-fixture.ts";
 
 const COMPLETE_COMMAND = 'env -u COMP_LINE dotweave __complete "${inputs[@]}"';
 const rootCommandNames = ["autocomplete", ...Object.keys(rootCommandRoutes)];
@@ -100,6 +112,88 @@ const shellQuote = (value: string) => {
   return `'${value.replaceAll("'", "'\\''")}'`;
 };
 
+const cleanShellStderr = (stderr: string) => {
+  return stripAnsi(stderr)
+    .split(/\r?\n/u)
+    .filter((line) => {
+      const trimmed = line.trim();
+
+      return (
+        trimmed.length > 0 &&
+        trimmed !==
+          "MSYS2 is starting for the first time. Executing the initial setup." &&
+        trimmed !== "Initial setup complete. MSYS2 is now ready to use."
+      );
+    })
+    .join("\n");
+};
+
+const splitWindowsDrivePath = (value: string) => {
+  const normalized = value.replaceAll("\\", "/");
+  const drivePathMatch = /^([A-Za-z]):\/(.*)$/u.exec(normalized);
+
+  if (!drivePathMatch) {
+    return undefined;
+  }
+
+  const [, drive, pathRest] = drivePathMatch;
+
+  if (drive === undefined || pathRest === undefined) {
+    return undefined;
+  }
+
+  return { drive: drive.toLowerCase(), pathRest };
+};
+
+const toMsysShellPath = (value: string) => {
+  const drivePath = splitWindowsDrivePath(value);
+  return drivePath === undefined
+    ? value.replaceAll("\\", "/")
+    : `/${drivePath.drive}/${drivePath.pathRest}`;
+};
+
+const toWslShellPath = (value: string) => {
+  const drivePath = splitWindowsDrivePath(value);
+  return drivePath === undefined
+    ? value.replaceAll("\\", "/")
+    : `/mnt/${drivePath.drive}/${drivePath.pathRest}`;
+};
+
+const shellPathEntries = (value: string) => {
+  if (process.platform !== "win32") {
+    return [value];
+  }
+
+  return [toWslShellPath(value), toMsysShellPath(value)];
+};
+
+const createShellShimScript = () => {
+  const cliArgs = ["--import", cliHookUrl, cliPath].map(shellQuote).join(" ");
+
+  if (process.platform !== "win32") {
+    return [
+      "#!/usr/bin/env bash",
+      `exec ${shellQuote(process.execPath)} ${cliArgs} "$@"`,
+    ].join("\n");
+  }
+
+  return [
+    "#!/usr/bin/env bash",
+    'case "$(uname -r 2>/dev/null || true)" in',
+    "  *icrosoft*|*WSL*)",
+    `    dotweave_node=${shellQuote(toWslShellPath(process.execPath))}`,
+    "    ;;",
+    "  *)",
+    `    dotweave_node=${shellQuote(toMsysShellPath(process.execPath))}`,
+    "    ;;",
+    "esac",
+    `exec "$dotweave_node" ${cliArgs} "$@"`,
+  ].join("\n");
+};
+
+const exportPathCommand = (binDirectory: string) =>
+  `export PATH=${shellPathEntries(binDirectory).map(shellQuote).join(":")}:$PATH`;
+
 const fishString = (value: string) => {
   return `'${value.replaceAll("\\", "\\\\").replaceAll("'", "\\'")}'`;
 };
@@ -111,40 +205,45 @@ const runBashCompletion = async (
     cwd?: string;
   }>,
 ) => {
-  const cliCommand = [process.execPath, ...cliNodeOptions]
-    .map((value) => shellQuote(value))
-    .join(" ");
-
-  const homeDir = await mkdtemp(join(tmpdir(), "dotweave-test-"));
-
-  return execa(
-    "bash",
-    [
-      "-lc",
-      [
-        "set -euo pipefail",
-        'temp_dir="$(mktemp -d)"',
-        `printf '%s\\n' '#!/usr/bin/env bash' "exec ${cliCommand} \\"\\$@\\"" >"$temp_dir/dotweave"`,
-        'chmod +x "$temp_dir/dotweave"',
-        "trap 'rm -rf \"$temp_dir\"' EXIT",
-        'export PATH="$temp_dir:$PATH"',
-        'eval "$(dotweave autocomplete bash)"',
-        `COMP_WORDS=(${words.map(shellQuote).join(" ")})`,
-        `COMP_CWORD=${currentWordIndex}`,
-        "__dotweave_complete",
-        'printf "%s\\n" "${COMPREPLY[@]}"',
-      ].join("; "),
-    ],
-    {
-      cwd: options?.cwd,
-      env: {
-        FORCE_COLOR: "0",
-        HOME: homeDir,
-        NODE_NO_WARNINGS: "1",
-        NO_COLOR: "1",
-      },
-    },
+  const configDirectory = await realpath(
+    await mkdtemp(join(tmpdir(), "dotweave-autocomplete-bash-")),
   );
+  const binDirectory = join(configDirectory, "bin");
+  const homeDir = join(configDirectory, "home");
+  const shimPath = join(binDirectory, "dotweave");
+
+  await mkdir(binDirectory, { recursive: true });
+  await writeFile(shimPath, createShellShimScript());
+  await chmod(shimPath, 0o755);
+
+  try {
+    return await execa(
+      "bash",
+      [
+        "-lc",
+        [
+          "set -euo pipefail",
+          exportPathCommand(binDirectory),
+          'eval "$(dotweave autocomplete bash)"',
+          `COMP_WORDS=(${words.map(shellQuote).join(" ")})`,
+          `COMP_CWORD=${currentWordIndex}`,
+          "__dotweave_complete",
+          'printf "%s\\n" "${COMPREPLY[@]}"',
+        ].join("; "),
+      ],
+      {
+        cwd: options?.cwd,
+        env: {
+          FORCE_COLOR: "0",
+          HOME: homeDir,
+          NODE_NO_WARNINGS: "1",
+          NO_COLOR: "1",
+        },
+      },
+    );
+  } finally {
+    await rm(configDirectory, { force: true, recursive: true });
+  }
 };
 
 const runZshCompletion = async (
@@ -154,84 +253,83 @@ const runZshCompletion = async (
     cwd?: string;
   }>,
 ) => {
-  const cliCommand = [process.execPath, ...cliNodeOptions]
-    .map((value) => shellQuote(value))
-    .join(" ");
-
-  return execa(
-    "zsh",
-    [
-      "-lc",
-      [
-        "set -euo pipefail",
-        'temp_dir="$(mktemp -d)"',
-        `printf '%s\\n' '#!/usr/bin/env bash' "exec ${cliCommand} \\"\\$@\\"" >"$temp_dir/dotweave"`,
-        'chmod +x "$temp_dir/dotweave"',
-        "trap 'rm -rf \"$temp_dir\"' EXIT",
-        'export PATH="$temp_dir:$PATH"',
-        "function compdef() { :; }",
-        [
-          "function compadd() {",
-          '  local suffix=""',
-          "  while (( $# > 0 )); do",
-          '    case "$1" in',
-          "      --)",
-          "        shift",
-          "        break",
-          "        ;;",
-          "      -Q)",
-          "        shift",
-          "        ;;",
-          "      -S)",
-          '        suffix="$2"',
-          "        shift 2",
-          "        ;;",
-          "      *)",
-          "        shift",
-          "        ;;",
-          "    esac",
-          "  done",
-          '  local completion=""',
-          '  for completion in "$@"; do',
-          '    printf "%s%s\\n" "$completion" "$suffix"',
-          "  done",
-          "}",
-        ].join("; "),
-        'eval "$(dotweave autocomplete zsh)"',
-        `words=(${words.map(shellQuote).join(" ")})`,
-        `CURRENT=${currentWord}`,
-        "__dotweave_complete",
-      ].join("; "),
-    ],
-    {
-      cwd: options?.cwd,
-      env: {
-        FORCE_COLOR: "0",
-        NODE_NO_WARNINGS: "1",
-        NO_COLOR: "1",
-      },
-    },
+  const configDirectory = await realpath(
+    await mkdtemp(join(tmpdir(), "dotweave-autocomplete-zsh-")),
   );
+  const binDirectory = join(configDirectory, "bin");
+  const shimPath = join(binDirectory, "dotweave");
+
+  await mkdir(binDirectory, { recursive: true });
+  await writeFile(shimPath, createShellShimScript());
+  await chmod(shimPath, 0o755);
+
+  try {
+    return await execa(
+      "zsh",
+      [
+        "-lc",
+        [
+          "set -euo pipefail",
+          exportPathCommand(binDirectory),
+          "function compdef() { :; }",
+          [
+            "function compadd() {",
+            '  local suffix=""',
+            "  while (( $# > 0 )); do",
+            '    case "$1" in',
+            "      --)",
+            "        shift",
+            "        break",
+            "        ;;",
+            "      -Q)",
+            "        shift",
+            "        ;;",
+            "      -S)",
+            '        suffix="$2"',
+            "        shift 2",
+            "        ;;",
+            "      *)",
+            "        shift",
+            "        ;;",
+            "    esac",
+            "  done",
+            '  local completion=""',
+            '  for completion in "$@"; do',
+            '    printf "%s%s\\n" "$completion" "$suffix"',
+            "  done",
+            "}",
+          ].join("; "),
+          'eval "$(dotweave autocomplete zsh)"',
+          `words=(${words.map(shellQuote).join(" ")})`,
+          `CURRENT=${currentWord}`,
+          "__dotweave_complete",
+        ].join("; "),
+      ],
+      {
+        cwd: options?.cwd,
+        env: {
+          FORCE_COLOR: "0",
+          NODE_NO_WARNINGS: "1",
+          NO_COLOR: "1",
+        },
+      },
+    );
+  } finally {
+    await rm(configDirectory, { force: true, recursive: true });
+  }
 };
 
 const runFishCompletion = async (
   commandLine: string,
   options?: Readonly<{ cwd?: string }>,
 ) => {
-  const configDirectory = await mkdtemp(
-    join(tmpdir(), "dotweave-autocomplete-fish-"),
+  const configDirectory = await realpath(
+    await mkdtemp(join(tmpdir(), "dotweave-autocomplete-fish-")),
   );
   const binDirectory = join(configDirectory, "bin");
-  const cliCommand = [process.execPath, ...cliNodeOptions]
-    .map((value) => shellQuote(value))
-    .join(" ");
-
   await mkdir(binDirectory, { recursive: true });
   const shimPath = join(binDirectory, "dotweave");
-  await writeFile(
-    shimPath,
-    ["#!/usr/bin/env bash", `exec ${cliCommand} "$@"`].join("\n"),
-  );
+  await writeFile(shimPath, createShellShimScript());
   await chmod(shimPath, 0o755);
 
   try {
@@ -240,7 +338,9 @@ const runFishCompletion = async (
       [
         "-c",
         [
-          `set -gx PATH ${fishString(binDirectory)} $PATH`,
+          `set -gx PATH ${shellPathEntries(binDirectory)
+            .map(fishString)
+            .join(" ")} $PATH`,
           "dotweave autocomplete fish | source",
           `complete -C ${fishString(commandLine)}`,
         ].join("; "),
@@ -260,8 +360,8 @@ const runFishCompletion = async (
 };
 
 const createPowerShellShim = async () => {
-  const configDirectory = await mkdtemp(
-    join(tmpdir(), "dotweave-autocomplete-pwsh-"),
+  const configDirectory = await realpath(
+    await mkdtemp(join(tmpdir(), "dotweave-autocomplete-pwsh-")),
   );
   const binDirectory = join(configDirectory, "bin");
   await mkdir(binDirectory, { recursive: true });
@@ -275,14 +375,8 @@ const createPowerShellShim = async () => {
       [`@echo off`, `"${process.execPath}" ${cliArgs} %*`].join("\r\n"),
     );
   } else {
-    const cliCommand = [process.execPath, ...cliNodeOptions]
-      .map((value) => shellQuote(value))
-      .join(" ");
     const shimPath = join(binDirectory, "dotweave");
-    await writeFile(
-      shimPath,
-      ["#!/usr/bin/env bash", `exec ${cliCommand} "$@"`].join("\n"),
-    );
+    await writeFile(shimPath, createShellShimScript());
     await chmod(shimPath, 0o755);
   }
 
@@ -356,7 +450,7 @@ describe("autocomplete e2e", () => {
     const result = await runCli([]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
     expect(result.stdout).toContain("autocomplete");
     expect(result.stdout).toContain("Print shell autocomplete scripts");
   });
@@ -371,7 +465,7 @@ describe("autocomplete e2e", () => {
       "complete -o default -o nospace -F __dotweave_complete dotweave",
     );
     expect(result.stdout).not.toContain("Setup Instructions");
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   it("prints a zsh autocomplete script for eval", async () => {
@@ -381,7 +475,7 @@ describe("autocomplete e2e", () => {
     expect(result.stdout).toContain("autoload -Uz compinit");
     expect(result.stdout).toContain(COMPLETE_COMMAND);
     expect(result.stdout).toContain("compdef __dotweave_complete dotweave");
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   it("prints a fish autocomplete script for source", async () => {
@@ -391,7 +485,7 @@ describe("autocomplete e2e", () => {
     expect(result.stdout).toContain("function __dotweave_complete");
     expect(result.stdout).toContain("command dotweave __complete");
     expect(result.stdout).toContain("complete -c dotweave -f");
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   it("normalizes __complete input when the command name is included", async () => {
@@ -399,7 +493,7 @@ describe("autocomplete e2e", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim().split("\t")[0]).toBe("autocomplete");
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   it("completes track targets and flags after an existing target", async () => {
@@ -416,7 +510,7 @@ describe("autocomplete e2e", () => {
         "folder-beta/",
       ]),
     );
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   runForShell("bash", isBashAvailable)(
@@ -426,7 +520,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout.split("\n")).toContain("autocomplete ");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -449,7 +543,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout.split("\n")).toContain("profile ");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -462,7 +556,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout.split("\n")).toContain("file-alpha.txt ");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -515,7 +609,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(completionNames(result.stdout)).toContain("profile");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -530,7 +624,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(completionNames(result.stdout)).toContain("file-alpha.txt");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -550,7 +644,7 @@ describe("autocomplete e2e", () => {
       expect(completionNames(result.stdout)).toEqual(
         expect.arrayContaining(["--mode", "--profile", "--repo"]),
       );
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -563,7 +657,7 @@ describe("autocomplete e2e", () => {
     expect(completionNames(result.stdout)).toEqual(
       expect.arrayContaining(rootCommandNames),
     );
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   it("proposes subcommand completions when COMP_LINE targets a command", async () => {
@@ -576,7 +670,7 @@ describe("autocomplete e2e", () => {
     expect(completionNames(result.stdout)).toEqual(
       expect.arrayContaining(["--mode", "--profile", "--repo"]),
     );
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 
   runForShell("powershell", isPowerShellAvailable)(
@@ -588,7 +682,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(powerShellLines(result.stdout)).toContain("profile");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -601,7 +695,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(powerShellLines(result.stdout)).toContain("track");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -616,7 +710,7 @@ describe("autocomplete e2e", () => {
 
       expect(result.exitCode).toBe(0);
       expect(powerShellLines(result.stdout)).toContain("file-alpha.txt");
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -636,7 +730,7 @@ describe("autocomplete e2e", () => {
       expect(powerShellLines(result.stdout)).toEqual(
         expect.arrayContaining(["--mode", "--profile", "--repo"]),
       );
-      expect(result.stderr).toBe("");
+      expect(cleanShellStderr(result.stderr)).toBe("");
     },
   );
 
@@ -650,6 +744,6 @@ describe("autocomplete e2e", () => {
     expect(result.stdout).toContain("powershell");
     expect(result.stdout).not.toContain("install");
     expect(result.stdout).not.toContain("uninstall");
-    expect(result.stderr).toBe("");
+    expect(cleanShellStderr(result.stderr)).toBe("");
   });
 });

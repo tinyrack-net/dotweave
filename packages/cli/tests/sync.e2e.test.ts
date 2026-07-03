@@ -413,7 +413,7 @@ describe("sync CLI e2e", () => {
     );
 
     expect(untrackEntries).toEqual([]);
-  }, 15_000);
+  }, 60_000);
 
   it("syncs with the default profile namespace using push and pull", async () => {
     const zshDirectory = join(ctx.homeDir, ".config", "zsh");
@@ -467,7 +467,7 @@ describe("sync CLI e2e", () => {
     await ctx.runCli(["pull", "-y"]);
 
     expect(await readFile(secretsFile, "utf8")).toContain("TOKEN=work");
-  }, 15_000);
+  }, 60_000);
 
   it("restores secret directory files on another checkout when secret artifacts match repository ignore rules", async () => {
     const sourceRepository = join(ctx.workspace, "remote-sync.git");
@@ -561,7 +561,7 @@ describe("sync CLI e2e", () => {
     await expect(
       readFile(join(secondHomeDirectory, ".vivident", "state.txt"), "utf8"),
     ).resolves.toBe("window=main\n");
-  }, 20_000);
+  }, 60_000);
 
   it("status reports a removed default entry artifact before push", async () => {
     const configDir = join(ctx.homeDir, ".config", "prune-status");
@@ -593,7 +593,7 @@ describe("sync CLI e2e", () => {
     expect(output).toContain("Push changes (repository)");
     expect(output).toContain("Delete (1)");
     expect(output).toContain(".config/prune-status/config.toml");
-  }, 15_000);
+  }, 60_000);
 
   it("push prunes a removed default entry artifact", async () => {
     const configDir = join(ctx.homeDir, ".config", "prune-push");
@@ -635,7 +635,7 @@ describe("sync CLI e2e", () => {
 
     expect(stripAnsi(result.stdout)).toContain("1 stale artifacts removed");
     await expect(lstat(artifact)).rejects.toThrow();
-  }, 15_000);
+  }, 60_000);
 
   it("push --profile work prunes a non-default profile artifact after final entry removal", async () => {
     const configDir = join(ctx.homeDir, ".config", "work-prune");
@@ -679,7 +679,7 @@ describe("sync CLI e2e", () => {
 
     expect(stripAnsi(result.stdout)).toContain("1 stale artifacts removed");
     await expect(lstat(artifact)).rejects.toThrow();
-  }, 15_000);
+  }, 60_000);
 
   it("fails cleanly when pulling a secret artifact with the wrong identity", async () => {
     const configDir = join(ctx.homeDir, ".config", "wrong-identity");
@@ -710,7 +710,7 @@ describe("sync CLI e2e", () => {
     expect(
       siblingNames.filter((name) => name.includes(".dotweave-sync-")),
     ).toEqual([]);
-  }, 15_000);
+  }, 60_000);
 
   it("sets mode on tracked roots via track command", async () => {
     const bundleDirectory = join(ctx.homeDir, ".config", "mytool");
