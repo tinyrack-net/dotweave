@@ -19,12 +19,12 @@
     "deploy:dry-run": "wrangler deploy --dry-run"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.41.2",
+    "@astrojs/starlight": "^0.41.3",
     "@astrojs/starlight-tailwind": "^5.0.0",
     "@fontsource/geist-mono": "^5.2.8",
     "@fontsource/geist-sans": "^5.2.5",
     "@tailwindcss/vite": "^4.3.2",
-    "astro": "7.0.5",
+    "astro": "7.0.6",
     "cobe": "^2.0.1",
     "starlight-theme-black": "^0.6.0",
     "tailwindcss": "^4.3.2",
@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@types/node": "^24.13.2",
+    "@types/node": "^24.13.3",
     "typescript": "^6.0.3",
-    "wrangler": "^4.106.0"
+    "wrangler": "^4.107.0"
   }
 }

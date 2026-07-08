@@ -5,3 +5,5 @@ allowBuilds:
   node-pty: true
   sharp: true
   workerd: true
+minimumReleaseAgeExclude:
+  - '@types/node@24.13.3'
