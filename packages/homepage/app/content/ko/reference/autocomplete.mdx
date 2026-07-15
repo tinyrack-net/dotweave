@@ -1,0 +1,58 @@
+---
+title: "dotweave autocomplete"
+description: "셸 탭 자동완성을 설정해요."
+section: reference
+order: 9
+---
+
+셸 자동완성 스크립트를 출력해요.
+
+eval/source 기반 셸 설정에서 사용할 수 있는 셸별 자동완성 스크립트를 생성해요.
+
+## Usage
+
+```bash
+dotweave autocomplete <shell>
+```
+
+## Subcommands
+
+| Subcommand                  | Description                    |
+| --------------------------- | ------------------------------ |
+| `dotweave autocomplete bash` | Bash용 자동완성 스크립트를 출력해요. |
+| `dotweave autocomplete zsh`  | Zsh용 자동완성 스크립트를 출력해요.  |
+| `dotweave autocomplete fish` | Fish용 자동완성 스크립트를 출력해요. |
+| `dotweave autocomplete powershell` | PowerShell용 자동완성 스크립트를 출력해요. |
+
+## Examples
+
+**Bash**에서 자동완성을 설정해요 (`~/.bashrc`에 추가):
+
+```bash
+eval "$(dotweave autocomplete bash)"
+```
+
+**Zsh**에서 자동완성을 설정해요 (`~/.zshrc`에 추가):
+
+```bash
+eval "$(dotweave autocomplete zsh)"
+```
+
+현재 **Fish** 세션에서 자동완성을 설정해요:
+
+```fish
+dotweave autocomplete fish | source
+```
+
+**Fish** 자동완성을 계속 사용하도록 설정해요:
+
+```fish
+mkdir -p ~/.config/fish/completions
+dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
+```
+
+**PowerShell**에서 자동완성을 설정해요 (PowerShell 프로필에 추가):
+
+```powershell
+dotweave autocomplete powershell | Invoke-Expression
+```

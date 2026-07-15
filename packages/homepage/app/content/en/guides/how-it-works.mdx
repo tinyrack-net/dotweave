@@ -1,0 +1,158 @@
+---
+title: How It Works
+description: The mental model, data flow, and design decisions behind dotweave.
+section: guides
+order: 7
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+import { Steps } from "@tinyrack/ui/components/steps";
+
+
+Understanding what happens under the hood makes dotweave feel predictable.
+This guide covers the mental model, the data flow for push and pull, and
+the design decisions that shape the tool.
+
+## Mental model
+
+Think of dotweave as a **two-way mirror** between your local config files and
+a Git-tracked sync directory:
+
+- **Local files** are the source of truth while you work.
+- The **sync directory** is a mirror that can be pushed to a Git remote and
+  pulled down on another machine.
+
+dotweave never modifies files behind your back — you explicitly run `push` to
+update the mirror or `pull` to apply changes from it.
+
+## Data flow
+
+```
+editor → local files → dotweave push → sync directory → git push → remote
+                                                                     ↓
+other machine ← dotweave pull ← sync directory ← git pull ← remote
+```
+
+There are two distinct operations. Git transport sits between them but is
+entirely in your hands.
+
+### Push flow
+
+<Steps.Root>
+<Steps.Item>
+
+**Load `manifest.jsonc`** — dotweave reads the sync config to discover every
+tracked file and its settings.
+
+</Steps.Item>
+<Steps.Item>
+
+**Walk local files** — for each entry it reads the file at the resolved
+`localPath` for the current platform.
+
+</Steps.Item>
+<Steps.Item>
+
+**Compare with existing artifacts** — if the file in the sync directory is
+already identical, nothing is written.
+
+</Steps.Item>
+<Steps.Item>
+
+**Encrypt secrets** — entries marked as secret are encrypted with
+[age](https://github.com/FiloSottile/age) before being written.
+
+</Steps.Item>
+<Steps.Item>
+
+**Write artifacts** — the (possibly encrypted) content is written to
+`repoPath` inside the sync directory.
+
+</Steps.Item>
+</Steps.Root>
+
+### Pull flow
+
+<Steps.Root>
+<Steps.Item>
+
+**Load `manifest.jsonc`** — same config, same resolution logic.
+
+</Steps.Item>
+<Steps.Item>
+
+**Read artifacts** — dotweave reads each file from the sync directory.
+
+</Steps.Item>
+<Steps.Item>
+
+**Decrypt secrets** — encrypted files are decrypted using your local age
+key.
+
+</Steps.Item>
+<Steps.Item>
+
+**Write to local paths** — content is written to the resolved `localPath`.
+
+</Steps.Item>
+<Steps.Item>
+
+**Apply permissions** — file permissions recorded in the config are
+restored so nothing ends up world-readable by accident.
+
+</Steps.Item>
+</Steps.Root>
+
+<Callout>
+Neither `push` nor `pull` creates Git commits. You run `git add`, `git commit`,
+and `git push` yourself. This keeps you in full control of your commit history.
+</Callout>
+
+## Design decisions
+
+### Local-first
+
+Your editor writes to real files on disk, and dotweave reads from those same
+files. There's no database, no daemon, and no background watcher. You decide
+when to sync.
+
+### No symlinks
+
+Some dotfile managers replace your config files with symlinks pointing into
+the repository. dotweave deliberately copies files instead. This avoids
+permission headaches, cross-filesystem issues, and surprises when a tool
+doesn't follow symlinks.
+
+### age encryption
+
+Secrets are encrypted at rest in the sync directory using
+[age](https://github.com/FiloSottile/age). age was chosen for its simplicity
+— a single key file, no key servers, no expiry management. Your private key
+never leaves the machine.
+
+### Git as transport
+
+dotweave piggybacks on Git instead of inventing its own sync protocol. You get
+branching, history, merge conflict tooling, and hosting (GitHub, GitLab, etc.)
+for free.
+
+## Sync directory structure
+
+The sync directory is a regular Git repository with a predictable layout.
+For the full breakdown, see the
+[Directory Structure](/en/guides/directory-structure/) guide.
+
+At a glance:
+
+```
+~/dotfiles/          ← sync directory root (Git repo)
+├── manifest.jsonc   ← sync config listing every tracked file
+├── .age-key         ← your age private key (git-ignored)
+├── .age-recipients  ← age public key(s) for encryption
+└── ...              ← artifacts written by dotweave push
+```
+
+<Callout variant="tip">
+Run `dotweave cd` to jump into the sync directory whenever you need to inspect
+or manage it directly.
+</Callout>

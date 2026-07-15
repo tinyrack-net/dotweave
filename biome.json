@@ -16,9 +16,12 @@
   "files": {
     "includes": [
       "**",
+      "!**/.codex",
       "!**/.opencode",
       "!**/.astro",
+      "!**/.react-router",
       "!**/*.astro",
+      "!**/build",
       "!**/coverage",
       "!**/dist",
       "!**/node_modules"

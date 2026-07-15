@@ -1,0 +1,36 @@
+---
+title: "dotweave doctor"
+description: "sync 설정의 상태를 점검해요."
+section: reference
+order: 8
+---
+
+sync 디렉터리, 설정 파일, age identity, 추적 중인 로컬 경로를 점검해요.
+
+로컬 sync 환경에 대해 상태 점검을 실행해요. 저장소 접근 가능 여부, 설정 파일 유효성, age identity 구성, 추적 중인 로컬 경로의 존재 여부를 확인해요.
+
+## Usage
+
+```bash
+dotweave doctor [flags]
+```
+
+## Flags
+
+| Flag               | Description                          |
+| ------------------ | ------------------------------------ |
+| `--profile <name>` | 특정 profile 레이어를 사용해요.        |
+
+## Examples
+
+모든 상태 점검을 실행해요:
+
+```bash
+dotweave doctor
+```
+
+특정 profile에 대해 점검해요:
+
+```bash
+dotweave doctor --profile work
+```

@@ -1,0 +1,36 @@
+---
+title: "dotweave doctor"
+description: "sync設定の状態をチェックします。"
+section: reference
+order: 8
+---
+
+syncディレクトリ、設定ファイル、age identity、trackされたローカルパスの状態をチェックします。
+
+リポジトリの可用性、設定ファイルの妥当性、age identityの構成、trackされたローカルパスが期待通りの場所に存在するかなど、ローカルsync環境の健全性チェックを実行します。
+
+## Usage
+
+```bash
+dotweave doctor [flags]
+```
+
+## Flags
+
+| Flag               | Description                          |
+| ------------------ | ------------------------------------ |
+| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+
+## Examples
+
+すべての健全性チェックを実行する:
+
+```bash
+dotweave doctor
+```
+
+特定のprofileでチェックを実行する:
+
+```bash
+dotweave doctor --profile work
+```

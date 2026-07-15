@@ -1,0 +1,43 @@
+---
+title: "dotweave status"
+description: "pushとpullで変更される内容をプレビューします。"
+section: reference
+order: 4
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+現在のsync設定におけるpushとpullの変更予定を表示します。
+
+trackされたローカルファイルとsyncディレクトリを比較し、`push` でリポジトリに書き込まれる内容と、`pull` でローカルに書き戻される内容を表示します。
+
+## Usage
+
+```bash
+dotweave status [flags]
+```
+
+## Flags
+
+| Flag               | Description                          |
+| ------------------ | ------------------------------------ |
+| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+
+## Examples
+
+syncステータスの全体を表示する:
+
+```bash
+dotweave status
+```
+
+特定のprofileのステータスを表示する:
+
+```bash
+dotweave status --profile work
+```
+
+<Callout>
+`status` は `manifest.jsonc` を読み込み、ファイルの内容を比較します。`git status` は実行**しません** — dotweaveレベルの差分のみ表示します。
+</Callout>

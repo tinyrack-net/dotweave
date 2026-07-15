@@ -7,3 +7,5 @@ allowBuilds:
   workerd: true
 minimumReleaseAgeExclude:
   - '@types/node@24.13.3'
+  - '@tinyrack/docs@0.3.0 || 0.3.1 || 0.3.2'
+  - '@tinyrack/ui@0.3.0'

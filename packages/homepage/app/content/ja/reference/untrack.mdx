@@ -1,0 +1,48 @@
+---
+title: "dotweave untrack"
+description: "パスの同期トラッキングを停止します。"
+section: reference
+order: 5
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+同期対象のパスのトラッキングを停止します。
+
+trackされたルートエントリまたはネストされたオーバーライドをdotweaveの設定から削除します。この操作は設定の更新のみを行い、実際のファイル変更は次回の `push` または `pull` で反映されます。ローカルパスを指定するとメインのtrackターゲットが削除され、trackされたディレクトリ内のリポジトリ相対の子パスを指定するとそのオーバーライドのみが削除されます。
+
+## Usage
+
+```bash
+dotweave untrack <target> [flags]
+```
+
+## Arguments
+
+| Argument   | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `<target>` | トラッキングを停止するローカルパスまたはリポジトリパスです。 |
+
+## Flags
+
+| Flag        | Description            |
+| ----------- | ---------------------- |
+
+## Examples
+
+設定ファイルのトラッキングを停止する:
+
+```bash
+dotweave untrack ~/.config/starship.toml
+```
+
+trackされたディレクトリ内の子オーバーライドを削除する:
+
+```bash
+dotweave untrack .ssh/config
+```
+
+<Callout>
+`untrack` は `manifest.jsonc` を更新するだけです。ローカルファイルやsyncディレクトリのアーティファクトは削除**しません**。
+</Callout>

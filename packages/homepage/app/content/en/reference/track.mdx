@@ -1,0 +1,72 @@
+---
+title: "dotweave track"
+description: "Register local files or directories for syncing."
+section: reference
+order: 1
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+Track local files or directories for syncing.
+
+Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If the target is already tracked, specified manifest fields are updated and unspecified fields are preserved.
+
+## Usage
+
+```bash
+dotweave track <target> [flags]
+```
+
+## Arguments
+
+| Argument   | Description                                  |
+| ---------- | -------------------------------------------- |
+| `<target>` | Local path or repository path to track.      |
+
+## Flags
+
+| Flag                             | Description                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| `--kind <file\|directory>`       | Target kind to use when the path does not exist yet.                         |
+| `--repo <path\|platform=path>`   | Repository-relative path, with optional platform overrides.                  |
+| `--local <platform=path>`        | Platform-specific local path override.                                       |
+| `--mode <mode\|platform=mode>`   | Sync mode: `normal` (default), `secret`, or `ignore`.                        |
+| `--permission <octal\|platform=octal>` | File permission to restore, as a 4-character octal value.             |
+| `--profile <profile>`            | Restrict syncing to a registered profile. Repeat for multiple profiles.      |
+
+## Examples
+
+Track a single config file:
+
+```bash
+dotweave track ~/.config/starship.toml
+```
+
+Track a directory containing secrets:
+
+```bash
+dotweave track ~/.ssh --mode secret
+```
+
+Track a file restricted to a specific profile:
+
+```bash
+dotweave track ~/.config/work-proxy.conf --profile work
+```
+
+Override the mode for a child path inside a tracked directory:
+
+```bash
+dotweave track .ssh/config --mode ignore
+```
+
+Customize the repository path and restore permission:
+
+```bash
+dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
+```
+
+<Callout>
+`track` only updates `manifest.jsonc`. Run `dotweave push` afterward to copy files into the sync directory.
+</Callout>

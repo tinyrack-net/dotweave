@@ -57,6 +57,22 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
+  homepage:
+    name: Homepage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - name: Build homepage
+        run: pnpm --filter @tinyrack/dotweave-homepage run build
+      - name: Install Chromium
+        run: pnpm --filter @tinyrack/dotweave-homepage exec playwright install --with-deps chromium
+      - name: Audit homepage in Chromium
+        run: pnpm --filter @tinyrack/dotweave-homepage run test:audit
+      - name: Verify Cloudflare deployment bundle
+        run: pnpm --filter @tinyrack/dotweave-homepage run deploy:dry-run
+
   autocomplete-shell-smoke:
     name: Autocomplete (${{ matrix.os }} / ${{ matrix.shell }})
     strategy:

@@ -1,0 +1,48 @@
+---
+title: "dotweave untrack"
+description: "Remove a path from sync tracking."
+section: reference
+order: 5
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+Stop tracking a synced path.
+
+Remove a tracked root entry or a nested override from dotweave configuration. This only updates the sync config; actual file changes happen on the next `push` or `pull`. Use a local path to remove the main tracked target, or use a repository-relative child path inside a tracked directory to remove only that override.
+
+## Usage
+
+```bash
+dotweave untrack <target> [flags]
+```
+
+## Arguments
+
+| Argument   | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `<target>` | Tracked local path or repository path to stop tracking. |
+
+## Flags
+
+| Flag        | Description            |
+| ----------- | ---------------------- |
+
+## Examples
+
+Stop tracking a config file:
+
+```bash
+dotweave untrack ~/.config/starship.toml
+```
+
+Remove a child override inside a tracked directory:
+
+```bash
+dotweave untrack .ssh/config
+```
+
+<Callout>
+`untrack` only updates `manifest.jsonc`. It does **not** delete local files or sync directory artifacts.
+</Callout>

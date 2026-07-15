@@ -1,9 +1,0 @@
-@layer base, starlight, theme, components, utilities;
-@import "@astrojs/starlight-tailwind";
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
-
-.sl-markdown-content :is(ul, ol):not(:where(.not-content *)) {
-  margin-inline-start: 0;
-  margin-left: 0;
-}

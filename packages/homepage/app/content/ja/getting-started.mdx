@@ -1,0 +1,171 @@
+---
+title: はじめに
+description: dotweaveをインストールして、最初の同期を設定しましょう。
+section: overview
+order: 2
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+import { Steps } from "@tinyrack/ui/components/steps";
+import { Tabs } from "@tinyrack/ui/components/tabs";
+
+
+## 前提条件
+
+- **Node.js 24**以降
+
+---
+
+## インストール
+
+<Tabs.Root defaultValue="windows">
+<Tabs.List aria-label="Installation method">
+<Tabs.Tab value="windows">Windows</Tabs.Tab>
+<Tabs.Tab value="macos-linux">macOS / Linux</Tabs.Tab>
+<Tabs.Tab value="npm">npm</Tabs.Tab>
+<Tabs.Indicator />
+</Tabs.List>
+<Tabs.Panel value="windows">
+
+```powershell
+winget install tinyrack.dotweave
+```
+
+</Tabs.Panel>
+<Tabs.Panel value="macos-linux">
+
+```bash
+brew install tinyrack-net/tap/dotweave
+```
+
+</Tabs.Panel>
+<Tabs.Panel value="npm">
+
+npmはすべてのプラットフォームで使用でき、cross-platform fallbackとしても使えます。
+
+```bash
+npm install -g @tinyrack/dotweave
+```
+
+</Tabs.Panel>
+</Tabs.Root>
+
+---
+
+## 新規セットアップ
+
+dotweaveを初めて使う場合は、以下の手順で新しいsyncディレクトリを作成します。
+
+<Steps.Root>
+<Steps.Item>
+
+**初期化**
+
+シークレット暗号化用のageキーを含む新しいsyncディレクトリを作成します。
+
+```bash
+dotweave init
+```
+
+これにより、dotweaveのアプリデータディレクトリにGitリポジトリとageのidentityが設定されます。
+
+</Steps.Item>
+<Steps.Item>
+
+**ファイルをトラッキング**
+
+同期したいファイルをdotweaveに登録します。例えば：
+
+```bash
+dotweave track ~/.zshrc
+dotweave track ~/.config/starship.toml
+dotweave track ~/.config/nvim
+```
+
+SSHキーなどの機密ファイルにはsecretモードを使います：
+
+```bash
+dotweave track --mode secret ~/.ssh/config
+```
+
+</Steps.Item>
+<Steps.Item>
+
+**syncディレクトリにpush**
+
+トラッキング中のファイルをsyncディレクトリにコピーします：
+
+```bash
+dotweave push
+```
+
+</Steps.Item>
+<Steps.Item>
+
+**Gitでcommit & push**
+
+syncディレクトリを開いてリモートにpushします：
+
+```bash
+dotweave cd
+git add -A && git commit -m "Initial sync"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+</Steps.Item>
+</Steps.Root>
+
+<Callout variant="tip">
+  セットアップが完了したら、[ディレクトリ構造](/ja/guides/directory-structure/)ガイドで、dotweaveが設定ファイルと同期データをどこに保存するかを確認してみてください。
+</Callout>
+
+---
+
+## 既存のsyncディレクトリに接続する
+
+新しいマシンで、既存のsyncディレクトリをcloneします：
+
+<Steps.Root>
+<Steps.Item>
+
+**cloneして初期化**
+
+```bash
+dotweave init <your-repo-url>
+```
+
+リポジトリがdotweaveのアプリデータディレクトリ内の`repository/`にcloneされます。既存のsyncリポジトリに接続する場合は、シークレットファイルの復号に使ったageプライベートキーを指定してください：
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+```
+
+</Steps.Item>
+<Steps.Item>
+
+**ファイルをpull**
+
+トラッキング中のすべてのファイルをローカルパスに復元します：
+
+```bash
+dotweave pull
+```
+
+</Steps.Item>
+</Steps.Root>
+
+<Callout variant="note">
+  syncディレクトリに暗号化されたシークレットが含まれている場合、すべてのマシンで同じageプライベートキーが必要です。詳しくは[シークレットファイルの同期](/ja/guides/syncing-secrets/)をご覧ください。
+</Callout>
+
+---
+
+## 次のステップ
+
+セットアップが完了したら、各ガイドを読んでみましょう：
+
+- [ディレクトリ構造](/ja/guides/directory-structure/) — dotweaveがファイルを保存する場所を理解する
+- [ファイルのトラッキング](/ja/guides/tracking-files/) — トラッキングオプションの詳細
+- [同期モード](/ja/guides/sync-modes/) — normal、secret、ignoreモード
+- [シークレットファイルの同期](/ja/guides/syncing-secrets/) — ageで機密ファイルを暗号化する

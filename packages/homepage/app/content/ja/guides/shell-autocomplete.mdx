@@ -1,0 +1,78 @@
+---
+title: シェル補完
+description: シェルでdotweaveのタブ補完を設定する方法。
+section: guides
+order: 8
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+タブ補完を使えば、ドキュメントを開かなくてもコマンド、フラグ、引数を素早く確認できます。dotweaveは**Bash**、**Zsh**、**Fish**、**PowerShell**に対応しています。
+
+## Bash
+
+`~/.bashrc`に以下の行を追加します：
+
+```bash
+eval "$(dotweave autocomplete bash)"
+```
+
+シェルを再読み込みします：
+
+```bash
+source ~/.bashrc
+```
+
+## Zsh
+
+`~/.zshrc`に以下の行を追加します：
+
+```bash
+eval "$(dotweave autocomplete zsh)"
+```
+
+シェルを再読み込みします：
+
+```bash
+source ~/.zshrc
+```
+
+## Fish
+
+現在のセッションで使う場合は以下を実行します：
+
+```fish
+dotweave autocomplete fish | source
+```
+
+永続的に使う場合は補完ファイルを書き込みます：
+
+```fish
+mkdir -p ~/.config/fish/completions
+dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
+```
+
+## PowerShell
+
+PowerShellプロファイル（`$PROFILE`）に以下の行を追加します：
+
+```powershell
+dotweave autocomplete powershell | Invoke-Expression
+```
+
+プロファイルを再読み込みします：
+
+```powershell
+. $PROFILE
+```
+
+<Callout variant="tip">
+eval/sourceの行を追加したら、新しいターミナルを開く（または設定ファイルをsourceする）して、
+`dotweave `の後にTabキーを押してみてください。利用可能なコマンドの一覧が表示されるはずです。
+</Callout>
+
+<Callout>
+`volta`や`fnm`などのバージョンマネージャーでdotweaveをインストールした場合は、
+eval/sourceの行が実行される前に`dotweave`バイナリが`PATH`に含まれていることを確認してください。
+</Callout>
