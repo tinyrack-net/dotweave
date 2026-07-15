@@ -1,0 +1,58 @@
+---
+title: "dotweave autocomplete"
+description: "シェルのタブ補完を設定します。"
+section: reference
+order: 9
+---
+
+シェル用のautocompleteスクリプトを出力します。
+
+eval/sourceベースのシェル設定で使用できる、シェル固有のautocompleteスクリプトを生成します。
+
+## Usage
+
+```bash
+dotweave autocomplete <shell>
+```
+
+## Subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `dotweave autocomplete bash` | Bash用のautocompleteスクリプトを出力します。 |
+| `dotweave autocomplete zsh` | Zsh用のautocompleteスクリプトを出力します。 |
+| `dotweave autocomplete fish` | Fish用のautocompleteスクリプトを出力します。 |
+| `dotweave autocomplete powershell` | PowerShell用のautocompleteスクリプトを出力します。 |
+
+## Examples
+
+**Bash** でautocompleteを設定する（`~/.bashrc` に追加）:
+
+```bash
+eval "$(dotweave autocomplete bash)"
+```
+
+**Zsh** でautocompleteを設定する（`~/.zshrc` に追加）:
+
+```bash
+eval "$(dotweave autocomplete zsh)"
+```
+
+現在の **Fish** セッションでautocompleteを設定する:
+
+```fish
+dotweave autocomplete fish | source
+```
+
+**Fish** で永続的にautocompleteを設定する:
+
+```fish
+mkdir -p ~/.config/fish/completions
+dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
+```
+
+**PowerShell** でautocompleteを設定する（PowerShellプロファイルに追加）:
+
+```powershell
+dotweave autocomplete powershell | Invoke-Expression
+```

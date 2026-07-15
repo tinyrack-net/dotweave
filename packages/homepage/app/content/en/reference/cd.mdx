@@ -1,0 +1,23 @@
+---
+title: "dotweave cd"
+description: "Open a shell in the sync directory."
+section: reference
+order: 6
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+Launch a shell in the sync directory.
+
+Like `chezmoi cd`, this opens a new child shell rooted at the local sync directory instead of changing the current directory of your existing shell. Exit the shell to return to your previous session.
+
+## Usage
+
+```bash
+dotweave cd
+```
+
+<Callout variant="tip">
+Use this to run git commands (`commit`, `push`, `pull`) directly inside the sync directory.
+</Callout>

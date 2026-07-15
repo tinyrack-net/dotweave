@@ -1,0 +1,177 @@
+---
+title: Multi-Device Workflow
+description: The complete flow from initial setup to daily syncing across machines.
+section: guides
+order: 6
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+import { Steps } from "@tinyrack/ui/components/steps";
+
+
+This guide walks through the entire lifecycle of using dotweave — from setting up
+your first machine to keeping multiple devices in sync every day.
+
+## Initial setup on Machine A
+
+<Steps.Root>
+<Steps.Item>
+
+**Initialize dotweave**
+
+```bash
+dotweave init
+```
+
+This creates a Git-backed sync directory in dotweave's app-data directory.
+
+</Steps.Item>
+<Steps.Item>
+
+**Track your files**
+
+```bash
+dotweave track ~/.gitconfig
+dotweave track ~/.config/starship.toml
+dotweave track ~/.ssh/config --mode secret
+```
+
+Each command adds an entry to `manifest.jsonc` inside the sync directory.
+
+</Steps.Item>
+<Steps.Item>
+
+**Push local files into the sync directory**
+
+```bash
+dotweave push
+```
+
+</Steps.Item>
+<Steps.Item>
+
+**Commit and push to a remote**
+
+dotweave never creates Git commits for you — you stay in full control:
+
+```bash
+dotweave cd   # opens a shell inside the sync directory
+git add -A && git commit -m "initial sync"
+git remote add origin git@github.com:you/dotfiles.git
+git push -u origin main
+exit
+```
+
+</Steps.Item>
+</Steps.Root>
+
+<Callout variant="tip">
+Run `dotweave status` at any point to preview what would change before you
+actually push or pull.
+</Callout>
+
+## Setting up Machine B
+
+<Steps.Root>
+<Steps.Item>
+
+**Initialize from the remote URL**
+
+```bash
+dotweave init git@github.com:you/dotfiles.git
+```
+
+</Steps.Item>
+<Steps.Item>
+
+**Pull files to their local paths**
+
+```bash
+dotweave pull
+```
+
+dotweave reads `manifest.jsonc`, resolves platform-specific paths, decrypts
+any secrets, and writes every file to the correct location.
+
+</Steps.Item>
+</Steps.Root>
+
+## Daily workflow
+
+Once both machines are set up, the day-to-day flow is short and predictable.
+
+**On the machine where you made changes:**
+
+```bash
+dotweave push
+dotweave cd
+git add -A && git commit -m "update shell aliases"
+git push
+exit
+```
+
+**On the other machine:**
+
+```bash
+dotweave cd
+git pull
+exit
+dotweave pull
+```
+
+<Callout>
+The pattern is always **dotweave push → git push** on one side and
+**git pull → dotweave pull** on the other.
+</Callout>
+
+## Handling conflicts
+
+The sync directory is a regular Git repository, so conflicts are resolved the
+usual way:
+
+```bash
+dotweave cd
+git pull            # may report merge conflicts
+# resolve conflicts in the affected files
+git add -A && git commit -m "resolve merge conflict"
+git push
+exit
+dotweave pull        # apply the resolved state locally
+```
+
+<Callout variant="caution">
+If two machines push different edits to the same file before either does a
+`git pull`, you'll get a normal Git merge conflict. Resolve it inside the sync
+directory — dotweave itself doesn't auto-merge.
+</Callout>
+
+## Checking health
+
+```bash
+dotweave doctor
+```
+
+This verifies the sync directory exists, Git is configured, encryption keys are
+in place, and tracked paths are accessible.
+
+## Adding more machines
+
+Adding a third (or fourth, or fifth) machine follows the same steps as
+Machine B — `dotweave init` with the remote URL, then `dotweave pull`. From
+there the daily push/pull cycle is identical on every device.
+
+<Callout variant="tip">
+If the new machine runs a different OS, dotweave automatically resolves
+platform-specific paths. See the
+[Platform-Specific Paths](/en/guides/platform-specific-paths/) guide.
+</Callout>
+
+## Quick reference
+
+| Task                        | Commands                                                  |
+| --------------------------- | --------------------------------------------------------- |
+| Preview changes             | `dotweave status`                                          |
+| Send local edits upstream   | `dotweave push` → `git add -A && git commit` → `git push` |
+| Receive upstream edits      | `git pull` → `dotweave pull`                               |
+| Resolve conflicts           | `dotweave cd` → fix files → `git commit` → `git push`     |
+| Check setup health          | `dotweave doctor`                                          |

@@ -1,0 +1,23 @@
+---
+title: "dotweave cd"
+description: "syncディレクトリでシェルを開きます。"
+section: reference
+order: 6
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+syncディレクトリで新しいシェルを起動します。
+
+`chezmoi cd` と同様に、現在のシェルのディレクトリを変更するのではなく、syncディレクトリをルートとする子シェルを開きます。シェルを終了すると元のセッションに戻ります。
+
+## Usage
+
+```bash
+dotweave cd
+```
+
+<Callout variant="tip">
+syncディレクトリ内で直接gitコマンド（`commit`、`push`、`pull`）を実行するのに便利です。
+</Callout>

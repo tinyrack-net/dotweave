@@ -1,0 +1,48 @@
+---
+title: Dotweave
+description: dotfile을 Git으로 동기화하는 CLI 도구
+section: overview
+order: 1
+---
+
+`Dotweave`는 **개발 환경 설정 파일(dotfile)을 Git으로 동기화하는 CLI 도구**예요. 여러 기기에서 일관된 개발 환경을 유지할 수 있어요.
+
+---
+
+## 왜 Dotweave인가요?
+
+`stow`나 `chezmoi` 같은 도구는 저장소를 원본(source of truth)으로 취급해요. 파일을 도구를 통해 편집하고, 도구가 저장소를 관리해 주는 방식이에요. `stow`는 홈 디렉터리에서 저장소로의 심링크를 만들고, `chezmoi`는 `chezmoi edit`를 통해 편집한 뒤 로컬에 적용하는 과정을 거쳐요. 저장소 상태를 깔끔하게 유지할 수 있지만, 일상적인 편집 흐름에 불편함이 생겨요.
+
+Dotweave는 반대 방향으로 접근해요. **로컬 파일이 항상 원본이에요.** sync 디렉터리는 단순한 미러에 불과해요. `~/.zshrc`를 좋아하는 에디터에서 바로 편집하세요. 특별한 명령어는 필요 없어요. 동기화할 준비가 되면 `dotweave push`로 로컬 파일을 sync 디렉터리에 복사한 다음, Git으로 공유하면 돼요.
+
+---
+
+## 주요 기능
+
+- **홈 디렉터리 아래의 모든 파일과 디렉터리**를 추적할 수 있어요
+- 로컬 파일과 sync 디렉터리 사이에서 **push와 pull**을 할 수 있어요
+- [age](https://age-encryption.org/)로 **시크릿을 암호화**해요. SSH 키, API 토큰 등 민감한 파일은 저장소에 암호화된 상태로 보관돼요
+- **프로필**로 업무용, 개인용, 기기별 설정을 따로 관리할 수 있어요
+- **플랫폼별 경로**로 OS 차이(Linux, macOS, Windows, WSL)를 처리할 수 있어요
+- **심링크도, 전용 에디터도 필요 없어요.** 기존 워크플로우를 그대로 유지할 수 있어요
+
+---
+
+## 이런 모습이에요
+
+```bash
+# 설정 파일을 추적
+dotweave track ~/.config/starship.toml
+
+# 로컬 변경사항을 sync 디렉터리로 push
+dotweave push
+
+# 다른 기기에서 pull로 복원
+dotweave pull
+```
+
+---
+
+## 다음 단계
+
+[시작하기](/ko/getting-started/)로 이동해서 dotweave를 설치하고 첫 동기화를 설정해 보세요.

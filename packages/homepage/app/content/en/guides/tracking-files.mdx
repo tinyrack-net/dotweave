@@ -1,0 +1,125 @@
+---
+title: Tracking Files
+description: How to register files and directories for syncing.
+section: guides
+order: 1
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+Before dotweave can sync anything, you need to **track** it. Tracking tells dotweave "hey, I care about this file" by adding an entry to `manifest.jsonc`. Nothing gets copied or pushed until you explicitly run `dotweave push` afterward.
+
+---
+
+## Tracking a File
+
+Pass any file path to `dotweave track`:
+
+```bash
+dotweave track ~/.gitconfig
+dotweave track ~/.zshrc
+```
+
+This adds entries to `manifest.jsonc` — that's it. Your files stay exactly where they are. To actually copy them into the sync directory, run `dotweave push` as a separate step.
+
+---
+
+## Tracking a Directory
+
+You can track an entire directory. Every file inside it (recursively) will be included when you push and pull.
+
+```bash
+dotweave track ~/.config/nvim
+dotweave track ~/.config/fish
+```
+
+<Callout variant="tip">
+When you track a directory, new files added inside it later are automatically included in the next push — no need to track them individually.
+</Callout>
+
+---
+
+## Setting a Sync Mode
+
+By default, tracked entries use `normal` mode. You can change this with `--mode`:
+
+```bash
+dotweave track ~/.ssh/config --mode secret
+dotweave track ~/.local/share/cache-stuff --mode ignore
+```
+
+See [Sync Modes](/en/guides/sync-modes) for a full breakdown of each mode.
+
+---
+
+## Limiting to Specific Profiles
+
+Use `--profile` to assign an entry to one or more profiles. Only machines with a matching active profile will sync that entry.
+
+```bash
+dotweave track ~/.config/work-tool --profile work
+dotweave track ~/.config/shared-tool --profile work --profile personal
+```
+
+Entries without `--profile` land in the `default` profile and sync everywhere. See [Profiles](/en/guides/profiles) for details.
+
+---
+
+## Customizing the Repository Path
+
+By default, dotweave mirrors your file's path relative to your home directory inside the sync directory. If you want a different path in the repository, use `--repo`:
+
+```bash
+dotweave track ~/Projects/scripts/deploy.sh --repo scripts/deploy.sh
+```
+
+---
+
+## Use Cases
+
+**Whitelist approach** — track only the specific files you want synced:
+
+```bash
+dotweave track ~/.gitconfig
+dotweave track ~/.zshrc
+dotweave track ~/.config/starship.toml
+dotweave push
+```
+
+**Blacklist approach** — track a whole directory, then ignore specific children:
+
+```bash
+dotweave track ~/.config/nvim
+dotweave track ~/.config/nvim/plugin/packer_compiled.lua --mode ignore
+dotweave push
+```
+
+---
+
+## Untracking
+
+Changed your mind? Remove an entry with `dotweave untrack`:
+
+```bash
+dotweave untrack ~/.gitconfig
+```
+
+This removes the entry from `manifest.jsonc`. It does **not** delete the local file or any existing copy in the sync directory.
+
+---
+
+## Checking What's Tracked
+
+Use `dotweave status` to see all tracked entries and their current state:
+
+```bash
+dotweave status
+```
+
+Add `--dry-run` to push or pull to preview changes without applying them:
+
+```bash
+dotweave push --dry-run
+dotweave pull --dry-run
+```

@@ -4,14 +4,7 @@ import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
-const docsRoot = join(
-  workspaceRoot,
-  "packages",
-  "homepage",
-  "src",
-  "content",
-  "docs",
-);
+const docsRoot = join(workspaceRoot, "packages", "homepage", "app", "content");
 
 const collectContentFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });

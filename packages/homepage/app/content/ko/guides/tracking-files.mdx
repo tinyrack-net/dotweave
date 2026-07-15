@@ -1,0 +1,125 @@
+---
+title: 파일 추적하기
+description: 파일과 디렉터리를 동기화 대상으로 등록하는 방법을 알아보세요.
+section: guides
+order: 1
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+dotweave가 파일을 동기화하려면 먼저 **추적**해야 해요. 추적은 `manifest.jsonc`에 항목을 추가해서 "이 파일을 관리할 거야"라고 알려주는 거예요. 실제로 파일이 복사되거나 push되려면 이후에 `dotweave push`를 직접 실행해야 해요.
+
+---
+
+## 파일 추적하기
+
+`dotweave track`에 파일 경로를 전달하세요:
+
+```bash
+dotweave track ~/.gitconfig
+dotweave track ~/.zshrc
+```
+
+이렇게 하면 `manifest.jsonc`에 항목이 추가돼요. 그게 전부예요. 파일은 원래 위치에 그대로 있어요. 실제로 sync 디렉터리에 복사하려면 `dotweave push`를 별도로 실행하세요.
+
+---
+
+## 디렉터리 추적하기
+
+디렉터리 전체를 추적할 수도 있어요. 디렉터리 안의 모든 파일이 (재귀적으로) push와 pull에 포함돼요.
+
+```bash
+dotweave track ~/.config/nvim
+dotweave track ~/.config/fish
+```
+
+<Callout variant="tip">
+디렉터리를 추적하면, 나중에 안에 새로 추가된 파일도 다음 push 때 자동으로 포함돼요. 개별적으로 추적할 필요 없어요.
+</Callout>
+
+---
+
+## 동기화 모드 설정
+
+기본적으로 추적된 항목은 `normal` 모드를 사용해요. `--mode`로 변경할 수 있어요:
+
+```bash
+dotweave track ~/.ssh/config --mode secret
+dotweave track ~/.local/share/cache-stuff --mode ignore
+```
+
+각 모드에 대한 자세한 설명은 [동기화 모드](/ko/guides/sync-modes/)를 참고하세요.
+
+---
+
+## 특정 프로필에 제한하기
+
+`--profile`을 사용하면 항목을 하나 이상의 프로필에 할당할 수 있어요. 활성 프로필이 일치하는 기기에서만 해당 항목이 동기화돼요.
+
+```bash
+dotweave track ~/.config/work-tool --profile work
+dotweave track ~/.config/shared-tool --profile work --profile personal
+```
+
+`--profile` 없이 추적한 항목은 `default` 프로필에 들어가서 모든 기기에서 동기화돼요. 자세한 내용은 [프로필](/ko/guides/profiles/)을 참고하세요.
+
+---
+
+## 저장소 경로 커스터마이징
+
+기본적으로 dotweave는 홈 디렉터리 기준 상대 경로를 sync 디렉터리 안에 그대로 미러링해요. 저장소 안에서 다른 경로를 사용하고 싶다면 `--repo`를 사용하세요:
+
+```bash
+dotweave track ~/Projects/scripts/deploy.sh --repo scripts/deploy.sh
+```
+
+---
+
+## 활용 패턴
+
+**화이트리스트 방식**: 동기화하고 싶은 파일만 골라서 추적:
+
+```bash
+dotweave track ~/.gitconfig
+dotweave track ~/.zshrc
+dotweave track ~/.config/starship.toml
+dotweave push
+```
+
+**블랙리스트 방식**: 디렉터리 전체를 추적한 뒤, 특정 하위 파일만 제외:
+
+```bash
+dotweave track ~/.config/nvim
+dotweave track ~/.config/nvim/plugin/packer_compiled.lua --mode ignore
+dotweave push
+```
+
+---
+
+## 추적 해제
+
+마음이 바뀌었다면 `dotweave untrack`으로 항목을 제거할 수 있어요:
+
+```bash
+dotweave untrack ~/.gitconfig
+```
+
+`manifest.jsonc`에서 항목이 제거돼요. 로컬 파일이나 sync 디렉터리에 있는 기존 복사본은 삭제되지 **않아요**.
+
+---
+
+## 추적 상태 확인
+
+`dotweave status`로 모든 추적 항목과 현재 상태를 확인할 수 있어요:
+
+```bash
+dotweave status
+```
+
+`--dry-run`을 추가하면 실제 적용 없이 변경 사항을 미리 볼 수 있어요:
+
+```bash
+dotweave push --dry-run
+dotweave pull --dry-run
+```

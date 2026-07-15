@@ -1,0 +1,48 @@
+---
+title: "dotweave untrack"
+description: "경로의 동기화 추적을 중단해요."
+section: reference
+order: 5
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+추적 중인 경로의 동기화를 중단해요.
+
+dotweave 설정에서 추적 중인 루트 항목이나 하위 재정의를 제거해요. 이 명령은 설정만 갱신하고, 실제 파일 변경은 다음 `push`나 `pull`에서 이루어져요. 로컬 경로를 지정하면 추적 대상 자체를 제거하고, 추적 중인 디렉터리 안의 저장소 상대 경로를 지정하면 해당 재정의만 제거해요.
+
+## Usage
+
+```bash
+dotweave untrack <target> [flags]
+```
+
+## Arguments
+
+| Argument   | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `<target>` | 추적을 중단할 로컬 경로 또는 저장소 경로예요. |
+
+## Flags
+
+| Flag        | Description            |
+| ----------- | ---------------------- |
+
+## Examples
+
+설정 파일의 추적을 중단해요:
+
+```bash
+dotweave untrack ~/.config/starship.toml
+```
+
+추적 중인 디렉터리 안의 자식 재정의를 제거해요:
+
+```bash
+dotweave untrack .ssh/config
+```
+
+<Callout>
+`untrack`은 `manifest.jsonc`만 갱신해요. 로컬 파일이나 sync 디렉터리의 파일을 **삭제하지 않아요**.
+</Callout>

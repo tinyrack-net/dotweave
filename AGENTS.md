@@ -3,7 +3,7 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Node.js (>=24), TypeScript, pnpm (Monorepo), `@stricli/core` (CLI), `zod` (Validation), `age-encryption` (Secrets), `vitest` (Testing), `Astro`/`Starlight` (Homepage/Docs).
+- **Main Technologies:** Node.js (>=24), TypeScript, pnpm (Monorepo), `@stricli/core` (CLI), `zod` (Validation), `age-encryption` (Secrets), `vitest` (Testing), React Router and `@tinyrack/docs` (Homepage/Docs).
 - **Architecture:** A monorepo containing a CLI package (`@tinyrack/dotweave`) and a documentation homepage (`@tinyrack/dotweave-homepage`).
 
 ---
@@ -21,7 +21,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 ## Workspace Structure
 Managed via `pnpm` workspaces:
 - `packages/cli`: The core CLI tool.
-- `packages/homepage`: Documentation and landing page built with Astro.
+- `packages/homepage`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui`.
 
 ---
 
@@ -72,8 +72,8 @@ Managed via `pnpm` workspaces:
 - **Error Handling:** Use the custom error types in `src/lib/error.ts`.
 
 ### Documentation / Homepage
-- **Localization:** Supports `en`, `ko`, and `ja`. Content is in `src/content/docs/`.
-- **Theming:** Uses `starlight-theme-black` and Tailwind CSS.
+- **Localization:** Supports `en`, `ko`, and `ja`. Content is in `app/content/`.
+- **UI boundary:** Shared documentation chrome and MDX elements come from `@tinyrack/ui`; product-only globe and terminal composition stay in `app/components/`.
 
 ---
 
@@ -82,4 +82,4 @@ Managed via `pnpm` workspaces:
 - `biome.json`: Linting and formatting rules.
 - `packages/cli/src/application.ts`: CLI entry point and application building.
 - `packages/cli/src/config/sync-schema.ts`: Zod schema for the sync configuration.
-- `packages/homepage/astro.config.ts`: Astro/Starlight configuration.
+- `packages/homepage/docs.config.ts`: Documentation manifest, navigation, localization, redirects, and site metadata.

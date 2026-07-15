@@ -1,0 +1,50 @@
+---
+title: "dotweave push"
+description: "로컬 파일을 sync 디렉터리에 반영해요."
+section: reference
+order: 2
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+로컬 설정을 git 기반 sync 디렉터리에 반영해요.
+
+추적 중인 로컬 파일과 디렉터리의 현재 상태를 모아서, sync 디렉터리의 내용을 일치하도록 갱신해요. secret 대상은 저장소에 쓰기 전에 암호화돼요.
+
+## Usage
+
+```bash
+dotweave push [flags]
+```
+
+## Flags
+
+| Flag               | Description                          |
+| ------------------ | ------------------------------------ |
+| `--dry-run`        | 실제로 쓰지 않고 변경 내용을 미리 확인해요.     |
+| `--profile <name>` | 특정 profile 레이어를 사용해요.        |
+
+## Examples
+
+추적 중인 모든 파일을 sync 디렉터리에 반영해요:
+
+```bash
+dotweave push
+```
+
+변경 없이 반영될 내용만 미리 확인해요:
+
+```bash
+dotweave push --dry-run
+```
+
+work profile 레이어만 반영해요:
+
+```bash
+dotweave push --profile work
+```
+
+<Callout>
+`push`는 원격 서버에 접속하지 않아요. 로컬 sync 디렉터리에만 기록해요. 원격 저장소에 올리려면 `git`을 따로 사용하세요.
+</Callout>

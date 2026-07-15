@@ -1,0 +1,114 @@
+---
+title: プラットフォーム別パス
+description: 同じ設定ファイルをOS別に異なるパスで管理する方法。
+section: guides
+order: 5
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+ほとんどの設定ファイルは、OSによって異なるパスに保存されます。
+例えばVS Codeの設定は、Linuxでは`~/.config/Code/User/`に、
+macOSでは`~/Library/Application Support/Code/User/`にあります。dotweaveは
+`manifest.jsonc`の**プラットフォーム別パスオブジェクト**でこの違いを吸収します。
+
+## プラットフォームキー
+
+`manifest.jsonc`のすべてのパスフィールドは、単純な文字列か、
+1つ以上のプラットフォームキーを持つオブジェクトのどちらかで記述できます：
+
+| キー      | 対象                                 |
+| --------- | ------------------------------------ |
+| `linux`   | ネイティブLinux                       |
+| `mac`     | macOS                                |
+| `win`     | Windows                              |
+| `wsl`     | Windows Subsystem for Linux          |
+| `default` | 明示的にリストされていないプラットフォーム |
+
+## パス解決の仕組み
+
+dotweaveがパスを読み取る際、以下の優先順位で最適なマッチを選びます：
+
+1. **完全一致のプラットフォームキー** — 対象のOSに専用のエントリがあれば、それが使われます。
+2. **フォールバック** — `wsl`キーがない場合、`wsl`は`linux`にフォールバックします。
+3. **`default`** — 他のキーがマッチしない場合に使われます。
+
+いずれも解決できない場合、そのエントリはそのプラットフォームではスキップされます。
+
+## `localPath` — 常にプラットフォームオブジェクト
+
+`localPath`は、マシン上のファイルの場所を示します。OS間で最も異なりやすい
+フィールドなので、常にプラットフォームオブジェクトとして記述されます：
+
+```json
+{
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  }
+}
+```
+
+## `repoPath` — 通常は共通、ただし異なる場合も
+
+`repoPath`はsyncディレクトリ内のパスです。ほとんどの場合、プラットフォーム間で
+同じなので、単純な文字列で十分です。異なる場合は、同じプラットフォームオブジェクト形式を
+使います：
+
+```json
+{
+  "repoPath": {
+    "default": "vscode/settings.json",
+    "win": "vscode-win/settings.json"
+  }
+}
+```
+
+## `mode` — プラットフォーム別の動作
+
+`mode`もプラットフォームごとに設定できます。特定のOSでしか意味のない設定に
+便利です：
+
+```json
+{
+  "mode": {
+    "default": "copy",
+    "win": "ignore"
+  }
+}
+```
+
+この設定では、Windows以外のすべてのプラットフォームでファイルが同期され、
+Windowsではスキップされます。Windowsでpushしても、別のプラットフォームvariantが
+引き続き所有するartifactは保持されますが、ignoredなWindows variantだけが所有する
+artifactは削除対象になります。
+
+## 完全な例
+
+Linux、macOS、Windowsで動作するVS Code設定の完全なエントリです：
+
+```json
+{
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  },
+  "repoPath": "vscode/settings.json",
+  "mode": "copy"
+}
+```
+
+<Callout variant="tip">
+`dotweave track`を実行すると、現在のプラットフォームのパスが自動的に`default`キーとして
+記録されます。プラットフォーム固有のパスが必要な場合は、`manifest.jsonc`を直接編集して
+他のキーを追加してください。
+</Callout>
+
+## 編集のヒント
+
+- `manifest.jsonc`を手動で編集して、プラットフォームキーの追加や調整がいつでもできます。
+- `dotweave track`はまず手早く始めるのに便利です — 現在のプラットフォームのパスが`default`として記録され、後から他のプラットフォームを追加できます。
+- pushする前に`dotweave status`で、現在のマシンでパスが正しく解決されているか確認しましょう。

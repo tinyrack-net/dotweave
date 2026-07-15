@@ -1,0 +1,115 @@
+---
+title: 플랫폼별 경로
+description: 같은 설정 파일을 OS마다 다른 경로로 관리하는 방법을 알아보세요.
+section: guides
+order: 5
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+대부분의 설정 파일은 운영체제에 따라 다른 경로에 저장돼요.
+예를 들어 VS Code 설정은 Linux에서는 `~/.config/Code/User/`에 있지만
+macOS에서는 `~/Library/Application Support/Code/User/`에 있어요. dotweave는
+`manifest.jsonc`의 **플랫폼별 경로 객체**로 이런 차이를 처리해요.
+
+## 플랫폼 키
+
+`manifest.jsonc`의 모든 경로 필드는 단순 문자열이거나 하나 이상의 플랫폼 키를 가진
+객체가 될 수 있어요:
+
+| 키        | 매칭 대상                            |
+| --------- | ------------------------------------ |
+| `linux`   | 네이티브 Linux                       |
+| `mac`     | macOS                                |
+| `win`     | Windows                              |
+| `wsl`     | Windows Subsystem for Linux          |
+| `default` | 명시적으로 지정되지 않은 모든 플랫폼 |
+
+## 경로 결정 방식
+
+dotweave가 경로를 읽을 때, 다음 순서로 가장 적합한 값을 선택해요:
+
+1. **정확한 플랫폼 키**: 현재 OS에 해당하는 항목이 있으면 그걸 사용해요.
+2. **폴백**: `wsl` 키가 없으면 `linux`로 대체해요.
+3. **`default`**: 다른 키가 매칭되지 않을 때 사용돼요.
+
+이 중 어떤 것도 해당하지 않으면, 해당 항목은 그 플랫폼에서 건너뛰어요.
+
+## `localPath`: 항상 플랫폼 객체
+
+`localPath`는 dotweave에 파일이 기기에서 어디에 있는지 알려줘요. OS에 따라 가장
+달라지기 쉬운 필드이기 때문에, 항상 플랫폼 객체로 작성돼요:
+
+```json
+{
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  }
+}
+```
+
+## `repoPath`: 보통 동일하지만 다를 수도 있어요
+
+`repoPath`는 sync 디렉터리 안에서의 경로예요. 대부분 플랫폼에 관계없이
+동일하기 때문에 단순 문자열로 충분해요. 필요하다면 같은 플랫폼 객체 형식을
+사용할 수 있어요:
+
+```json
+{
+  "repoPath": {
+    "default": "vscode/settings.json",
+    "win": "vscode-win/settings.json"
+  }
+}
+```
+
+## `mode`: 플랫폼별 동작
+
+`mode`도 플랫폼별로 설정할 수 있어요. 특정 OS에서만 의미 있는 설정에
+유용해요:
+
+```json
+{
+  "mode": {
+    "default": "copy",
+    "win": "ignore"
+  }
+}
+```
+
+이렇게 설정하면 Windows를 제외한 모든 플랫폼에서 파일이 동기화되고,
+Windows에서는 조용히 건너뛰어요. Windows push는 다른 플랫폼 variant가
+계속 소유하는 artifact는 보존하지만, ignored Windows variant만 소유하는
+artifact는 정리해요.
+
+## 전체 예시
+
+Linux, macOS, Windows에서 모두 동작하는 VS Code 설정의 전체 항목이에요:
+
+```json
+{
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  },
+  "repoPath": "vscode/settings.json",
+  "mode": "copy"
+}
+```
+
+<Callout variant="tip">
+`dotweave track`을 실행하면 현재 플랫폼의 경로가 `default` 키로 자동 기록돼요.
+플랫폼별 경로가 필요하면 `manifest.jsonc`를 직접 편집해서 다른 키를 추가하세요.
+</Callout>
+
+## 편집 팁
+
+- `manifest.jsonc`를 직접 편집해서 플랫폼 키를 추가하거나 수정할 수 있어요.
+- `dotweave track`은 빠르게 시작하기 좋아요. 현재 플랫폼의 경로를 `default`로
+  저장하고, 나중에 다른 플랫폼을 추가하면 돼요.
+- push하기 전에 `dotweave status`로 현재 기기에서 경로가 올바르게 해석되는지
+  확인하세요.

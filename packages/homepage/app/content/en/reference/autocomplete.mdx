@@ -1,0 +1,58 @@
+---
+title: "dotweave autocomplete"
+description: "Set up shell tab completion."
+section: reference
+order: 9
+---
+
+Print shell autocomplete scripts.
+
+Emit shell-specific autocomplete scripts for use with eval/source-based shell setup.
+
+## Usage
+
+```bash
+dotweave autocomplete <shell>
+```
+
+## Subcommands
+
+| Subcommand                  | Description                    |
+| --------------------------- | ------------------------------ |
+| `dotweave autocomplete bash` | Print autocomplete script for Bash. |
+| `dotweave autocomplete zsh`  | Print autocomplete script for Zsh.  |
+| `dotweave autocomplete fish` | Print autocomplete script for Fish. |
+| `dotweave autocomplete powershell` | Print autocomplete script for PowerShell. |
+
+## Examples
+
+Set up autocomplete in **Bash** (add to `~/.bashrc`):
+
+```bash
+eval "$(dotweave autocomplete bash)"
+```
+
+Set up autocomplete in **Zsh** (add to `~/.zshrc`):
+
+```bash
+eval "$(dotweave autocomplete zsh)"
+```
+
+Set up autocomplete in **Fish** for the current session:
+
+```fish
+dotweave autocomplete fish | source
+```
+
+Set up autocomplete in **Fish** persistently:
+
+```fish
+mkdir -p ~/.config/fish/completions
+dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
+```
+
+Set up autocomplete in **PowerShell** (add to your profile):
+
+```powershell
+dotweave autocomplete powershell | Invoke-Expression
+```

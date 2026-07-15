@@ -1,0 +1,154 @@
+---
+title: 디렉터리 구조
+description: dotweave가 설정과 동기화 파일을 저장하는 위치와 구조를 알아보세요.
+section: guides
+order: 0
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+import { FileTree } from "@tinyrack/ui/components/file-tree";
+
+
+dotweave가 생성하는 모든 파일은 하나의 앱 데이터 디렉터리 안에 있어요. Linux, macOS, WSL에서는 기본값이 `$XDG_CONFIG_HOME/dotweave`이고, `XDG_CONFIG_HOME`이 없으면 `~/.config/dotweave`를 사용해요. Windows에서는 `%APPDATA%\dotweave`가 기본값이고, 없으면 `%LOCALAPPDATA%\dotweave`, `%USERPROFILE%\AppData\Roaming\dotweave`, 마지막으로 OS 홈 디렉터리의 `AppData\Roaming\dotweave`를 사용해요.
+
+---
+
+## 전체 구조
+
+<FileTree.Root>
+  <FileTree.Directory name="&lt;dotweave-home&gt;">
+    <FileTree.Root>
+      <FileTree.File>settings.jsonc</FileTree.File>
+      <FileTree.File>keys.txt</FileTree.File>
+      <FileTree.Directory name="repository">
+        <FileTree.Root>
+          <FileTree.File>manifest.jsonc</FileTree.File>
+          <FileTree.Directory name="default">
+            <FileTree.Root>
+              <FileTree.File>.gitconfig</FileTree.File>
+              <FileTree.File>.zshrc</FileTree.File>
+              <FileTree.Directory name=".config">
+                <FileTree.Root>
+                  <FileTree.Directory name="nvim">
+                    <FileTree.Root>
+                      <FileTree.File>init.lua</FileTree.File>
+                    </FileTree.Root>
+                  </FileTree.Directory>
+                </FileTree.Root>
+              </FileTree.Directory>
+            </FileTree.Root>
+          </FileTree.Directory>
+          <FileTree.Directory name="work">
+            <FileTree.Root>
+              <FileTree.Directory name=".config">
+                <FileTree.Root>
+                  <FileTree.Directory name="work-tool">
+                    <FileTree.Root>
+                      <FileTree.File>config.json</FileTree.File>
+                    </FileTree.Root>
+                  </FileTree.Directory>
+                </FileTree.Root>
+              </FileTree.Directory>
+              <FileTree.Directory name=".ssh">
+                <FileTree.Root>
+                  <FileTree.File>config.dotweave.secret</FileTree.File>
+                </FileTree.Root>
+              </FileTree.Directory>
+            </FileTree.Root>
+          </FileTree.Directory>
+        </FileTree.Root>
+      </FileTree.Directory>
+    </FileTree.Root>
+  </FileTree.Directory>
+</FileTree.Root>
+
+---
+
+## DOTWEAVE_HOME
+
+`DOTWEAVE_HOME`을 설정하면 dotweave 앱 데이터 디렉터리만 따로 바꿀 수 있어요:
+
+```bash
+DOTWEAVE_HOME=/path/to/dotweave dotweave sync
+```
+
+sync 저장소는 `$DOTWEAVE_HOME/repository` 아래에 저장돼요.
+
+---
+
+## 각 파일의 역할
+
+### `repository/`: sync 디렉터리
+
+동기화된 파일을 보관하는 Git 저장소예요. `dotweave push`를 실행하면 파일이 여기에 복사되고, `dotweave pull`을 실행하면 여기에서 파일이 복원돼요. 이 저장소를 GitHub 같은 리모트에 push하면 여러 기기에서 동기화할 수 있어요.
+
+### `repository/manifest.jsonc`: 설정 파일
+
+설정 파일은 원본(source of truth)이에요. 추적 중인 모든 파일과 디렉터리가 동기화 모드, 프로필, 퍼미션 같은 옵션과 함께 나열돼 있어요. `dotweave track`과 `dotweave untrack` 명령어가 이 파일을 수정해요.
+
+### `repository/default/`: default 프로필의 파일들
+
+특정 프로필에 할당되지 않은 파일이 여기에 저장돼요. 대부분의 dotfile이 이 디렉터리에 위치하게 돼요.
+
+### `repository/<profile>/`: 이름이 지정된 프로필의 파일들
+
+[프로필](/ko/guides/profiles/)을 사용하면 각 프로필마다 고유한 하위 디렉터리가 생겨요. 예를 들어, `--profile work`으로 추적한 항목은 `repository/work/` 아래에 저장돼요.
+
+### `keys.txt`: age identity 파일
+
+[시크릿 파일](/ko/guides/syncing-secrets/)을 암호화하고 복호화하는 데 사용하는 age 비밀 키예요. `dotweave init` 중에 생성되며, `AGE-SECRET-KEY-`로 시작해요.
+
+<Callout variant="caution">
+`keys.txt`를 안전한 곳에 백업해 두세요. 비밀번호 관리자가 좋은 선택이에요. 이 키를 잃어버리면 시크릿 파일을 복호화할 수 없어요.
+</Callout>
+
+### `settings.jsonc`: 사용자 설정
+
+활성 프로필과 기타 로컬 설정을 저장해요. 보통 직접 편집할 필요는 없으며, `dotweave profile use work` 같은 명령어가 자동으로 업데이트해 줘요.
+
+---
+
+## `manifest.jsonc`의 모습
+
+추적 항목 몇 개가 포함된 간단한 예시예요:
+
+```json
+{
+  "version": 7,
+  "age": {
+    "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]
+  },
+  "entries": [
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.gitconfig" }
+    },
+    {
+      "kind": "directory",
+      "localPath": { "default": "~/.config/nvim" }
+    },
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.ssh/config" },
+      "mode": { "default": "secret" },
+      "profiles": ["work"]
+    }
+  ]
+}
+```
+
+### 설정 파일 구조
+
+- **`version`**: 스키마 버전 (현재 `7`). dotweave가 자동으로 관리해요.
+- **`age`**: 암호화 설정. `recipients` 배열에 시크릿 파일을 암호화하는 데 사용하는 공개 키가 나열돼요.
+- **`entries`**: 추적 중인 파일과 디렉터리 목록이에요. 각 항목에는 다음 옵션이 있어요:
+  - **`kind`**: `"file"` 또는 `"directory"`
+  - **`localPath`**: 파일이 내 기기에서 위치하는 경로 ([플랫폼별 경로](/ko/guides/platform-specific-paths/) 지원)
+  - **`repoPath`**: sync 디렉터리 안에서의 커스텀 경로 (선택 사항, 기본적으로 `localPath`에서 파생)
+  - **`mode`**: [동기화 모드](/ko/guides/sync-modes/): `"normal"`, `"secret"`, `"ignore"` (선택 사항, 기본값은 `"normal"`)
+  - **`profiles`**: 이 항목이 속한 [프로필](/ko/guides/profiles/) (선택 사항, 생략하면 전체 적용)
+  - **`permission`**: `"0600"` 같은 8진수 파일 퍼미션 (선택 사항)
+
+<Callout variant="note">
+`manifest.jsonc`를 직접 편집할 일은 거의 없어요. `dotweave track`과 `dotweave untrack` 명령어가 대신 처리해 줘요.
+</Callout>

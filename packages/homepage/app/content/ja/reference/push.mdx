@@ -1,0 +1,50 @@
+---
+title: "dotweave push"
+description: "ローカルファイルをsyncディレクトリに反映します。"
+section: reference
+order: 2
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+ローカルの設定をgitベースのsyncディレクトリにミラーリングします。
+
+trackされたローカルファイル・ディレクトリの現在の状態を収集し、syncディレクトリの内容を一致するよう更新します。secretモードのターゲットは、リポジトリに書き込む前に暗号化されます。
+
+## Usage
+
+```bash
+dotweave push [flags]
+```
+
+## Flags
+
+| Flag               | Description                          |
+| ------------------ | ------------------------------------ |
+| `--dry-run`        | 実際には書き込まず、変更内容をプレビューします。     |
+| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+
+## Examples
+
+trackされたすべてのファイルをsyncディレクトリにpushする:
+
+```bash
+dotweave push
+```
+
+変更内容を実際に書き込まずにプレビューする:
+
+```bash
+dotweave push --dry-run
+```
+
+workプロファイルのレイヤーのみpushする:
+
+```bash
+dotweave push --profile work
+```
+
+<Callout>
+`push` はリモートへの通信を行いません。ローカルのsyncディレクトリに書き込むだけです。commitやリモートへのpushには、別途 `git` を使用してください。
+</Callout>

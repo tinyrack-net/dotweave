@@ -1,0 +1,56 @@
+---
+title: "dotweave init"
+description: "Initialize a new sync directory or connect to an existing one."
+section: reference
+order: 0
+---
+
+import { Callout } from "@tinyrack/ui/components/callout";
+
+
+Initialize the git-backed sync directory.
+
+Create or connect the sync directory under your dotweave app-data directory, then store the sync settings used by later `pull` and `push` operations. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.
+
+## Usage
+
+```bash
+dotweave init [repository]
+```
+
+## Arguments
+
+| Argument       | Description                                              |
+| -------------- | -------------------------------------------------------- |
+| `[repository]` | Remote URL or local git repository path to clone. Optional — when omitted, a new local repository is created. |
+
+## Flags
+
+| Flag                        | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| `--key-file <path>`         | Read an age private key from a file.                           |
+| `--force`                   | Replace existing local sync repository, identity, and settings before initializing. |
+
+## Examples
+
+Initialize a fresh local sync directory:
+
+```bash
+dotweave init
+```
+
+Clone a remote repository as the sync directory:
+
+```bash
+dotweave init https://github.com/user/dotfiles.git --key-file ~/dotweave.agekey
+```
+
+Initialize with an existing age secret key:
+
+```bash
+dotweave init --key-file ~/dotweave.agekey
+```
+
+<Callout variant="tip">
+If you pass a repository to `dotweave init`, provide the existing age private key with `--key-file` or enter it at the interactive prompt so dotweave can decrypt your secret files.
+</Callout>
