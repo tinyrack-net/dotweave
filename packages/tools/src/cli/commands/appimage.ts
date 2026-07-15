@@ -4,6 +4,10 @@ import { buildCommand, buildRouteMap } from "@stricli/core";
 import { execa } from "execa";
 import { getRepoRoot } from "../../lib/git.ts";
 
+export function getAppImageIconPath(repoRoot: string): string {
+  return join(repoRoot, "packages/homepage/public/logo.svg");
+}
+
 const buildAppImageCommand = buildCommand<
   { executablePath: string; outputPath: string; arch: string },
   []
@@ -54,10 +58,7 @@ Terminal=true
 `,
     );
 
-    await copyFile(
-      join(repoRoot, "packages/homepage/src/assets/logo.svg"),
-      join(appDir, "dotweave.svg"),
-    );
+    await copyFile(getAppImageIconPath(repoRoot), join(appDir, "dotweave.svg"));
 
     await writeFile(
       join(appDir, "AppRun"),
