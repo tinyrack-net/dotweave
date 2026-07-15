@@ -9,6 +9,7 @@ const buildRoot = join(import.meta.dirname, "..", "build", "client");
 let browser: Browser;
 let origin: string;
 let server: Server;
+let simulateCloudflareBeacon = false;
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
@@ -24,6 +25,10 @@ beforeAll(async () => {
   server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? "/", "http://localhost");
+      if (url.pathname === "/cdn-cgi/rum") {
+        response.writeHead(204).end();
+        return;
+      }
       const requestPath = decodeURIComponent(url.pathname);
       const relativePath = requestPath.endsWith("/")
         ? `${requestPath.slice(1)}index.html`
@@ -34,7 +39,16 @@ beforeAll(async () => {
       const file = (await stat(path)).isDirectory()
         ? join(path, "index.html")
         : path;
-      const body = await readFile(file);
+      let body = await readFile(file);
+      if (extname(file) === ".html" && simulateCloudflareBeacon) {
+        body = Buffer.from(
+          body.toString("utf8").replace(
+            "</body>",
+            `<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" data-cf-beacon='{"version":"2024.11.0","token":"test-token","r":1}' crossorigin="anonymous"></script>
+</body>`,
+          ),
+        );
+      }
       response.writeHead(200, {
         "content-type":
           contentTypes[extname(file)] ?? "application/octet-stream",
@@ -60,6 +74,32 @@ afterAll(async () => {
 });
 
 describe("Dotweave built documentation", () => {
+  it("protects hydration from Cloudflare analytics injection", async () => {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    simulateCloudflareBeacon = true;
+    try {
+      const response = await page.goto(
+        `${origin}/en/guides/directory-structure/`,
+      );
+      expect(await response?.text()).toContain("data-cf-beacon");
+      await page.locator('html[data-hydrated="true"]').waitFor();
+
+      await expect(
+        page.locator("script[data-cf-beacon]").count(),
+      ).resolves.toBe(1);
+      expect(errors).toEqual([]);
+    } finally {
+      simulateCloudflareBeacon = false;
+      await page.close();
+    }
+  });
+
   it("renders the English landing and guide in desktop light mode", async () => {
     const page = await browser.newPage({ colorScheme: "light" });
     const errors: string[] = [];
@@ -90,6 +130,12 @@ describe("Dotweave built documentation", () => {
     await expect(
       page.getByText("repository", { exact: true }).first().isVisible(),
     ).resolves.toBe(true);
+    await expect(
+      page.locator('meta[property="og:site_name"]').count(),
+    ).resolves.toBe(1);
+    await expect(
+      page.locator('meta[name="twitter:card"]').getAttribute("content"),
+    ).resolves.toBe("summary_large_image");
     expect(errors).toEqual([]);
     await page.close();
   });

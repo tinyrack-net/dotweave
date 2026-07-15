@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@react-router/node": "8.2.0",
-    "@tinyrack/docs": "0.3.2",
-    "@tinyrack/ui": "0.3.0",
+    "@tinyrack/docs": "0.3.3",
+    "@tinyrack/ui": "0.3.1",
     "cobe": "^2.0.1",
     "isbot": "5.2.0",
     "react": "19.2.7",
