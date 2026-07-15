@@ -66,6 +66,8 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Build homepage
         run: pnpm --filter @tinyrack/dotweave-homepage run build
+      - name: Install Chromium
+        run: pnpm --filter @tinyrack/dotweave-homepage exec playwright install --with-deps chromium
       - name: Audit homepage in Chromium
         run: pnpm --filter @tinyrack/dotweave-homepage run test:audit
       - name: Verify Cloudflare deployment bundle

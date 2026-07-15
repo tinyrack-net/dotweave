@@ -15,7 +15,7 @@
     "preview:worker": "wrangler dev",
     "start": "tinyrack-docs dev",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/browser.test.ts",
     "test:audit": "vitest run tests/browser.test.ts",
     "deploy": "wrangler deploy",
     "deploy:dry-run": "wrangler deploy --dry-run"

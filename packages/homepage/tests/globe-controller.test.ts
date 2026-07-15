@@ -51,7 +51,11 @@ function installBrowserFakes(reducedMotion = false) {
     matchMedia: vi.fn(() => media),
   });
   vi.stubGlobal("document", {
-    documentElement: { dataset: { theme: "tinyrack-dark" } },
+    documentElement: {
+      getAttribute: vi.fn((name: string) =>
+        name === "data-theme" ? "tinyrack-dark" : null,
+      ),
+    },
   });
 
   return {
