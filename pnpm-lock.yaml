@@ -64,11 +64,11 @@ importers:
         specifier: 8.2.0
         version: 8.2.0(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@6.0.3)
       '@tinyrack/docs':
-        specifier: 0.3.3
-        version: 0.3.3(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(rollup@4.60.3)(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(wrangler@4.107.0)
+        specifier: 0.3.4
+        version: 0.3.4(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(rollup@4.60.3)(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(wrangler@4.107.0)
       '@tinyrack/ui':
-        specifier: 0.3.1
-        version: 0.3.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)
+        specifier: 0.3.2
+        version: 0.3.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)
       cobe:
         specifier: ^2.0.1
         version: 2.0.1
@@ -1219,8 +1219,8 @@ packages:
   '@stricli/core@1.2.9':
     resolution: {integrity: sha512-vKniyS+0GtarIaUpMRMQ5+Ck9mXeaBqdN/7otznkBTWU0EXfkMJAHt2QdOCmOudR9eciQZQf09DmYm14yfPWzw==}
 
-  '@tinyrack/docs@0.3.3':
-    resolution: {integrity: sha512-dJEtR3JgdyMR/eQazJX2/UbLPeXzc76wTLUH0oY3Eeme1tpb7djgxCbkLnGcPrIcp82nNtpOVayjwPDIClBRQw==}
+  '@tinyrack/docs@0.3.4':
+    resolution: {integrity: sha512-1TryIYBuDG+h9GGZIR6BQsTG1qagpE1zAJkztmNRTKVv1Lr0KbLoJKaXeOgx0/D1tbPOFeCGAUjw5MgUPfqNkg==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -1229,8 +1229,8 @@ packages:
       react-router: '>=8.2.0 <9.0.0'
       vite: '>=8.0.0 <9.0.0'
 
-  '@tinyrack/ui@0.3.1':
-    resolution: {integrity: sha512-tPwBr2S4FBM7G+bOLKJBc6hQfKQ5vh+za0K7yWsSy3nTPJ0V4gcIDTOEIrFFZULri28YwJXgNQ4d2vbKrpCbIg==}
+  '@tinyrack/ui@0.3.2':
+    resolution: {integrity: sha512-PfrY/jqX9GwPYgERSTgX+0B4bZPUcva/rk561IBvQyBIwTtYoZl/x033bsk1nUtobEL4EnlQKJeehwVAbx7/8Q==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       react: '>=19.0.0'
@@ -3698,7 +3698,7 @@ snapshots:
 
   '@stricli/core@1.2.9': {}
 
-  '@tinyrack/docs@0.3.3(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(rollup@4.60.3)(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(wrangler@4.107.0)':
+  '@tinyrack/docs@0.3.4(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(rollup@4.60.3)(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(wrangler@4.107.0)':
     dependencies:
       '@fontsource/ibm-plex-sans': 5.2.8
       '@fontsource/ibm-plex-sans-jp': 5.2.8
@@ -3708,7 +3708,7 @@ snapshots:
       '@react-router/dev': 8.2.0(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(wrangler@4.107.0)
       '@shikijs/langs': 4.3.1
       '@shikijs/themes': 4.3.1
-      '@tinyrack/ui': 0.3.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)
+      '@tinyrack/ui': 0.3.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)
       pagefind: 1.5.2
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
@@ -3734,7 +3734,7 @@ snapshots:
       - typescript
       - wrangler
 
-  '@tinyrack/ui@0.3.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)':
+  '@tinyrack/ui@0.3.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.2)':
     dependencies:
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
