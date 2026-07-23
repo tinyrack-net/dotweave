@@ -128,7 +128,7 @@ describe("Dotweave built documentation", () => {
       page.getByRole("heading", { name: "Directory Structure" }).isVisible(),
     ).resolves.toBe(true);
     await expect(
-      page.getByText("repository", { exact: true }).first().isVisible(),
+      page.getByText("repository/", { exact: true }).first().isVisible(),
     ).resolves.toBe(true);
     await expect(
       page.locator('meta[property="og:site_name"]').count(),
