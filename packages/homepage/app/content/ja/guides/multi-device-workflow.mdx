@@ -5,8 +5,8 @@ section: guides
 order: 6
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 このガイドでは、dotweaveのライフサイクル全体を説明します — 最初のマシンのセットアップから、
@@ -14,8 +14,8 @@ import { Steps } from "@tinyrack/ui/components/steps";
 
 ## マシンAでの初期セットアップ
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **dotweaveを初期化する**
 
@@ -25,8 +25,8 @@ dotweave init
 
 dotweaveのアプリデータディレクトリ内にGitベースのsyncディレクトリが作成されます。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ファイルをトラッキングする**
 
@@ -38,8 +38,8 @@ dotweave track ~/.ssh/config --mode secret
 
 各コマンドがsyncディレクトリ内の`manifest.jsonc`にエントリを追加します。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ローカルファイルをsyncディレクトリにpush**
 
@@ -47,8 +47,8 @@ dotweave track ~/.ssh/config --mode secret
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **commitしてリモートにpush**
 
@@ -62,17 +62,17 @@ git push -u origin main
 exit
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 pushやpullの前にいつでも`dotweave status`を実行して、変更内容をプレビューできます。
-</Callout>
+</TRCallout>
 
 ## マシンBのセットアップ
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **リモートURLから初期化する**
 
@@ -80,8 +80,8 @@ pushやpullの前にいつでも`dotweave status`を実行して、変更内容�
 dotweave init git@github.com:you/dotfiles.git
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ファイルをローカルパスにpull**
 
@@ -92,8 +92,8 @@ dotweave pull
 dotweaveが`manifest.jsonc`を読み取り、プラットフォーム別パスを解決し、
 シークレットを復号して、すべてのファイルを正しい場所に配置します。
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ## 日常のワークフロー
 
@@ -118,10 +118,10 @@ exit
 dotweave pull
 ```
 
-<Callout>
+<TRCallout>
 パターンは常に、一方で**dotweave push → git push**、
 もう一方で**git pull → dotweave pull**です。
-</Callout>
+</TRCallout>
 
 ## コンフリクトの解決
 
@@ -138,11 +138,11 @@ exit
 dotweave pull        # 解決後の状態をローカルに適用
 ```
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 2台のマシンが、いずれかが`git pull`する前に同じファイルに異なる編集をpushすると、
 通常のGitマージコンフリクトが発生します。syncディレクトリ内で解決してください — 
 dotweave自体は自動マージを行いません。
-</Callout>
+</TRCallout>
 
 ## ヘルスチェック
 
@@ -159,10 +159,10 @@ syncディレクトリの存在、Gitの設定、暗号化キーの状態、ト�
 `dotweave init`してから`dotweave pull`。以降の日常的なpush/pullサイクルは、
 すべてのデバイスで同じです。
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 新しいマシンのOSが異なる場合、dotweaveはプラットフォーム別パスを自動的に解決します。
 [プラットフォーム別パス](/ja/guides/platform-specific-paths/)ガイドをご覧ください。
-</Callout>
+</TRCallout>
 
 ## クイックリファレンス
 

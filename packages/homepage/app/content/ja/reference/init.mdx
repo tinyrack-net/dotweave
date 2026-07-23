@@ -5,7 +5,7 @@ section: reference
 order: 0
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 gitベースのsyncディレクトリを初期化します。
@@ -51,6 +51,6 @@ dotweave init https://github.com/user/dotfiles.git
 dotweave init --key-file ~/dotweave.agekey
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 別のマシンで使用しているage identityがある場合は、`--key-file`で指定するか、既存リポジトリを取り込むときの対話プロンプトに入力すると、secretファイルを復号できます。
-</Callout>
+</TRCallout>

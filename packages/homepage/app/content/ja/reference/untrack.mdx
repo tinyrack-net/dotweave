@@ -5,7 +5,7 @@ section: reference
 order: 5
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 同期対象のパスのトラッキングを停止します。
@@ -43,6 +43,6 @@ trackされたディレクトリ内の子オーバーライドを削除する:
 dotweave untrack .ssh/config
 ```
 
-<Callout>
+<TRCallout>
 `untrack` は `manifest.jsonc` を更新するだけです。ローカルファイルやsyncディレクトリのアーティファクトは削除**しません**。
-</Callout>
+</TRCallout>

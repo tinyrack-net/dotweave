@@ -1,7 +1,7 @@
-import { Badge } from "@tinyrack/ui/components/badge";
-import { Button } from "@tinyrack/ui/components/button";
-import { CodeBlock } from "@tinyrack/ui/components/code-block";
-import { Link } from "@tinyrack/ui/components/link";
+import { TRBadge as Badge } from "@tinyrack/ui/components/badge";
+import { TRButton as Button } from "@tinyrack/ui/components/button";
+import { TRCodeBlock as CodeBlock } from "@tinyrack/ui/components/code-block";
+import { TRLink as Link } from "@tinyrack/ui/components/link";
 
 import { GlobeBackground } from "./globe-background.tsx";
 
@@ -39,8 +39,8 @@ export function DotweaveHome({
         <div className="dotweave-home-actions">
           <Button
             render={<a href={getStartedPath} />}
-            size="lg"
-            variant="primary"
+            uiSize="lg"
+            intent="primary"
           >
             {getStartedLabel}
           </Button>

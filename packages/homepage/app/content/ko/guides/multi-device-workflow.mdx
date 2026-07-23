@@ -5,8 +5,8 @@ section: guides
 order: 6
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 이 가이드에서는 dotweave 사용의 전체 생명주기를 다뤄요. 첫 기기 설정부터
@@ -14,8 +14,8 @@ import { Steps } from "@tinyrack/ui/components/steps";
 
 ## 기기 A에서의 초기 설정
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **dotweave 초기화**
 
@@ -25,8 +25,8 @@ dotweave init
 
 dotweave 앱 데이터 디렉터리 안에 Git으로 관리되는 sync 디렉터리가 생성돼요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일 추적**
 
@@ -38,8 +38,8 @@ dotweave track ~/.ssh/config --mode secret
 
 각 명령어는 sync 디렉터리 안의 `manifest.jsonc`에 항목을 추가해요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **로컬 파일을 sync 디렉터리로 push**
 
@@ -47,8 +47,8 @@ dotweave track ~/.ssh/config --mode secret
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Git으로 commit & 리모트에 push**
 
@@ -62,18 +62,18 @@ git push -u origin main
 exit
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 push나 pull 전에 `dotweave status`를 실행하면 어떤 변경이 있을지 미리 확인할 수
 있어요.
-</Callout>
+</TRCallout>
 
 ## 기기 B 설정
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **리모트 URL로 초기화**
 
@@ -81,8 +81,8 @@ push나 pull 전에 `dotweave status`를 실행하면 어떤 변경이 있을지
 dotweave init git@github.com:you/dotfiles.git
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일을 로컬 경로로 pull**
 
@@ -93,8 +93,8 @@ dotweave pull
 dotweave가 `manifest.jsonc`을 읽고, 플랫폼별 경로를 해석하고, 시크릿을
 복호화한 뒤 모든 파일을 올바른 위치에 써줘요.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ## 일상적인 워크플로우
 
@@ -119,10 +119,10 @@ exit
 dotweave pull
 ```
 
-<Callout>
+<TRCallout>
 패턴은 항상 한쪽에서 **dotweave push → git push**, 다른 쪽에서
 **git pull → dotweave pull**이에요.
-</Callout>
+</TRCallout>
 
 ## 충돌 처리
 
@@ -138,11 +138,11 @@ exit
 dotweave pull        # 해결된 상태를 로컬에 적용
 ```
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 두 기기가 같은 파일에 다른 수정을 push한 뒤 어느 쪽도 `git pull`을 하지 않으면,
 일반적인 Git merge 충돌이 발생해요. sync 디렉터리 안에서 직접 해결하세요 —
 dotweave 자체는 자동 병합을 하지 않아요.
-</Callout>
+</TRCallout>
 
 ## 상태 확인
 
@@ -159,10 +159,10 @@ sync 디렉터리의 존재 여부, Git 설정, 암호화 키, 추적 경로의 
 — 리모트 URL로 `dotweave init`을 하고 `dotweave pull`을 하면 돼요. 이후의 일상적인
 push/pull 사이클은 모든 기기에서 동일해요.
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 새 기기가 다른 OS라도 dotweave가 플랫폼별 경로를 자동으로 해석해 줘요.
 [플랫폼별 경로](/ko/guides/platform-specific-paths/) 가이드를 참고하세요.
-</Callout>
+</TRCallout>
 
 ## 빠른 참조
 

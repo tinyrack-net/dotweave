@@ -5,7 +5,7 @@ section: guides
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 모든 추적 항목에는 **동기화 모드**가 있어요. push와 pull 때 dotweave가 해당 항목을 어떻게 처리할지를 결정해요. `normal`, `secret`, `ignore` 세 가지 모드 중에서 선택할 수 있어요.
@@ -50,9 +50,9 @@ dotweave track ~/.aws/credentials --mode secret
 
 `pull` 중에 dotweave는 age 비밀 키로 파일을 복호화한 뒤 디스크에 써요. 전체 설정 방법은 [시크릿 파일 동기화](/ko/guides/syncing-secrets/)를 참고하세요.
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 secret 모드는 파일 **내용**을 암호화하지만, 파일 이름과 경로는 sync 디렉터리에 그대로 보여요. 경로 자체가 민감한 경우에는 이 점을 유의하세요.
-</Callout>
+</TRCallout>
 
 ---
 

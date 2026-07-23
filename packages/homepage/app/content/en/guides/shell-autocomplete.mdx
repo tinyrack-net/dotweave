@@ -5,7 +5,7 @@ section: guides
 order: 8
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 Tab completion lets you discover commands, flags, and arguments without
@@ -68,13 +68,13 @@ Then reload your profile:
 . $PROFILE
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 After adding the eval line, open a new terminal (or source the config file) and
 try typing `dotweave ` followed by a Tab. You should see a list of available
 commands.
-</Callout>
+</TRCallout>
 
-<Callout>
+<TRCallout>
 If you installed dotweave with a version manager like `volta` or `fnm`, make
 sure the `dotweave` binary is on your `PATH` before the eval line runs.
-</Callout>
+</TRCallout>

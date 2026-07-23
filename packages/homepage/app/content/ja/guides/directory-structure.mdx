@@ -5,8 +5,8 @@ section: guides
 order: 0
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { FileTree } from "@tinyrack/ui/components/file-tree";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRFileTree } from "@tinyrack/ui/components/file-tree";
 
 
 dotweaveが作成するものはすべて1つのアプリデータディレクトリにまとまっています。Linux、macOS、WSLでは`$XDG_CONFIG_HOME/dotweave`が既定で、`XDG_CONFIG_HOME`が未設定の場合は`~/.config/dotweave`を使います。Windowsでは`%APPDATA%\dotweave`が既定で、未設定の場合は`%LOCALAPPDATA%\dotweave`、`%USERPROFILE%\AppData\Roaming\dotweave`、最後にOSホームディレクトリの`AppData\Roaming\dotweave`へフォールバックします。
@@ -15,52 +15,54 @@ dotweaveが作成するものはすべて1つのアプリデータディレク�
 
 ## 全体像
 
-<FileTree.Root>
-  <FileTree.Directory name="&lt;dotweave-home&gt;">
-    <FileTree.Root>
-      <FileTree.File>settings.jsonc</FileTree.File>
-      <FileTree.File>keys.txt</FileTree.File>
-      <FileTree.Directory name="repository">
-        <FileTree.Root>
-          <FileTree.File>manifest.jsonc</FileTree.File>
-          <FileTree.Directory name="default">
-            <FileTree.Root>
-              <FileTree.File>.gitconfig</FileTree.File>
-              <FileTree.File>.zshrc</FileTree.File>
-              <FileTree.Directory name=".config">
-                <FileTree.Root>
-                  <FileTree.Directory name="nvim">
-                    <FileTree.Root>
-                      <FileTree.File>init.lua</FileTree.File>
-                    </FileTree.Root>
-                  </FileTree.Directory>
-                </FileTree.Root>
-              </FileTree.Directory>
-            </FileTree.Root>
-          </FileTree.Directory>
-          <FileTree.Directory name="work">
-            <FileTree.Root>
-              <FileTree.Directory name=".config">
-                <FileTree.Root>
-                  <FileTree.Directory name="work-tool">
-                    <FileTree.Root>
-                      <FileTree.File>config.json</FileTree.File>
-                    </FileTree.Root>
-                  </FileTree.Directory>
-                </FileTree.Root>
-              </FileTree.Directory>
-              <FileTree.Directory name=".ssh">
-                <FileTree.Root>
-                  <FileTree.File>config.dotweave.secret</FileTree.File>
-                </FileTree.Root>
-              </FileTree.Directory>
-            </FileTree.Root>
-          </FileTree.Directory>
-        </FileTree.Root>
-      </FileTree.Directory>
-    </FileTree.Root>
-  </FileTree.Directory>
-</FileTree.Root>
+<TRFileTree>
+  {<ul>
+    <li>&lt;dotweave-home&gt;/
+      <ul>
+        <li>settings.jsonc</li>
+        <li>keys.txt</li>
+        <li>repository/
+          <ul>
+            <li>manifest.jsonc</li>
+            <li>default/
+              <ul>
+                <li>.gitconfig</li>
+                <li>.zshrc</li>
+                <li>.config/
+                  <ul>
+                    <li>nvim/
+                      <ul>
+                        <li>init.lua</li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li>work/
+              <ul>
+                <li>.config/
+                  <ul>
+                    <li>work-tool/
+                      <ul>
+                        <li>config.json</li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+                <li>.ssh/
+                  <ul>
+                    <li>config.dotweave.secret</li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>}
+</TRFileTree>
 
 ---
 
@@ -98,9 +100,9 @@ syncリポジトリは`$DOTWEAVE_HOME/repository`に保存されます。
 
 [シークレットファイル](/ja/guides/syncing-secrets)の暗号化と復号に使うageプライベートキーです。`dotweave init`の実行時に作成され、`AGE-SECRET-KEY-`で始まります。
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 `keys.txt`は安全な場所にバックアップしてください — パスワードマネージャーがおすすめです。紛失すると、シークレットファイルを復号できなくなります。
-</Callout>
+</TRCallout>
 
 ### `settings.jsonc` — ユーザー設定
 
@@ -149,6 +151,6 @@ syncリポジトリは`$DOTWEAVE_HOME/repository`に保存されます。
   - **`profiles`** — このエントリが属する[プロファイル](/ja/guides/profiles)（省略可。省略時はグローバル）
   - **`permission`** — `"0600"`のような8進数のファイルパーミッション（省略可）
 
-<Callout variant="note">
+<TRCallout variant="note">
 `manifest.jsonc`を手動で編集する必要はほとんどありません。`dotweave track`や`dotweave untrack`コマンドが管理してくれます。
-</Callout>
+</TRCallout>

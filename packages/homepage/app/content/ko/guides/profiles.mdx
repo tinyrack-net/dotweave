@@ -5,7 +5,7 @@ section: guides
 order: 4
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 모든 설정 파일이 모든 기기에 필요하지는 않아요. 업무용 노트북에는 업무 인증 정보가, 개인 데스크톱에는 GPU 설정이, Linux 서버에는 macOS 설정이 필요 없어요. **프로필**을 사용하면 추적 항목을 이름 붙인 그룹으로 정리해서 각 기기가 필요한 것만 하나의 저장소로 동기화할 수 있어요.
@@ -127,6 +127,6 @@ sync-directory/
         └── personal-app/
 ```
 
-<Callout variant="note">
+<TRCallout variant="note">
 여러 프로필에 할당된 항목(예: `--profile work --profile personal`)은 sync 디렉터리에 한 번만 저장되고, 해당 프로필 중 하나라도 활성화되면 동기화돼요.
-</Callout>
+</TRCallout>

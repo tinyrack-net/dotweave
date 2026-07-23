@@ -5,7 +5,7 @@ section: guides
 order: 8
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 タブ補完を使えば、ドキュメントを開かなくてもコマンド、フラグ、引数を素早く確認できます。dotweaveは**Bash**、**Zsh**、**Fish**、**PowerShell**に対応しています。
@@ -67,12 +67,12 @@ dotweave autocomplete powershell | Invoke-Expression
 . $PROFILE
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 eval/sourceの行を追加したら、新しいターミナルを開く（または設定ファイルをsourceする）して、
 `dotweave `の後にTabキーを押してみてください。利用可能なコマンドの一覧が表示されるはずです。
-</Callout>
+</TRCallout>
 
-<Callout>
+<TRCallout>
 `volta`や`fnm`などのバージョンマネージャーでdotweaveをインストールした場合は、
 eval/sourceの行が実行される前に`dotweave`バイナリが`PATH`に含まれていることを確認してください。
-</Callout>
+</TRCallout>

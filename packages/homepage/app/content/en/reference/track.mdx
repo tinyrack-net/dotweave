@@ -5,7 +5,7 @@ section: reference
 order: 1
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 Track local files or directories for syncing.
@@ -67,6 +67,6 @@ Customize the repository path and restore permission:
 dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
 ```
 
-<Callout>
+<TRCallout>
 `track` only updates `manifest.jsonc`. Run `dotweave push` afterward to copy files into the sync directory.
-</Callout>
+</TRCallout>

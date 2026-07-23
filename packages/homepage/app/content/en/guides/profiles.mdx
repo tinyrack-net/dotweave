@@ -5,7 +5,7 @@ section: guides
 order: 4
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 Not every config file belongs on every machine. Your work laptop needs work credentials, your personal desktop needs GPU settings, and your Linux server doesn't care about macOS configs. **Profiles** let you organize tracked entries into named groups so each machine syncs only what it needs — all from a single repository.
@@ -127,6 +127,6 @@ sync-directory/
         └── personal-app/
 ```
 
-<Callout variant="note">
+<TRCallout variant="note">
 An entry assigned to multiple profiles (e.g., `--profile work --profile personal`) is stored once in the sync directory and synced whenever either profile is active.
-</Callout>
+</TRCallout>

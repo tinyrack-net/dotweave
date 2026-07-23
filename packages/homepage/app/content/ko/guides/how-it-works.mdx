@@ -5,8 +5,8 @@ section: guides
 order: 7
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 내부 동작을 이해하면 dotweave를 더 예측 가능하게 사용할 수 있어요.
@@ -38,75 +38,75 @@ dotweave는 뒤에서 몰래 파일을 수정하지 않아요. `push`로 미러�
 
 ### Push 흐름
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **`manifest.jsonc` 로드**: dotweave가 설정 파일을 읽어 추적 중인 모든
 파일과 설정을 파악해요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **로컬 파일 탐색**: 각 항목에 대해 현재 플랫폼에 맞는 `localPath`의
 파일을 읽어요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **기존 파일과 비교**: sync 디렉터리의 파일이 이미 동일하면 아무것도
 쓰지 않아요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **시크릿 암호화**: secret으로 표시된 항목은
 [age](https://github.com/FiloSottile/age)로 암호화한 뒤 저장해요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일 쓰기**: (암호화된 경우도 포함해서) 내용을 sync 디렉터리의
 `repoPath`에 써요.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ### Pull 흐름
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **`manifest.jsonc` 로드**: 같은 설정 파일, 같은 해석 방식.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일 읽기**: sync 디렉터리에서 각 파일을 읽어요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **시크릿 복호화**: 암호화된 파일은 로컬 age 키로 복호화해요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **로컬 경로에 쓰기**: 내용을 해석된 `localPath`에 써요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **퍼미션 적용**: 설정 파일에 기록된 파일 퍼미션을 복원해서 실수로
 모든 사용자가 읽을 수 있게 되는 걸 방지해요.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout>
+<TRCallout>
 `push`도 `pull`도 Git commit을 만들지 않아요. `git add`, `git commit`,
 `git push`는 직접 실행해야 해요. 이렇게 해서 commit 히스토리를 완전히
 통제할 수 있어요.
-</Callout>
+</TRCallout>
 
 ## 설계 결정
 
@@ -149,7 +149,7 @@ sync 디렉터리는 예측 가능한 레이아웃을 가진 일반 Git 저장�
 └── ...              ← dotweave push로 생성된 파일들
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 `dotweave cd`를 실행하면 sync 디렉터리로 바로 이동해서 직접 확인하거나 관리할 수
 있어요.
-</Callout>
+</TRCallout>

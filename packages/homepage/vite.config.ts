@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import tailwindcss from "@tailwindcss/vite";
 import { tinyrackDocs } from "@tinyrack/docs/vite";
 import { defineConfig } from "vite";
 
@@ -11,6 +12,6 @@ const cliPackage = JSON.parse(
 
 export default defineConfig({
   define: { __CLI_VERSION__: JSON.stringify(cliPackage.version) },
-  plugins: tinyrackDocs(config, { root: import.meta.dirname }),
+  plugins: [tailwindcss(), tinyrackDocs(config, { root: import.meta.dirname })],
   server: { allowedHosts: true, host: "0.0.0.0", port: 5432, strictPort: true },
 });

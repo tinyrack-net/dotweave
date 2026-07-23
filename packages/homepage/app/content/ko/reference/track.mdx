@@ -5,7 +5,7 @@ section: reference
 order: 1
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 로컬 파일이나 디렉터리를 동기화 대상으로 등록해요.
@@ -67,6 +67,6 @@ dotweave track .ssh/config --mode ignore
 dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
 ```
 
-<Callout>
+<TRCallout>
 `track`은 `manifest.jsonc`만 갱신해요. 파일을 sync 디렉터리에 복사하려면 `dotweave push`를 실행하세요.
-</Callout>
+</TRCallout>
