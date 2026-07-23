@@ -5,7 +5,7 @@ section: reference
 order: 0
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 Initialize the git-backed sync directory.
@@ -51,6 +51,7 @@ Initialize with an existing age secret key:
 dotweave init --key-file ~/dotweave.agekey
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 If you pass a repository to `dotweave init`, provide the existing age private key with `--key-file` or enter it at the interactive prompt so dotweave can decrypt your secret files.
-</Callout>
+</TRCallout>
+

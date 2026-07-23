@@ -5,9 +5,9 @@ section: overview
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
-import { Tabs } from "@tinyrack/ui/components/tabs";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
 ## 前提条件
@@ -18,28 +18,28 @@ import { Tabs } from "@tinyrack/ui/components/tabs";
 
 ## インストール
 
-<Tabs.Root defaultValue="windows">
-<Tabs.List aria-label="Installation method">
-<Tabs.Tab value="windows">Windows</Tabs.Tab>
-<Tabs.Tab value="macos-linux">macOS / Linux</Tabs.Tab>
-<Tabs.Tab value="npm">npm</Tabs.Tab>
-<Tabs.Indicator />
-</Tabs.List>
-<Tabs.Panel value="windows">
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Tab value="npm">npm</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
 
 ```powershell
 winget install tinyrack.dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="macos-linux">
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
 
 ```bash
 brew install tinyrack-net/tap/dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="npm">
+</TRTabs.Panel>
+<TRTabs.Panel value="npm">
 
 npmはすべてのプラットフォームで使用でき、cross-platform fallbackとしても使えます。
 
@@ -47,8 +47,8 @@ npmはすべてのプラットフォームで使用でき、cross-platform fallb
 npm install -g @tinyrack/dotweave
 ```
 
-</Tabs.Panel>
-</Tabs.Root>
+</TRTabs.Panel>
+</TRTabs.Root>
 
 ---
 
@@ -56,8 +56,8 @@ npm install -g @tinyrack/dotweave
 
 dotweaveを初めて使う場合は、以下の手順で新しいsyncディレクトリを作成します。
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **初期化**
 
@@ -69,8 +69,8 @@ dotweave init
 
 これにより、dotweaveのアプリデータディレクトリにGitリポジトリとageのidentityが設定されます。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ファイルをトラッキング**
 
@@ -88,8 +88,8 @@ SSHキーなどの機密ファイルにはsecretモードを使います：
 dotweave track --mode secret ~/.ssh/config
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **syncディレクトリにpush**
 
@@ -99,8 +99,8 @@ dotweave track --mode secret ~/.ssh/config
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Gitでcommit & push**
 
@@ -113,12 +113,12 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
   セットアップが完了したら、[ディレクトリ構造](/ja/guides/directory-structure/)ガイドで、dotweaveが設定ファイルと同期データをどこに保存するかを確認してみてください。
-</Callout>
+</TRCallout>
 
 ---
 
@@ -126,8 +126,8 @@ git push -u origin main
 
 新しいマシンで、既存のsyncディレクトリをcloneします：
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **cloneして初期化**
 
@@ -141,8 +141,8 @@ dotweave init <your-repo-url>
 dotweave init <your-repo-url> --key-file ~/dotweave.agekey
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ファイルをpull**
 
@@ -152,12 +152,12 @@ dotweave init <your-repo-url> --key-file ~/dotweave.agekey
 dotweave pull
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="note">
+<TRCallout variant="note">
   syncディレクトリに暗号化されたシークレットが含まれている場合、すべてのマシンで同じageプライベートキーが必要です。詳しくは[シークレットファイルの同期](/ja/guides/syncing-secrets/)をご覧ください。
-</Callout>
+</TRCallout>
 
 ---
 
@@ -169,3 +169,5 @@ dotweave pull
 - [ファイルのトラッキング](/ja/guides/tracking-files/) — トラッキングオプションの詳細
 - [同期モード](/ja/guides/sync-modes/) — normal、secret、ignoreモード
 - [シークレットファイルの同期](/ja/guides/syncing-secrets/) — ageで機密ファイルを暗号化する
+
+

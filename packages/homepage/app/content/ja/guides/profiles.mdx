@@ -5,7 +5,7 @@ section: guides
 order: 4
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 すべての設定ファイルがすべてのマシンに必要なわけではありません。仕事用のノートPCには仕事のクレデンシャルが、個人のデスクトップにはGPU設定が、LinuxサーバーにはmacOSの設定は不要です。**プロファイル**を使えば、トラッキングエントリを名前付きグループに分類し、各マシンが必要なものだけを同期できます — すべて1つのリポジトリから。
@@ -127,6 +127,7 @@ sync-directory/
         └── personal-app/
 ```
 
-<Callout variant="note">
+<TRCallout variant="note">
 複数のプロファイルに割り当てられたエントリ（例：`--profile work --profile personal`）は、syncディレクトリ内に1回だけ保存され、いずれかのプロファイルがアクティブなときに同期されます。
-</Callout>
+</TRCallout>
+

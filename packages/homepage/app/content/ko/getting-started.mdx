@@ -5,9 +5,9 @@ section: overview
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
-import { Tabs } from "@tinyrack/ui/components/tabs";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
 ## 사전 준비
@@ -18,28 +18,28 @@ import { Tabs } from "@tinyrack/ui/components/tabs";
 
 ## 설치
 
-<Tabs.Root defaultValue="windows">
-<Tabs.List aria-label="Installation method">
-<Tabs.Tab value="windows">Windows</Tabs.Tab>
-<Tabs.Tab value="macos-linux">macOS / Linux</Tabs.Tab>
-<Tabs.Tab value="npm">npm</Tabs.Tab>
-<Tabs.Indicator />
-</Tabs.List>
-<Tabs.Panel value="windows">
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Tab value="npm">npm</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
 
 ```powershell
 winget install tinyrack.dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="macos-linux">
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
 
 ```bash
 brew install tinyrack-net/tap/dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="npm">
+</TRTabs.Panel>
+<TRTabs.Panel value="npm">
 
 npm은 모든 플랫폼에서 사용할 수 있고, cross-platform fallback으로도 사용할 수 있어요.
 
@@ -47,8 +47,8 @@ npm은 모든 플랫폼에서 사용할 수 있고, cross-platform fallback으�
 npm install -g @tinyrack/dotweave
 ```
 
-</Tabs.Panel>
-</Tabs.Root>
+</TRTabs.Panel>
+</TRTabs.Root>
 
 ---
 
@@ -56,8 +56,8 @@ npm install -g @tinyrack/dotweave
 
 dotweave를 처음 사용한다면, 아래 단계를 따라 새로운 sync 디렉터리를 만들어 보세요.
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **초기화**
 
@@ -69,8 +69,8 @@ dotweave init
 
 dotweave 앱 데이터 디렉터리에 Git 저장소와 age identity가 설정돼요.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일 추적**
 
@@ -88,8 +88,8 @@ SSH 키 같은 민감한 파일은 secret 모드를 사용하세요:
 dotweave track --mode secret ~/.ssh/config
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **sync 디렉터리로 push**
 
@@ -99,8 +99,8 @@ dotweave track --mode secret ~/.ssh/config
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Git으로 commit & push**
 
@@ -113,12 +113,12 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
   설정을 마쳤다면, [디렉터리 구조](/ko/guides/directory-structure/) 가이드에서 dotweave가 config과 동기화된 파일을 어디에 저장하는지 확인해 보세요.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -126,8 +126,8 @@ git push -u origin main
 
 새 기기에서는 기존 sync 디렉터리를 clone해서 연결할 수 있어요:
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Clone & 초기화**
 
@@ -141,8 +141,8 @@ dotweave init <your-repo-url> --key-file ~/dotweave.agekey
 dotweave init <your-repo-url>
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **파일 pull**
 
@@ -152,12 +152,12 @@ dotweave init <your-repo-url>
 dotweave pull
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="note">
+<TRCallout variant="note">
   sync 디렉터리에 암호화된 시크릿이 있다면, 모든 기기에 같은 age 비밀 키가 있어야 해요. 자세한 내용은 [시크릿 파일 동기화](/ko/guides/syncing-secrets/)를 참고하세요.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -169,3 +169,5 @@ dotweave pull
 - [파일 추적하기](/ko/guides/tracking-files/): 추적 옵션 자세히 알아보기
 - [동기화 모드](/ko/guides/sync-modes/): normal, secret, ignore 모드
 - [시크릿 파일 동기화](/ko/guides/syncing-secrets/): age로 민감한 파일 암호화하기
+
+

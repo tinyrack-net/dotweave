@@ -5,9 +5,9 @@ section: overview
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
-import { Tabs } from "@tinyrack/ui/components/tabs";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
 ## Prerequisites
@@ -18,28 +18,28 @@ import { Tabs } from "@tinyrack/ui/components/tabs";
 
 ## Installation
 
-<Tabs.Root defaultValue="windows">
-<Tabs.List aria-label="Installation method">
-<Tabs.Tab value="windows">Windows</Tabs.Tab>
-<Tabs.Tab value="macos-linux">macOS / Linux</Tabs.Tab>
-<Tabs.Tab value="npm">npm</Tabs.Tab>
-<Tabs.Indicator />
-</Tabs.List>
-<Tabs.Panel value="windows">
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Tab value="npm">npm</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
 
 ```powershell
 winget install tinyrack.dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="macos-linux">
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
 
 ```bash
 brew install tinyrack-net/tap/dotweave
 ```
 
-</Tabs.Panel>
-<Tabs.Panel value="npm">
+</TRTabs.Panel>
+<TRTabs.Panel value="npm">
 
 npm works on every platform and can be used as a cross-platform fallback.
 
@@ -47,8 +47,8 @@ npm works on every platform and can be used as a cross-platform fallback.
 npm install -g @tinyrack/dotweave
 ```
 
-</Tabs.Panel>
-</Tabs.Root>
+</TRTabs.Panel>
+</TRTabs.Root>
 
 ---
 
@@ -56,8 +56,8 @@ npm install -g @tinyrack/dotweave
 
 If this is your first time using dotweave, follow these steps to create a new sync directory.
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Initialize**
 
@@ -69,8 +69,8 @@ dotweave init
 
 This sets up the dotweave app-data directory with a Git repository and an age identity.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Track your files**
 
@@ -88,8 +88,8 @@ For sensitive files like SSH keys, use secret mode:
 dotweave track --mode secret ~/.ssh/config
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Push to the sync directory**
 
@@ -99,8 +99,8 @@ Copy your tracked files into the sync directory:
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Commit and push with Git**
 
@@ -113,12 +113,12 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
   After setting up, check out the [Directory Structure](/en/guides/directory-structure/) guide to see where dotweave stores your config and synced files.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -126,8 +126,8 @@ git push -u origin main
 
 On a new machine, clone your existing sync directory:
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Clone and initialize**
 
@@ -141,8 +141,8 @@ This clones the repository into the dotweave app-data directory under `repositor
 dotweave init <your-repo-url>
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Pull your files**
 
@@ -152,12 +152,12 @@ Restore all tracked files to their local paths:
 dotweave pull
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="note">
+<TRCallout variant="note">
   If your sync directory contains encrypted secrets, you need the same age private key on all machines. See [Syncing Secrets](/en/guides/syncing-secrets/) for details.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -169,3 +169,5 @@ Now that you're set up, explore the guides:
 - [Tracking Files](/en/guides/tracking-files/) — learn more about tracking options
 - [Sync Modes](/en/guides/sync-modes/) — normal, secret, and ignore modes
 - [Syncing Secrets](/en/guides/syncing-secrets/) — encrypt sensitive files with age
+
+

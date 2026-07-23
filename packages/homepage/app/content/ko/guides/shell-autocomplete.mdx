@@ -5,7 +5,7 @@ section: guides
 order: 8
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 탭 자동완성을 사용하면 문서를 찾지 않아도 명령어, 플래그, 인자를 발견할 수
@@ -68,12 +68,13 @@ dotweave autocomplete powershell | Invoke-Expression
 . $PROFILE
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 eval 줄을 추가한 후, 새 터미널을 열거나 설정 파일을 source한 뒤 `dotweave `를
 입력하고 Tab을 눌러 보세요. 사용 가능한 명령어 목록이 나타나야 해요.
-</Callout>
+</TRCallout>
 
-<Callout>
+<TRCallout>
 `volta`나 `fnm` 같은 버전 관리자로 dotweave를 설치했다면, eval 줄이 실행되기
 전에 `dotweave` 바이너리가 `PATH`에 포함되어 있는지 확인하세요.
-</Callout>
+</TRCallout>
+

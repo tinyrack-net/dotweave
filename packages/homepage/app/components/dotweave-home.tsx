@@ -1,7 +1,7 @@
-import { Badge } from "@tinyrack/ui/components/badge";
-import { Button } from "@tinyrack/ui/components/button";
-import { CodeBlock } from "@tinyrack/ui/components/code-block";
-import { Link } from "@tinyrack/ui/components/link";
+import { TRBadge } from "@tinyrack/ui/components/badge";
+import { TRButton } from "@tinyrack/ui/components/button";
+import { TRCodeBlock } from "@tinyrack/ui/components/code-block";
+import { TRLink } from "@tinyrack/ui/components/link";
 
 import { GlobeBackground } from "./globe-background.tsx";
 
@@ -33,18 +33,20 @@ export function DotweaveHome({
     <section className="dotweave-home">
       <GlobeBackground />
       <div className="dotweave-home-content">
-        <Badge variant="success">Dotweave v{__CLI_VERSION__}</Badge>
+        <TRBadge variant="success">Dotweave v{__CLI_VERSION__}</TRBadge>
         <h1>{tagline}</h1>
         <p className="dotweave-home-copy">{body}</p>
         <div className="dotweave-home-actions">
-          <Button
+          <TRButton
             render={<a href={getStartedPath} />}
-            size="lg"
-            variant="primary"
+            intent="primary"
+            uiSize="lg"
           >
             {getStartedLabel}
-          </Button>
-          <Link href="https://github.com/tinyrack-net/dotweave">GitHub →</Link>
+          </TRButton>
+          <TRLink href="https://github.com/tinyrack-net/dotweave">
+            GitHub →
+          </TRLink>
         </div>
         <section
           aria-label="Dotweave terminal example"
@@ -55,7 +57,7 @@ export function DotweaveHome({
             <span />
             <span />
           </div>
-          <CodeBlock code={terminalSession} language="bash" />
+          <TRCodeBlock code={terminalSession} language="bash" />
         </section>
       </div>
     </section>

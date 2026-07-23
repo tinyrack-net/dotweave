@@ -5,8 +5,8 @@ section: guides
 order: 6
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 This guide walks through the entire lifecycle of using dotweave — from setting up
@@ -14,8 +14,8 @@ your first machine to keeping multiple devices in sync every day.
 
 ## Initial setup on Machine A
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Initialize dotweave**
 
@@ -25,8 +25,8 @@ dotweave init
 
 This creates a Git-backed sync directory in dotweave's app-data directory.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Track your files**
 
@@ -38,8 +38,8 @@ dotweave track ~/.ssh/config --mode secret
 
 Each command adds an entry to `manifest.jsonc` inside the sync directory.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Push local files into the sync directory**
 
@@ -47,8 +47,8 @@ Each command adds an entry to `manifest.jsonc` inside the sync directory.
 dotweave push
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Commit and push to a remote**
 
@@ -62,18 +62,18 @@ git push -u origin main
 exit
 ```
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 Run `dotweave status` at any point to preview what would change before you
 actually push or pull.
-</Callout>
+</TRCallout>
 
 ## Setting up Machine B
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Initialize from the remote URL**
 
@@ -81,8 +81,8 @@ actually push or pull.
 dotweave init git@github.com:you/dotfiles.git
 ```
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Pull files to their local paths**
 
@@ -93,8 +93,8 @@ dotweave pull
 dotweave reads `manifest.jsonc`, resolves platform-specific paths, decrypts
 any secrets, and writes every file to the correct location.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ## Daily workflow
 
@@ -119,10 +119,10 @@ exit
 dotweave pull
 ```
 
-<Callout>
+<TRCallout>
 The pattern is always **dotweave push → git push** on one side and
 **git pull → dotweave pull** on the other.
-</Callout>
+</TRCallout>
 
 ## Handling conflicts
 
@@ -139,11 +139,11 @@ exit
 dotweave pull        # apply the resolved state locally
 ```
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 If two machines push different edits to the same file before either does a
 `git pull`, you'll get a normal Git merge conflict. Resolve it inside the sync
 directory — dotweave itself doesn't auto-merge.
-</Callout>
+</TRCallout>
 
 ## Checking health
 
@@ -160,11 +160,11 @@ Adding a third (or fourth, or fifth) machine follows the same steps as
 Machine B — `dotweave init` with the remote URL, then `dotweave pull`. From
 there the daily push/pull cycle is identical on every device.
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 If the new machine runs a different OS, dotweave automatically resolves
 platform-specific paths. See the
 [Platform-Specific Paths](/en/guides/platform-specific-paths/) guide.
-</Callout>
+</TRCallout>
 
 ## Quick reference
 
@@ -175,3 +175,5 @@ platform-specific paths. See the
 | Receive upstream edits      | `git pull` → `dotweave pull`                               |
 | Resolve conflicts           | `dotweave cd` → fix files → `git commit` → `git push`     |
 | Check setup health          | `dotweave doctor`                                          |
+
+

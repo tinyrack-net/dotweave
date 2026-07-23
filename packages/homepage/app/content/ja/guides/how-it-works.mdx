@@ -5,8 +5,8 @@ section: guides
 order: 7
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 内部の仕組みを理解すると、dotweaveの動作が予測しやすくなります。
@@ -38,76 +38,76 @@ dotweaveはファイルを勝手に変更しません — `push`でミラーを�
 
 ### pushフロー
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **`manifest.jsonc`を読み込む** — dotweaveが設定ファイルを読み取り、
 すべてのトラッキングファイルとその設定を把握します。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ローカルファイルを走査する** — 各エントリについて、現在のプラットフォームの
 解決済み`localPath`にあるファイルを読み取ります。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **既存のアーティファクトと比較する** — syncディレクトリのファイルがすでに
 同一であれば、何も書き込みません。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **シークレットを暗号化する** — secretとマークされたエントリは、書き込み前に
 [age](https://github.com/FiloSottile/age)で暗号化されます。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **アーティファクトを書き込む** — （暗号化されている場合もある）内容が
 syncディレクトリ内の`repoPath`に書き込まれます。
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ### pullフロー
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **`manifest.jsonc`を読み込む** — 同じ設定ファイル、同じ解決ロジックです。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **アーティファクトを読み取る** — dotweaveがsyncディレクトリから各ファイルを
 読み取ります。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **シークレットを復号する** — 暗号化されたファイルはローカルのageキーで
 復号されます。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **ローカルパスに書き込む** — 内容が解決済みの`localPath`に書き込まれます。
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **パーミッションを適用する** — 設定ファイルに記録されたファイルパーミッションが
 復元され、意図せずファイルが誰でも読める状態になることを防ぎます。
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout>
+<TRCallout>
 `push`も`pull`もGitのcommitを作成しません。`git add`、`git commit`、
 `git push`は自分で実行します。これにより、commit履歴を完全にコントロールできます。
-</Callout>
+</TRCallout>
 
 ## 設計上の判断
 
@@ -151,6 +151,8 @@ syncディレクトリは予測可能なレイアウトの通常のGitリポジ�
 └── ...              ← dotweave pushで書き込まれるアーティファクト
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 syncディレクトリを直接確認・管理したいときは、`dotweave cd`で移動できます。
-</Callout>
+</TRCallout>
+
+
