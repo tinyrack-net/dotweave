@@ -57,6 +57,56 @@ describe("Dotweave documentation contract", () => {
     expect(violations).toEqual([]);
   });
 
+  it("ships built-in locale messages for every configured locale", () => {
+    const manifest = loadDocsManifest(config, { root });
+
+    expect(manifest.locales["en"]?.messages.navigation).toBe("Documentation");
+    expect(manifest.locales["en"]?.messages.search).toBe(
+      "Search documentation",
+    );
+    expect(manifest.locales["ko"]?.messages.navigation).toBe("문서");
+    expect(manifest.locales["ko"]?.messages.search).toBe("문서 검색");
+    expect(manifest.locales["ko"]?.messages.useLightColorScheme).toBe(
+      "밝은 색상 모드로 전환",
+    );
+    expect(manifest.locales["ja"]?.messages.navigation).toBe("ドキュメント");
+    expect(manifest.locales["ja"]?.messages.search).toBe("ドキュメントを検索");
+    expect(manifest.locales["ja"]?.messages.useLightColorScheme).toBe(
+      "ライトカラースキームに切り替え",
+    );
+
+    for (const locale of ["en", "ko", "ja"] as const) {
+      expect(manifest.locales[locale]?.messages.backToMainMenu).toBeTypeOf(
+        "string",
+      );
+      expect(manifest.locales[locale]?.messages.siteNavigation).toBeTypeOf(
+        "string",
+      );
+      expect(manifest.locales[locale]?.messages.useDarkColorScheme).toBeTypeOf(
+        "string",
+      );
+    }
+  });
+
+  it("emits locale-aware section labels from the section configuration", () => {
+    const manifest = loadDocsManifest(config, { root });
+
+    const localized = (locale: string, id: string) =>
+      manifest.pages.find(
+        (page) => page.locale === locale && page.section === id,
+      )?.sectionLabel;
+
+    expect(localized("en", "overview")).toBe("Overview");
+    expect(localized("ko", "overview")).toBe("시작하기");
+    expect(localized("ja", "overview")).toBe("はじめに");
+    expect(localized("en", "guides")).toBe("Guides");
+    expect(localized("ko", "guides")).toBe("가이드");
+    expect(localized("ja", "guides")).toBe("ガイド");
+    expect(localized("en", "reference")).toBe("Command Reference");
+    expect(localized("ko", "reference")).toBe("명령어 레퍼런스");
+    expect(localized("ja", "reference")).toBe("コマンドリファレンス");
+  });
+
   it("keeps every localized internal content link valid", async () => {
     const manifest = loadDocsManifest(config, { root });
     const routes = new Set(manifest.pages.map((page) => page.path));

@@ -5,8 +5,8 @@ section: guides
 order: 0
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { FileTree } from "@tinyrack/ui/components/file-tree";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRFileTree } from "@tinyrack/ui/components/file-tree";
 
 
 Everything dotweave creates lives under a single app-data directory. On Linux, macOS, and WSL this defaults to `$XDG_CONFIG_HOME/dotweave`, or `~/.config/dotweave` when `XDG_CONFIG_HOME` is unset. On Windows it defaults to `%APPDATA%\dotweave`, then falls back to `%LOCALAPPDATA%\dotweave`, `%USERPROFILE%\AppData\Roaming\dotweave`, and finally the OS home directory's `AppData\Roaming\dotweave`.
@@ -15,52 +15,25 @@ Everything dotweave creates lives under a single app-data directory. On Linux, m
 
 ## The Full Picture
 
-<FileTree.Root>
-  <FileTree.Directory name="&lt;dotweave-home&gt;">
-    <FileTree.Root>
-      <FileTree.File>settings.jsonc</FileTree.File>
-      <FileTree.File>keys.txt</FileTree.File>
-      <FileTree.Directory name="repository">
-        <FileTree.Root>
-          <FileTree.File>manifest.jsonc</FileTree.File>
-          <FileTree.Directory name="default">
-            <FileTree.Root>
-              <FileTree.File>.gitconfig</FileTree.File>
-              <FileTree.File>.zshrc</FileTree.File>
-              <FileTree.Directory name=".config">
-                <FileTree.Root>
-                  <FileTree.Directory name="nvim">
-                    <FileTree.Root>
-                      <FileTree.File>init.lua</FileTree.File>
-                    </FileTree.Root>
-                  </FileTree.Directory>
-                </FileTree.Root>
-              </FileTree.Directory>
-            </FileTree.Root>
-          </FileTree.Directory>
-          <FileTree.Directory name="work">
-            <FileTree.Root>
-              <FileTree.Directory name=".config">
-                <FileTree.Root>
-                  <FileTree.Directory name="work-tool">
-                    <FileTree.Root>
-                      <FileTree.File>config.json</FileTree.File>
-                    </FileTree.Root>
-                  </FileTree.Directory>
-                </FileTree.Root>
-              </FileTree.Directory>
-              <FileTree.Directory name=".ssh">
-                <FileTree.Root>
-                  <FileTree.File>config.dotweave.secret</FileTree.File>
-                </FileTree.Root>
-              </FileTree.Directory>
-            </FileTree.Root>
-          </FileTree.Directory>
-        </FileTree.Root>
-      </FileTree.Directory>
-    </FileTree.Root>
-  </FileTree.Directory>
-</FileTree.Root>
+<TRFileTree aria-label="Dotweave configuration directory layout">
+- `<dotweave-home>/`
+  - `settings.jsonc`
+  - `keys.txt`
+  - `repository/`
+    - `manifest.jsonc`
+    - `default/`
+      - `.gitconfig`
+      - `.zshrc`
+      - `.config/`
+        - `nvim/`
+          - `init.lua`
+    - `work/`
+      - `.config/`
+        - `work-tool/`
+          - `config.json`
+      - `.ssh/`
+        - `config.dotweave.secret`
+</TRFileTree>
 
 ---
 
@@ -98,9 +71,9 @@ If you use [profiles](/en/guides/profiles), each profile gets its own subdirecto
 
 Your age private key for encrypting and decrypting [secret files](/en/guides/syncing-secrets). This is created during `dotweave init`. It starts with `AGE-SECRET-KEY-`.
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 Back up your `keys.txt` somewhere safe — a password manager works great. If you lose it, you won't be able to decrypt your secret files.
-</Callout>
+</TRCallout>
 
 ### `settings.jsonc` — user preferences
 
@@ -149,6 +122,7 @@ Here's a simple example with a few tracked entries:
   - **`profiles`** — which [profiles](/en/guides/profiles) this entry belongs to (optional, global if omitted)
   - **`permission`** — file permission in octal like `"0600"` (optional)
 
-<Callout variant="note">
+<TRCallout variant="note">
 You rarely need to edit `manifest.jsonc` by hand. The `dotweave track` and `dotweave untrack` commands handle it for you.
-</Callout>
+</TRCallout>
+

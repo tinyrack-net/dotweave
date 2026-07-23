@@ -5,7 +5,7 @@ section: guides
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 Every tracked entry has a **sync mode** that controls how dotweave handles it during push and pull. There are three modes to choose from: `normal`, `secret`, and `ignore`.
@@ -50,9 +50,9 @@ dotweave track ~/.aws/credentials --mode secret
 
 During `pull`, dotweave decrypts the file with your age private key before writing it to disk. See [Syncing Secrets](/en/guides/syncing-secrets) for the full setup guide.
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 Secret mode encrypts the file **content**, but the filename and path are still visible in the sync directory. Keep that in mind if the path itself is sensitive.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -98,3 +98,4 @@ dotweave track ~/.config/my-tool/credentials.json --mode secret
 ```
 
 The directory is synced normally, but `credentials.json` inside it gets encrypted. Child entries always take priority over their parent.
+

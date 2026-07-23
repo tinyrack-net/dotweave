@@ -128,7 +128,13 @@ describe("Dotweave built documentation", () => {
       page.getByRole("heading", { name: "Directory Structure" }).isVisible(),
     ).resolves.toBe(true);
     await expect(
-      page.getByText("repository", { exact: true }).first().isVisible(),
+      page
+        .locator(
+          'ul.tr-file-tree[aria-label="Dotweave configuration directory layout"]',
+        )
+        .getByText("repository/")
+        .first()
+        .isVisible(),
     ).resolves.toBe(true);
     await expect(
       page.locator('meta[property="og:site_name"]').count(),
@@ -162,6 +168,69 @@ describe("Dotweave built documentation", () => {
       "tinyrack-dark",
     );
     await page.close();
+  });
+
+  it("renders an accessible file tree with nested files for the directory guide", async () => {
+    const page = await browser.newPage();
+    await page.goto(`${origin}/en/guides/directory-structure/`);
+    await page.locator('html[data-hydrated="true"]').waitFor();
+
+    const tree = page.locator(
+      'ul.tr-file-tree[aria-label="Dotweave configuration directory layout"]',
+    );
+    await expect(tree.isVisible()).resolves.toBe(true);
+    await expect(
+      tree.getByText("<dotweave-home>/").first().isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      tree.getByText("manifest.jsonc").first().isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      tree.getByText("settings.jsonc").first().isVisible(),
+    ).resolves.toBe(true);
+    await expect(tree.getByText("keys.txt").first().isVisible()).resolves.toBe(
+      true,
+    );
+    await expect(
+      tree.getByText("config.dotweave.secret").first().isVisible(),
+    ).resolves.toBe(true);
+    await page.close();
+  });
+
+  it("exposes the localized accessibility name in Korean and Japanese", async () => {
+    const korean = await browser.newPage();
+    await korean.goto(`${origin}/ko/guides/directory-structure/`);
+    await korean.locator('html[data-hydrated="true"]').waitFor();
+    await expect(
+      korean
+        .locator('ul.tr-file-tree[aria-label="dotweave 설정 디렉터리 구조"]')
+        .isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      korean
+        .locator('ul.tr-file-tree[aria-label="dotweave 설정 디렉터리 구조"]')
+        .getByText("manifest.jsonc")
+        .first()
+        .isVisible(),
+    ).resolves.toBe(true);
+    await korean.close();
+
+    const japanese = await browser.newPage();
+    await japanese.goto(`${origin}/ja/guides/directory-structure/`);
+    await japanese.locator('html[data-hydrated="true"]').waitFor();
+    await expect(
+      japanese
+        .locator('ul.tr-file-tree[aria-label="dotweaveの設定ディレクトリ構造"]')
+        .isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      japanese
+        .locator('ul.tr-file-tree[aria-label="dotweaveの設定ディレクトリ構造"]')
+        .getByText("manifest.jsonc")
+        .first()
+        .isVisible(),
+    ).resolves.toBe(true);
+    await japanese.close();
   });
 
   it("keeps the root redirect", async () => {

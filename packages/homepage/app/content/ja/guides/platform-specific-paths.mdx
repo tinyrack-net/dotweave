@@ -5,7 +5,7 @@ section: guides
 order: 5
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 ほとんどの設定ファイルは、OSによって異なるパスに保存されます。
@@ -101,14 +101,15 @@ Linux、macOS、Windowsで動作するVS Code設定の完全なエントリで�
 }
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 `dotweave track`を実行すると、現在のプラットフォームのパスが自動的に`default`キーとして
 記録されます。プラットフォーム固有のパスが必要な場合は、`manifest.jsonc`を直接編集して
 他のキーを追加してください。
-</Callout>
+</TRCallout>
 
 ## 編集のヒント
 
 - `manifest.jsonc`を手動で編集して、プラットフォームキーの追加や調整がいつでもできます。
 - `dotweave track`はまず手早く始めるのに便利です — 現在のプラットフォームのパスが`default`として記録され、後から他のプラットフォームを追加できます。
 - pushする前に`dotweave status`で、現在のマシンでパスが正しく解決されているか確認しましょう。
+

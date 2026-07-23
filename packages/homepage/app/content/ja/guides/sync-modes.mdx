@@ -5,7 +5,7 @@ section: guides
 order: 2
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 トラッキングされたすべてのエントリには**同期モード**があり、pushやpull時のdotweaveの動作を制御します。`normal`、`secret`、`ignore`の3つのモードがあります。
@@ -50,9 +50,9 @@ dotweave track ~/.aws/credentials --mode secret
 
 `pull`時に、dotweaveはageプライベートキーでファイルを復号してからディスクに書き込みます。セットアップの詳細は[シークレットファイルの同期](/ja/guides/syncing-secrets)をご覧ください。
 
-<Callout variant="caution">
+<TRCallout variant="caution">
 secretモードはファイルの**内容**を暗号化しますが、ファイル名とパスはsyncディレクトリ内でそのまま見えます。パス自体が機密情報の場合はご注意ください。
-</Callout>
+</TRCallout>
 
 ---
 
@@ -98,3 +98,4 @@ dotweave track ~/.config/my-tool/credentials.json --mode secret
 ```
 
 ディレクトリは通常通り同期されますが、その中の`credentials.json`は暗号化されます。子エントリは常に親エントリより優先されます。
+

@@ -5,7 +5,7 @@ section: guides
 order: 1
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 dotweave가 파일을 동기화하려면 먼저 **추적**해야 해요. 추적은 `manifest.jsonc`에 항목을 추가해서 "이 파일을 관리할 거야"라고 알려주는 거예요. 실제로 파일이 복사되거나 push되려면 이후에 `dotweave push`를 직접 실행해야 해요.
@@ -34,9 +34,9 @@ dotweave track ~/.config/nvim
 dotweave track ~/.config/fish
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 디렉터리를 추적하면, 나중에 안에 새로 추가된 파일도 다음 push 때 자동으로 포함돼요. 개별적으로 추적할 필요 없어요.
-</Callout>
+</TRCallout>
 
 ---
 
@@ -123,3 +123,4 @@ dotweave status
 dotweave push --dry-run
 dotweave pull --dry-run
 ```
+

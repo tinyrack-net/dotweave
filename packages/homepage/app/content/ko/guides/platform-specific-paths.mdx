@@ -5,7 +5,7 @@ section: guides
 order: 5
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
+import { TRCallout } from "@tinyrack/ui/components/callout";
 
 
 대부분의 설정 파일은 운영체제에 따라 다른 경로에 저장돼요.
@@ -101,10 +101,10 @@ Linux, macOS, Windows에서 모두 동작하는 VS Code 설정의 전체 항목�
 }
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 `dotweave track`을 실행하면 현재 플랫폼의 경로가 `default` 키로 자동 기록돼요.
 플랫폼별 경로가 필요하면 `manifest.jsonc`를 직접 편집해서 다른 키를 추가하세요.
-</Callout>
+</TRCallout>
 
 ## 편집 팁
 
@@ -113,3 +113,4 @@ Linux, macOS, Windows에서 모두 동작하는 VS Code 설정의 전체 항목�
   저장하고, 나중에 다른 플랫폼을 추가하면 돼요.
 - push하기 전에 `dotweave status`로 현재 기기에서 경로가 올바르게 해석되는지
   확인하세요.
+

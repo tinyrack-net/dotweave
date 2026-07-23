@@ -5,8 +5,8 @@ section: guides
 order: 7
 ---
 
-import { Callout } from "@tinyrack/ui/components/callout";
-import { Steps } from "@tinyrack/ui/components/steps";
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
 Understanding what happens under the hood makes dotweave feel predictable.
@@ -38,75 +38,75 @@ entirely in your hands.
 
 ### Push flow
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Load `manifest.jsonc`** — dotweave reads the sync config to discover every
 tracked file and its settings.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Walk local files** — for each entry it reads the file at the resolved
 `localPath` for the current platform.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Compare with existing artifacts** — if the file in the sync directory is
 already identical, nothing is written.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Encrypt secrets** — entries marked as secret are encrypted with
 [age](https://github.com/FiloSottile/age) before being written.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Write artifacts** — the (possibly encrypted) content is written to
 `repoPath` inside the sync directory.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
 ### Pull flow
 
-<Steps.Root>
-<Steps.Item>
+<TRSteps.Root>
+<TRSteps.Item>
 
 **Load `manifest.jsonc`** — same config, same resolution logic.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Read artifacts** — dotweave reads each file from the sync directory.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Decrypt secrets** — encrypted files are decrypted using your local age
 key.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Write to local paths** — content is written to the resolved `localPath`.
 
-</Steps.Item>
-<Steps.Item>
+</TRSteps.Item>
+<TRSteps.Item>
 
 **Apply permissions** — file permissions recorded in the config are
 restored so nothing ends up world-readable by accident.
 
-</Steps.Item>
-</Steps.Root>
+</TRSteps.Item>
+</TRSteps.Root>
 
-<Callout>
+<TRCallout>
 Neither `push` nor `pull` creates Git commits. You run `git add`, `git commit`,
 and `git push` yourself. This keeps you in full control of your commit history.
-</Callout>
+</TRCallout>
 
 ## Design decisions
 
@@ -152,7 +152,9 @@ At a glance:
 └── ...              ← artifacts written by dotweave push
 ```
 
-<Callout variant="tip">
+<TRCallout variant="tip">
 Run `dotweave cd` to jump into the sync directory whenever you need to inspect
 or manage it directly.
-</Callout>
+</TRCallout>
+
+
