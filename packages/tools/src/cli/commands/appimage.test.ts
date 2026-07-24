@@ -9,7 +9,9 @@ describe("getAppImageIconPath", () => {
     const repoRoot = await getRepoRoot(process.cwd());
     const iconPath = getAppImageIconPath(repoRoot);
 
-    expect(iconPath).toBe(join(repoRoot, "packages/homepage/public/logo.svg"));
+    expect(iconPath).toBe(
+      join(repoRoot, "packages/homepage/public/favicon.svg"),
+    );
     await expect(access(iconPath)).resolves.toBeUndefined();
   });
 });

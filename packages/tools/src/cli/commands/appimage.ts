@@ -5,7 +5,7 @@ import { execa } from "execa";
 import { getRepoRoot } from "../../lib/git.ts";
 
 export function getAppImageIconPath(repoRoot: string): string {
-  return join(repoRoot, "packages/homepage/public/logo.svg");
+  return join(repoRoot, "packages/homepage/public/favicon.svg");
 }
 
 const buildAppImageCommand = buildCommand<
