@@ -7,6 +7,7 @@ import 'collation.dart';
 import 'error.dart';
 import 'file_mode.dart';
 import 'fs_errors.dart';
+import 'native_stat.dart';
 import 'posix_chmod.dart';
 import 'windows/reparse.dart';
 import 'windows/win32_links.dart' as win32_links;
@@ -76,6 +77,20 @@ PathNotFoundException _pathNotFound(String path) {
 
 /// Checks whether a filesystem path currently exists.
 Future<bool> pathExists(String path) async {
+  // Fast path: a plain file/dir trivially exists; a definitely-missing path
+  // trivially doesn't. Reparse points must delegate — existence follows the
+  // link chain here (dangling symlinks report notFound), which only the
+  // dart:io implementation reproduces.
+  final fast = nativeLstatSync(path);
+  switch (fast.outcome) {
+    case NativeStatOutcome.present:
+      return true;
+    case NativeStatOutcome.absent:
+      return false;
+    case NativeStatOutcome.cannotAnswer:
+      break;
+  }
+
   final type = await FileSystemEntity.type(path);
 
   return type != FileSystemEntityType.notFound;
@@ -83,6 +98,24 @@ Future<bool> pathExists(String path) async {
 
 /// Reads path metadata while treating missing paths as an absent result.
 Future<PathStats?> getPathStats(String path) async {
+  // Fast path: one native metadata call instead of the two dart:io IO-thread
+  // round trips below. Links and edge cases fall through to the original
+  // implementation, kept verbatim.
+  final fast = nativeLstatSync(path);
+  switch (fast.outcome) {
+    case NativeStatOutcome.present:
+      return PathStats(
+        isFile: fast.isFile,
+        isDirectory: fast.isDirectory,
+        isSymbolicLink: false,
+        mode: fast.mode,
+      );
+    case NativeStatOutcome.absent:
+      return null;
+    case NativeStatOutcome.cannotAnswer:
+      break;
+  }
+
   final type = await FileSystemEntity.type(path, followLinks: false);
 
   if (type == FileSystemEntityType.notFound) {
@@ -115,6 +148,23 @@ Future<PathStats?> getPathStats(String path) async {
 /// Reads path metadata while following symlinks and treating missing paths as
 /// an absent result.
 Future<PathStats?> getFollowedPathStats(String path) async {
+  // Fast path is valid only when the node is not a reparse point: for plain
+  // files/dirs the followed and unfollowed answers are identical.
+  final fast = nativeLstatSync(path);
+  switch (fast.outcome) {
+    case NativeStatOutcome.present:
+      return PathStats(
+        isFile: fast.isFile,
+        isDirectory: fast.isDirectory,
+        isSymbolicLink: false,
+        mode: fast.mode,
+      );
+    case NativeStatOutcome.absent:
+      return null;
+    case NativeStatOutcome.cannotAnswer:
+      break;
+  }
+
   final stats = await FileStat.stat(path);
 
   if (stats.type == FileSystemEntityType.notFound) {
@@ -127,6 +177,22 @@ Future<PathStats?> getFollowedPathStats(String path) async {
     isSymbolicLink: false,
     mode: stats.mode,
   );
+}
+
+/// Shared type dispatcher for [removePath]/[_renameNode]: fast-path native
+/// classification with the dart:io answer for links/edge cases.
+Future<FileSystemEntityType> _nodeType(String path) async {
+  final fast = nativeLstatSync(path);
+  switch (fast.outcome) {
+    case NativeStatOutcome.present:
+      return fast.isDirectory
+          ? FileSystemEntityType.directory
+          : FileSystemEntityType.file;
+    case NativeStatOutcome.absent:
+      return FileSystemEntityType.notFound;
+    case NativeStatOutcome.cannotAnswer:
+      return FileSystemEntity.type(path, followLinks: false);
+  }
 }
 
 /// Lists directory entries in a stable name-sorted order.
@@ -156,7 +222,7 @@ Future<List<DirectoryEntry>> listDirectoryEntries(String path) async {
 /// missing paths are ignored and link nodes are unlinked without ever
 /// touching the link target's contents.
 Future<void> removePath(String path) async {
-  final type = await FileSystemEntity.type(path, followLinks: false);
+  final type = await _nodeType(path);
 
   switch (type) {
     case FileSystemEntityType.notFound:
@@ -173,7 +239,7 @@ Future<void> removePath(String path) async {
 }
 
 Future<void> _renameNode(String from, String to) async {
-  final type = await FileSystemEntity.type(from, followLinks: false);
+  final type = await _nodeType(from);
 
   switch (type) {
     case FileSystemEntityType.notFound:
@@ -205,12 +271,19 @@ Future<void> renamePath(String from, String to) async {
 }
 
 /// Writes a regular file node with the permissions dotweave should preserve.
+///
+/// [ensureParent] can be disabled by batch writers that have already created
+/// the parent directory (e.g. artifact writes precompute the unique parent
+/// set) — the write itself is unchanged.
 Future<void> writeFileNode(
   String path,
-  ({Object contents, bool executable}) node, [
+  ({Object contents, bool executable}) node, {
   int? fileMode,
-]) async {
-  await Directory(p.dirname(path)).create(recursive: true);
+  bool ensureParent = true,
+}) async {
+  if (ensureParent) {
+    await Directory(p.dirname(path)).create(recursive: true);
+  }
 
   if ((await getPathStats(path))?.isSymbolicLink ?? false) {
     await removePath(path);
