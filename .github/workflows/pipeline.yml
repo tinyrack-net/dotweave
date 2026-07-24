@@ -57,6 +57,147 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
+  dart-analyze:
+    name: Dart Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed packages/cli_dart packages/tools_dart
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+  dart-test:
+    name: Dart Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-26
+          - windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Build e2e binary
+        run: dart tool/build_e2e.dart
+        working-directory: packages/cli_dart
+      - name: Run cli_dart tests
+        # interop/compat need the Node toolchain; they run in dart-compat.
+        run: dart test -x interop -x compat
+        working-directory: packages/cli_dart
+      - name: Run tools_dart tests
+        run: dart test
+        working-directory: packages/tools_dart
+
+  dart-compat:
+    name: Dart Compat (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install Dart dependencies
+        run: dart pub get
+      - name: Build TS CLI
+        run: pnpm --filter @tinyrack/dotweave run build
+      - name: Build e2e binary
+        run: dart tool/build_e2e.dart
+        working-directory: packages/cli_dart
+      - name: Run age interop tests
+        run: dart test -t interop
+        working-directory: packages/cli_dart
+      - name: Run TS↔Dart compat tests
+        run: dart test -t compat
+        working-directory: packages/cli_dart
+
+  build-dart:
+    name: Build Dart (${{ matrix.target }})
+    needs:
+      - dart-analyze
+      - dart-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            asset: dotweave-dart-linux-x64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            asset: dotweave-dart-linux-arm64
+          - os: macos-13
+            target: macos-x64
+            asset: dotweave-dart-macos-x64
+          - os: macos-26
+            target: macos-arm64
+            asset: dotweave-dart-macos-arm64
+          - os: windows-2022
+            target: win-x64
+            asset: dotweave-dart-win-x64.exe
+          - os: windows-11-arm
+            target: win-arm64
+            asset: dotweave-dart-win-arm64.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Compile executable
+        run: dart compile exe bin/dotweave.dart -o ${{ matrix.asset }}
+        working-directory: packages/cli_dart
+      - name: Smoke test binary
+        run: dart run bin/cli.dart smoke --executable-path
+          packages/cli_dart/${{ matrix.asset }}
+        working-directory: packages/tools_dart
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: packages/cli_dart/${{ matrix.asset }}
+          if-no-files-found: error
+
   homepage:
     name: Homepage
     runs-on: ubuntu-latest
@@ -449,6 +590,7 @@ jobs:
       - sign-and-test
       - package-windows
       - build-appimage
+      - build-dart
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 30

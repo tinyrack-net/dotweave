@@ -1,4 +1,8 @@
 node_modules
+.dart_tool
+packages/cli_dart/dotweave
+packages/cli_dart/dotweave.exe
+packages/cli_dart/dotweave-dart-*
 .astro
 .react-router
 build

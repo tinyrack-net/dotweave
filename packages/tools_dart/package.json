@@ -1,0 +1,8 @@
+{
+  "name": "dotweave-tools-dart",
+  "private": true,
+  "scripts": {
+    "analyze": "dart analyze",
+    "test": "dart test"
+  }
+}
