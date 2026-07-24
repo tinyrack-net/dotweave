@@ -5,7 +5,12 @@ import { extname, join, normalize } from "node:path";
 import { type Browser, chromium } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+// The CLI version comes from packages/cli/pubspec.yaml so the rendered
+// "Dotweave v<version>" badge assertion tracks releases automatically.
+import { cliVersion } from "../cli-version.ts";
+
 const buildRoot = join(import.meta.dirname, "..", "build", "client");
+
 let browser: Browser;
 let origin: string;
 let server: Server;
@@ -116,7 +121,7 @@ describe("Dotweave built documentation", () => {
       page.getByRole("heading", { name: "Your config, anywhere." }).isVisible(),
     ).resolves.toBe(true);
     await expect(
-      page.getByText("Dotweave v0.53.0").first().isVisible(),
+      page.getByText(`Dotweave v${cliVersion}`).first().isVisible(),
     ).resolves.toBe(true);
     expect(await page.locator("html").getAttribute("data-theme")).toBe(
       "tinyrack-light",

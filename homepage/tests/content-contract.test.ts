@@ -29,7 +29,8 @@ describe("Dotweave documentation contract", () => {
 
     expect(manifest.pages).toHaveLength(66);
     expect(manifest.redirects).toEqual({ "/": "/en/" });
-    expect(manifest.header?.version).toBe("0.53.0");
+    expect(manifest.header?.version).toBeUndefined();
+    expect(manifest.header?.title).toBe(true);
 
     for (const locale of ["en", "ko", "ja"]) {
       const pages = manifest.pages.filter((page) => page.locale === locale);

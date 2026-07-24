@@ -11,7 +11,7 @@ void main() {
       final repoRoot = await getRepoRoot(Directory.current.path);
       final iconPath = getAppImageIconPath(repoRoot);
 
-      expect(iconPath, p.join(repoRoot, 'homepage/public/logo.svg'));
+      expect(iconPath, p.join(repoRoot, 'homepage/public/favicon.svg'));
       expect(File(iconPath).existsSync(), isTrue);
     });
   });

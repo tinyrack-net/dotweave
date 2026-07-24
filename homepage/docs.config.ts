@@ -1,7 +1,5 @@
 import { defineDocsConfig } from "@tinyrack/docs/config";
 
-import { cliVersion } from "./cli-version.ts";
-
 const labels = (en: string, ko: string, ja: string) => ({ en, ja, ko });
 
 export default defineDocsConfig({
@@ -9,11 +7,15 @@ export default defineDocsConfig({
   header: {
     links: [
       {
+        label: labels("Docs", "문서", "ドキュメント"),
+        path: "/{locale}/intro/",
+      },
+      {
         label: "GitHub",
         path: "https://github.com/tinyrack-net/dotweave",
       },
     ],
-    version: cliVersion,
+    title: true,
   },
   i18n: {
     defaultLocale: "en",
@@ -98,7 +100,7 @@ export default defineDocsConfig({
       "Git-backed configuration sync for your development environment.",
     favicon: "/favicon.svg",
     locale: { language: "en", openGraph: "en_US" },
-    logo: { alt: "Dotweave", dark: "/logo.svg", light: "/logo.svg" },
+    logo: { alt: "Dotweave", dark: "/favicon.svg", light: "/favicon.svg" },
     title: "Dotweave",
     url: "https://dotweave.tinyrack.net",
   },
