@@ -1,17 +1,12 @@
-import { readFileSync } from "node:fs";
-
 import tailwindcss from "@tailwindcss/vite";
 import { tinyrackDocs } from "@tinyrack/docs/vite";
 import { defineConfig } from "vite";
 
+import { cliVersion } from "./cli-version.ts";
 import config from "./docs.config.ts";
 
-const cliPackage = JSON.parse(
-  readFileSync(new URL("../cli/package.json", import.meta.url), "utf8"),
-) as { version: string };
-
 export default defineConfig({
-  define: { __CLI_VERSION__: JSON.stringify(cliPackage.version) },
+  define: { __CLI_VERSION__: JSON.stringify(cliVersion) },
   plugins: [
     ...tinyrackDocs(config, { root: import.meta.dirname }),
     tailwindcss(),

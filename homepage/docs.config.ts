@@ -1,10 +1,6 @@
-import { readFileSync } from "node:fs";
-
 import { defineDocsConfig } from "@tinyrack/docs/config";
 
-const cliPackage = JSON.parse(
-  readFileSync(new URL("../cli/package.json", import.meta.url), "utf8"),
-) as { version: string };
+import { cliVersion } from "./cli-version.ts";
 
 const labels = (en: string, ko: string, ja: string) => ({ en, ja, ko });
 
@@ -17,7 +13,7 @@ export default defineDocsConfig({
         path: "https://github.com/tinyrack-net/dotweave",
       },
     ],
-    version: cliPackage.version,
+    version: cliVersion,
   },
   i18n: {
     defaultLocale: "en",

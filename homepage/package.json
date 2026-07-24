@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Dotweave documentation built with Tinyrack Docs and React Router.",
   "license": "MIT",
+  "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -17,6 +18,8 @@
     "typecheck": "react-router typegen && tsc --noEmit",
     "test": "vitest run --exclude tests/browser.test.ts",
     "test:audit": "vitest run tests/browser.test.ts",
+    "format": "biome format --write .",
+    "format:check": "biome check .",
     "deploy": "wrangler deploy",
     "deploy:dry-run": "wrangler deploy --dry-run"
   },
@@ -32,6 +35,7 @@
     "shiki": "4.3.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.2",
     "@react-router/dev": "8.2.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
