@@ -1,7 +1,8 @@
 import { TRBadge } from "@tinyrack/ui/components/badge";
 import { TRButton } from "@tinyrack/ui/components/button";
 import { TRCodeBlock } from "@tinyrack/ui/components/code-block";
-import { TRLink } from "@tinyrack/ui/components/link";
+import { TRText } from "@tinyrack/ui/components/text";
+import { TRWindowFrame } from "@tinyrack/ui/components/window-frame";
 
 import { GlobeBackground } from "./globe-background.tsx";
 
@@ -34,31 +35,50 @@ export function DotweaveHome({
       <GlobeBackground />
       <div className="dotweave-home-content">
         <TRBadge variant="success">Dotweave v{__CLI_VERSION__}</TRBadge>
-        <h1>{tagline}</h1>
-        <p className="dotweave-home-copy">{body}</p>
+        <TRText as="h1" variant="display">
+          {tagline}
+        </TRText>
+        <TRText
+          as="p"
+          className="dotweave-home-copy"
+          color="muted"
+          variant="body"
+        >
+          {body}
+        </TRText>
         <div className="dotweave-home-actions">
           <TRButton
             render={<a href={getStartedPath} />}
             intent="primary"
-            uiSize="lg"
+            uiSize="sm"
           >
             {getStartedLabel}
           </TRButton>
-          <TRLink href="https://github.com/tinyrack-net/dotweave">
+          <TRButton
+            render={<a href="https://github.com/tinyrack-net/dotweave" />}
+            appearance="outline"
+            uiSize="sm"
+          >
             GitHub →
-          </TRLink>
+          </TRButton>
         </div>
-        <section
+        <TRWindowFrame.Root
           aria-label="Dotweave terminal example"
           className="dotweave-terminal"
+          variant="macos"
         >
-          <div aria-hidden="true" className="dotweave-terminal-header">
-            <span />
-            <span />
-            <span />
-          </div>
-          <TRCodeBlock code={terminalSession} language="bash" />
-        </section>
+          <TRWindowFrame.TitleBar>
+            <TRWindowFrame.Controls aria-hidden="true">
+              <TRWindowFrame.Control tone="close" />
+              <TRWindowFrame.Control tone="minimize" />
+              <TRWindowFrame.Control tone="maximize" />
+            </TRWindowFrame.Controls>
+            <TRWindowFrame.Title>dotweave</TRWindowFrame.Title>
+          </TRWindowFrame.TitleBar>
+          <TRWindowFrame.Body padding="none">
+            <TRCodeBlock code={terminalSession} language="bash" />
+          </TRWindowFrame.Body>
+        </TRWindowFrame.Root>
       </div>
     </section>
   );
