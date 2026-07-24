@@ -10,6 +10,7 @@ import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/file_mode.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/lib/posix_chmod.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
@@ -252,6 +253,12 @@ Future<bool> _isMaterializedFileLikeNodeCurrent(
   }
 }
 
+/// Per-directory cache for [_resolveStagingParentDirectory]: within one
+/// apply pass thousands of sibling files share a handful of parent
+/// directories, and the parents are created before the per-node loop runs,
+/// so their resolution is stable for the process lifetime of a pull.
+final Map<String, String> _stagingParentCache = <String, String>{};
+
 String _resolveStagingParentDirectory(String targetPath) {
   final parentDirectory = p.dirname(targetPath);
 
@@ -259,12 +266,14 @@ String _resolveStagingParentDirectory(String targetPath) {
     return parentDirectory;
   }
 
-  try {
-    // Mirrors node:fs `realpathSync.native(parentDirectory)`.
-    return Directory(parentDirectory).resolveSymbolicLinksSync();
-  } catch (_) {
-    return parentDirectory;
-  }
+  return _stagingParentCache[parentDirectory] ??= () {
+    try {
+      // Mirrors node:fs `realpathSync.native(parentDirectory)`.
+      return Directory(parentDirectory).resolveSymbolicLinksSync();
+    } catch (_) {
+      return parentDirectory;
+    }
+  }();
 }
 
 Future<void> _stageAndReplacePath(
@@ -272,10 +281,16 @@ Future<void> _stageAndReplacePath(
   FileLikeSnapshotNode node, [
   int? fileMode,
 ]) async {
-  await Directory(p.dirname(targetPath)).create(recursive: true);
-  final stagingDirectory = await Directory(
-    _resolveStagingParentDirectory(targetPath),
-  ).createTemp('.${p.basename(targetPath)}.dotweave-sync-');
+  await tracePhase(
+    'stage.ensureParent',
+    () => Directory(p.dirname(targetPath)).create(recursive: true),
+  );
+  final stagingDirectory = await tracePhase(
+    'stage.createTemp',
+    () => Directory(
+      _resolveStagingParentDirectory(targetPath),
+    ).createTemp('.${p.basename(targetPath)}.dotweave-sync-'),
+  );
   final stagedPath = p.join(stagingDirectory.path, p.basename(targetPath));
 
   try {
@@ -283,15 +298,28 @@ Future<void> _stageAndReplacePath(
       case SymlinkSnapshotNode():
         await createSymlink(toNativeLinkTarget(node.linkTarget), stagedPath);
       case FileSnapshotNode():
-        await writeFileNode(stagedPath, (
-          contents: node.contents,
-          executable: node.executable,
-        ), fileMode);
+        // The staged file's parent is the createTemp directory made just
+        // above — no need to re-ensure it.
+        await tracePhase(
+          'stage.writeFileNode',
+          () => writeFileNode(
+            stagedPath,
+            (contents: node.contents, executable: node.executable),
+            fileMode: fileMode,
+            ensureParent: false,
+          ),
+        );
     }
 
-    await replacePathAtomically(targetPath, stagedPath);
+    await tracePhase(
+      'stage.replaceAtomically',
+      () => replacePathAtomically(targetPath, stagedPath),
+    );
   } finally {
-    await removePath(stagingDirectory.path);
+    await tracePhase(
+      'stage.cleanupStaging',
+      () => removePath(stagingDirectory.path),
+    );
   }
 }
 
@@ -743,10 +771,10 @@ Future<void> _reconcileMaterializedDirectoryPath(
         ...relativePath.split('/'),
       ]);
 
-      if (await _isMaterializedFileLikeNodeCurrent(
-        targetNodePath,
-        node,
-        fileMode,
+      if (await tracePhase(
+        'reconcile.currencyCheck',
+        () =>
+            _isMaterializedFileLikeNodeCurrent(targetNodePath, node, fileMode),
       )) {
         return;
       }
@@ -757,12 +785,15 @@ Future<void> _reconcileMaterializedDirectoryPath(
 
   final existingKeys = <String>{};
   final keyToLocalPath = <String, String>{};
-  await countDeletedLocalNodes(
-    entry,
-    desiredKeys,
-    config,
-    existingKeys,
-    keyToLocalPath,
+  await tracePhase(
+    'reconcile.countDeletedWalk',
+    () => countDeletedLocalNodes(
+      entry,
+      desiredKeys,
+      config,
+      existingKeys,
+      keyToLocalPath,
+    ),
   );
 
   final deletableKeys = await collectDeletableLocalKeys(

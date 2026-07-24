@@ -242,7 +242,7 @@ void main() {
       await writeFileNode(filePath, (
         contents: 'private-key-content\n',
         executable: false,
-      ), 0x180); // 0o600
+      ), fileMode: 0x180); // 0o600
 
       final stats = await File(filePath).stat();
       expect(stats.mode & 0x1FF, 0x180); // mode & 0o777 == 0o600

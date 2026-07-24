@@ -16,6 +16,7 @@ import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/lib/jsonc.dart';
 import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:path/path.dart' as p;
@@ -1072,25 +1073,48 @@ Future<void> writeArtifactsToDirectory(
 ]) async {
   await Directory(rootDirectory).create(recursive: true);
 
-  await limitConcurrency<RepoArtifact, void>(
-    AppConstants.sync.defaultConcurrency,
-    artifacts,
-    (artifact, _) async {
-      final relativePath = resolveArtifactRelativePath(
-        category: artifact.category,
-        kind: artifact.kind,
-        profile: artifact.profile,
-        repoPath: artifact.repoPath,
-      );
-      final artifactPath = p.joinAll([
+  final artifactPaths = [
+    for (final artifact in artifacts)
+      p.joinAll([
         rootDirectory,
-        ...relativePath.split('/'),
-      ]);
+        ...resolveArtifactRelativePath(
+          category: artifact.category,
+          kind: artifact.kind,
+          profile: artifact.profile,
+          repoPath: artifact.repoPath,
+        ).split('/'),
+      ]),
+  ];
 
-      if (await isRepoArtifactCurrent(
-        rootDirectory,
-        artifact,
-        ageConfig == null ? null : (identityFile: ageConfig.identityFile),
+  // Create every unique parent directory once up front (a 10k-file tree has
+  // only a handful of distinct parents) instead of a per-file recursive
+  // mkdir inside writeFileNode. Final trees are identical: any parent in
+  // this set was created by writeFileNode before this hoist whenever any
+  // artifact under it was written.
+  final parentDirectories = <String>{
+    for (var index = 0; index < artifacts.length; index += 1)
+      if (artifacts[index] is! DirectoryRepoArtifact)
+        p.dirname(artifactPaths[index]),
+  };
+
+  for (final directory in parentDirectories.toList()..sort()) {
+    await Directory(directory).create(recursive: true);
+  }
+
+  await limitConcurrency<int, void>(
+    AppConstants.sync.defaultConcurrency,
+    [for (var index = 0; index < artifacts.length; index += 1) index],
+    (index, _) async {
+      final artifact = artifacts[index];
+      final artifactPath = artifactPaths[index];
+
+      if (await tracePhase(
+        'push.currencyCheck',
+        () => isRepoArtifactCurrent(
+          rootDirectory,
+          artifact,
+          ageConfig == null ? null : (identityFile: ageConfig.identityFile),
+        ),
       )) {
         return;
       }
@@ -1107,7 +1131,7 @@ Future<void> writeArtifactsToDirectory(
         await writeFileNode(artifactPath, (
           contents: toPosixLinkTarget(artifact.linkTarget),
           executable: false,
-        ));
+        ), ensureParent: false);
         return;
       }
 
@@ -1122,14 +1146,19 @@ Future<void> writeArtifactsToDirectory(
         await writeFileNode(artifactPath, (
           contents: encrypted,
           executable: fileArtifact.executable,
-        ));
+        ), ensureParent: false);
         return;
       }
 
-      await writeFileNode(artifactPath, (
-        contents: fileArtifact.contents,
-        executable: fileArtifact.executable,
-      ));
+      await tracePhase(
+        'push.writeFileNode',
+        () => writeFileNode(artifactPath, (
+          contents: fileArtifact.contents,
+          executable: fileArtifact.executable,
+        ), ensureParent: false),
+      );
     },
   );
+
+  dumpPerfTrace('writeArtifactsToDirectory');
 }
