@@ -6,9 +6,8 @@ import 'error.dart';
 import 'version_files.dart';
 
 const String _packageJsonPath = 'packages/cli/package.json';
-const String _pubspecPath = 'packages/cli_dart/pubspec.yaml';
-const String _versionConstantPath =
-    'packages/cli_dart/lib/src/lib/version.g.dart';
+const String _pubspecPath = 'packages/cli/pubspec.yaml';
+const String _versionConstantPath = 'packages/cli/lib/src/lib/version.g.dart';
 
 /// Verifies that GITHUB_REF_NAME matches the release version and that all
 /// release version files agree with each other.

@@ -1,7 +1,7 @@
 name: dotweave_tools
 description: >-
-  Internal build/release tooling for dotweave. Dart port of
-  @tinyrack/dotweave-tools. Run via `dart run dotweave_tools:cli`.
+  Internal build/release tooling for dotweave.
+  Run via `dart run dotweave_tools:cli`.
 version: 1.0.0
 publish_to: none
 resolution: workspace

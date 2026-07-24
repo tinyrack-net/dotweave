@@ -10,8 +10,8 @@ import 'package:dotweave/src/crypto/age/age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// Interop tests against the TypeScript `age-encryption` npm package
-/// (installed at packages/cli/node_modules), driven via node.
+/// Interop tests against the reference `age-encryption` npm package
+/// (installed at this package's node_modules), driven via node.
 void main() {
   final packageRoot = Directory.current.path;
   final script = p.join(
@@ -22,13 +22,12 @@ void main() {
     'interop',
     'age_interop.mjs',
   );
-  final cliPackageDir = p.normalize(p.join(packageRoot, '..', 'cli'));
 
   Future<String> runNode(List<String> args, {String stdinText = ''}) async {
     final process = await Process.start('node', [
       script,
       ...args,
-    ], workingDirectory: cliPackageDir);
+    ], workingDirectory: packageRoot);
     process.stdin.write(stdinText);
     await process.stdin.close();
     final stdout = await process.stdout.transform(utf8.decoder).join();

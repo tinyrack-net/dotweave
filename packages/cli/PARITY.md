@@ -1,8 +1,10 @@
 # TS → Dart parity decisions
 
-Every intentional behavioral divergence from `packages/cli` (TypeScript) discovered
-during the port is recorded here so the cutover review is a checklist, not
-archaeology. Keep entries short: what differs, why, and which tests pin it.
+Every intentional behavioral divergence from the pre-cutover TypeScript
+implementation (removed from the repo at the Dart cutover) discovered during
+the port is recorded here as a historical record, so reviewing the port is a
+checklist, not archaeology. Keep entries short: what differs, why, and which
+tests pin it.
 
 ## Conventions
 
@@ -82,22 +84,13 @@ archaeology. Keep entries short: what differs, why, and which tests pin it.
   Windows): cold push 89.5s → 13.8s (TS 10.1s), pull 130.3s → 34.5s
   (TS 20.6s), incremental push and status now faster than TS (1.17x/1.42x).
 
-## Release/distribution status (M8)
+## Cutover status
 
-- The Dart CLI is currently distributed **only as raw binaries attached to
-  GitHub Releases** (asset names `dotweave-dart-{linux,macos}-{x64,arm64}`,
-  `dotweave-dart-win-{x64,arm64}.exe`), built and smoke-tested on 6 native
-  runners by the `build-dart` CI job and uploaded by the existing
-  `publish-release` job (its `dotweave-*` download pattern already matches
-  the `dotweave-dart-*` names, so no separate upload step was needed).
-- npm / Homebrew / WinGet / MSIX / Snap continue to package **only the
-  TypeScript CLI**, unchanged. The Homebrew formula generator
-  (`homebrewArtifactNames` in `tools_dart/lib/src/lib/homebrew.dart`) looks up
-  a fixed list of TS asset names, so the extra `dotweave-dart-*` release
-  assets do not interfere with it.
-- Both CLIs release under the **same `v*.*.*` tag** — one GitHub Release per
-  tag carries both sets of binaries.
-- This is intentionally a parallel-availability step, not the cutover
-  described in the original migration plan's Phase C (which would replace
-  the TS `build-pkg`/npm publish path outright). Revisit when the Dart CLI
-  is promoted to primary.
+- The cutover is complete: Dart binaries are built under the original asset
+  names (`dotweave-{macos,linux}-{x64,arm64}`, `dotweave-win-{x64,arm64}.exe`)
+  and are now **the** distribution, shipped via GitHub Releases, Homebrew,
+  WinGet, and MSIX.
+- npm distribution of `@tinyrack/dotweave` is discontinued.
+- The TypeScript packages have been deleted from the repo. The TS↔Dart compat
+  harness served its purpose and was removed along with them (the age interop
+  tests remain).

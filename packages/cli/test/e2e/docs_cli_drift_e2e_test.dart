@@ -2,7 +2,7 @@
 //
 // The TS suite resolves the workspace root from `import.meta.dirname`
 // (`packages/cli/tests` -> repo root); the Dart port resolves it from the
-// dotweave package root (`packages/cli_dart` -> repo root) so the homepage
+// dotweave package root (`packages/cli` -> repo root) so the homepage
 // docs paths keep working regardless of the test runner's working directory.
 
 @Timeout(Duration(minutes: 3))

@@ -29,10 +29,7 @@ void main() {
     final repoRoot = directory.path;
 
     await Directory(
-      p.join(repoRoot, 'packages', 'cli'),
-    ).create(recursive: true);
-    await Directory(
-      p.join(repoRoot, 'packages', 'cli_dart', 'lib', 'src', 'lib'),
+      p.join(repoRoot, 'packages', 'cli', 'lib', 'src', 'lib'),
     ).create(recursive: true);
 
     await File(
@@ -42,13 +39,13 @@ void main() {
       '  "version": "$packageJsonVersion"\n}\n',
     );
     await File(
-      p.join(repoRoot, 'packages', 'cli_dart', 'pubspec.yaml'),
+      p.join(repoRoot, 'packages', 'cli', 'pubspec.yaml'),
     ).writeAsString('name: dotweave\nversion: $pubspecVersion\n');
     await File(
       p.join(
         repoRoot,
         'packages',
-        'cli_dart',
+        'cli',
         'lib',
         'src',
         'lib',

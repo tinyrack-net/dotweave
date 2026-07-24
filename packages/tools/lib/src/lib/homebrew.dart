@@ -18,8 +18,8 @@ const List<String> homebrewArtifactNames = [
   'dotweave-linux-arm64',
 ];
 
-/// Renders a Homebrew formula. Byte-compatible with the TypeScript
-/// generator in packages/tools/src/cli/commands/homebrew.ts.
+/// Renders a Homebrew formula. Byte-compatible with the pre-cutover
+/// TypeScript generator.
 String generateHomebrewFormula({
   required String className,
   required bool isVersioned,

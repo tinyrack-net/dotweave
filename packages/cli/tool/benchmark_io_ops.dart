@@ -2,7 +2,7 @@
 // the choice between async dart:io, sync dart:io, and isolate-pool
 // strategies for FS-heavy code paths (stat/read/write/mkdir/rename/delete).
 //
-// Usage (from packages/cli_dart): dart run tool/benchmark_io_ops.dart
+// Usage (from packages/cli): dart run tool/benchmark_io_ops.dart
 //
 // This is a standalone diagnostic script, not part of the test suite: it
 // builds a deterministic temp fixture (2,000 x 1 KB + 2,000 x 6 KB files in

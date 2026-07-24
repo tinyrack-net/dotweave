@@ -1,14 +1,15 @@
-// Benchmarks the Dart CLI (compiled AOT executable) against the TypeScript
-// CLI (`node dist/index.js`) using a synthetic "large repository" fixture:
-// thousands of small config-like files plus a handful of larger asset-like
-// files, spread across nested directories.
+// Benchmarks the Dart CLI (compiled AOT executable) standalone using a
+// synthetic "large repository" fixture: thousands of small config-like files
+// plus a handful of larger asset-like files, spread across nested
+// directories. (An earlier version compared against the since-removed
+// TypeScript CLI; that comparison served the migration and is gone.)
 //
-// Usage (from packages/cli_dart): dart run tool/benchmark_large_repo.dart
+// Usage (from packages/cli): dart run tool/benchmark_large_repo.dart
 //
 // This is a standalone diagnostic script, not part of the test suite: it
-// prints a wall-clock timing table and binary/bundle size comparison to
-// stdout. Numbers are machine- and load-dependent; treat them as a rough
-// signal, not a certified benchmark.
+// prints a wall-clock timing table and the Dart binary size to stdout.
+// Numbers are machine- and load-dependent; treat them as a rough signal,
+// not a certified benchmark.
 
 import 'dart:convert';
 import 'dart:io';
@@ -147,7 +148,6 @@ Map<String, String> _isolatedEnv(String home) {
     'XDG_CONFIG_HOME': p.join(home, '.config'),
     'NO_COLOR': '1',
     'FORCE_COLOR': '0',
-    'NODE_NO_WARNINGS': '1',
   };
 }
 
@@ -163,14 +163,13 @@ String _identityFileFor(String home) {
       : p.join(home, '.config', 'dotweave', 'keys.txt');
 }
 
-/// Drives one CLI implementation (a compiled executable, or `node <script>`)
-/// through an isolated-environment process invocation.
+/// Drives the compiled CLI executable through an isolated-environment
+/// process invocation.
 class CliDriver {
-  CliDriver(this.label, this.executable, [this.baseArgs = const []]);
+  CliDriver(this.label, this.executable);
 
   final String label;
   final String executable;
-  final List<String> baseArgs;
 
   Future<ProcessResult> run(
     List<String> args, {
@@ -179,7 +178,7 @@ class CliDriver {
   }) {
     return Process.run(
       executable,
-      [...baseArgs, ...args],
+      args,
       workingDirectory: cwd,
       environment: env,
       includeParentEnvironment: false,
@@ -342,64 +341,8 @@ Future<Map<String, Duration>> _benchmarkCli(
   return timings;
 }
 
-Future<bool> _ensureTsBuilt(String repoRoot) async {
-  final distEntry = File(
-    p.join(repoRoot, 'packages', 'cli', 'dist', 'index.js'),
-  );
-  if (distEntry.existsSync()) {
-    return true;
-  }
-
-  _log('Building TS CLI (pnpm --filter @tinyrack/dotweave run build)...');
-  final result = await Process.run(
-    Platform.isWindows ? 'pnpm.cmd' : 'pnpm',
-    ['--filter', '@tinyrack/dotweave', 'run', 'build'],
-    workingDirectory: repoRoot,
-    runInShell: Platform.isWindows,
-  );
-
-  if (result.exitCode != 0) {
-    _log('TS build failed:\n${result.stdout}\n${result.stderr}');
-    return false;
-  }
-
-  return distEntry.existsSync();
-}
-
-Future<int?> _findNodeExecutableSize() async {
-  try {
-    final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
-      'node',
-    ]);
-    if (result.exitCode != 0) return null;
-    final nodePath = (result.stdout as String)
-        .split(RegExp(r'\r?\n'))
-        .first
-        .trim();
-    if (nodePath.isEmpty) return null;
-    return File(nodePath).lengthSync();
-  } on ProcessException {
-    return null;
-  }
-}
-
-int _directorySizeBytes(String root) {
-  var total = 0;
-  final dir = Directory(root);
-  if (!dir.existsSync()) return 0;
-  for (final entity in dir.listSync(recursive: true, followLinks: false)) {
-    if (entity is File) {
-      total += entity.lengthSync();
-    }
-  }
-  return total;
-}
-
-void _printTimingTable(
-  Map<String, Duration> tsTimings,
-  Map<String, Duration> dartTimings,
-) {
-  final labels = tsTimings.keys.toList();
+void _printTimingTable(Map<String, Duration> dartTimings) {
+  final labels = dartTimings.keys.toList();
   final labelWidth = labels.fold<int>(
     'Operation'.length,
     (max, l) => l.length > max ? l.length : max,
@@ -409,34 +352,24 @@ void _printTimingTable(
 
   stdout.writeln();
   stdout.writeln('=== Performance (large-repo sync) ===');
-  stdout.writeln(
-    '${pad('Operation', labelWidth)}  ${pad('TS (node)', 12)}  ${pad('Dart (AOT)', 12)}  Speedup',
-  );
-  stdout.writeln('-' * (labelWidth + 45));
+  stdout.writeln('${pad('Operation', labelWidth)}  Dart (AOT)');
+  stdout.writeln('-' * (labelWidth + 12));
 
   for (final label in labels) {
-    final ts = tsTimings[label]!;
     final dart = dartTimings[label]!;
-    final speedup = ts.inMicroseconds == 0 || dart.inMicroseconds == 0
-        ? '-'
-        : '${(ts.inMicroseconds / dart.inMicroseconds).toStringAsFixed(2)}x';
-    stdout.writeln(
-      '${pad(label, labelWidth)}  ${pad(_fmtMs(ts), 12)}  ${pad(_fmtMs(dart), 12)}  $speedup'
-      '${dart.inMicroseconds > ts.inMicroseconds ? ' (Dart slower)' : ' (Dart faster)'}',
-    );
+    stdout.writeln('${pad(label, labelWidth)}  ${_fmtMs(dart)}');
   }
 }
 
-/// Runs cold `push` at increasing file counts for both CLIs to reveal
-/// whether wall-clock time scales linearly (constant per-file overhead) or
-/// super-linearly (an O(n^2)-shaped algorithmic issue) with repo size.
-Future<void> _runScalingProbe(CliDriver tsDriver, CliDriver dartDriver) async {
+/// Runs cold `push` at increasing file counts to reveal whether wall-clock
+/// time scales linearly (constant per-file overhead) or super-linearly (an
+/// O(n^2)-shaped algorithmic issue) with repo size.
+Future<void> _runScalingProbe(CliDriver dartDriver) async {
   const sizes = [500, 1000, 2000, 4000, 8000];
   stdout.writeln();
   stdout.writeln('=== Cold push scaling probe (files vs. time) ===');
   stdout.writeln(
-    '${'files'.padRight(8)}${'TS ms'.padRight(12)}${'TS ms/file'.padRight(14)}'
-    '${'Dart ms'.padRight(12)}${'Dart ms/file'.padRight(14)}',
+    '${'files'.padRight(8)}${'Dart ms'.padRight(12)}${'Dart ms/file'.padRight(14)}',
   );
 
   for (final size in sizes) {
@@ -486,14 +419,11 @@ Future<void> _runScalingProbe(CliDriver tsDriver, CliDriver dartDriver) async {
       }
     }
 
-    final tsTime = await coldPushFor(tsDriver);
     final dartTime = await coldPushFor(dartDriver);
     await _deleteDirectoryWithRetry(Directory(p.dirname(fixtureRoot)));
 
     stdout.writeln(
       '${size.toString().padRight(8)}'
-      '${tsTime.inMilliseconds.toString().padRight(12)}'
-      '${(tsTime.inMicroseconds / 1000 / size).toStringAsFixed(3).padRight(14)}'
       '${dartTime.inMilliseconds.toString().padRight(12)}'
       '${(dartTime.inMicroseconds / 1000 / size).toStringAsFixed(3).padRight(14)}',
     );
@@ -511,32 +441,18 @@ Future<void> main(List<String> args) async {
   }
 
   final packageRoot = findPackageRoot();
-  final repoRoot = p.dirname(p.dirname(packageRoot));
 
   _log('Package root: $packageRoot');
-  _log('Repo root: $repoRoot');
 
   _log('Building/locating Dart AOT binary...');
   final dartBinary = await ensureE2eBinary(
     force: args.contains('--force-dart-build'),
   );
 
-  final tsAvailable = await _ensureTsBuilt(repoRoot);
-  if (!tsAvailable) {
-    stderr.writeln(
-      'Could not build the TS CLI; aborting comparison. '
-      'Run `pnpm --filter @tinyrack/dotweave run build` manually and retry.',
-    );
-    exitCode = 1;
-    return;
-  }
-  final tsEntry = p.join(repoRoot, 'packages', 'cli', 'dist', 'index.js');
-
   final dartDriver = CliDriver('dart', dartBinary);
-  final tsDriver = CliDriver('ts', 'node', [tsEntry]);
 
   if (args.contains('--scaling')) {
-    await _runScalingProbe(tsDriver, dartDriver);
+    await _runScalingProbe(dartDriver);
     return;
   }
 
@@ -551,42 +467,20 @@ Future<void> main(List<String> args) async {
     '${_fmtBytes(fixture.totalBytes)} total.',
   );
 
-  _log('Running TS benchmark...');
-  final tsTimings = await _benchmarkCli(tsDriver, fixtureRoot);
-
   _log('Running Dart benchmark...');
   final dartTimings = await _benchmarkCli(dartDriver, fixtureRoot);
 
   await Directory(p.dirname(fixtureRoot)).delete(recursive: true);
 
-  _printTimingTable(tsTimings, dartTimings);
+  _printTimingTable(dartTimings);
 
   stdout.writeln();
-  stdout.writeln('=== Binary / bundle size ===');
+  stdout.writeln('=== Binary size ===');
   final dartSize = File(dartBinary).lengthSync();
-  final tsDistSize = _directorySizeBytes(
-    p.join(repoRoot, 'packages', 'cli', 'dist'),
-  );
-  final nodeExeSize = await _findNodeExecutableSize();
   stdout.writeln(
     'Dart AOT executable (self-contained, no runtime needed): '
     '${_fmtBytes(dartSize)}',
   );
-  stdout.writeln(
-    'TS compiled output only (packages/cli/dist; needs a Node runtime '
-    'already installed to run): ${_fmtBytes(tsDistSize)}',
-  );
-  if (nodeExeSize != null) {
-    stdout.writeln(
-      'Node runtime on this machine (node.exe, measured): '
-      '${_fmtBytes(nodeExeSize)}',
-    );
-    stdout.writeln(
-      'TS total footprint on a machine with no Node preinstalled: '
-      '${_fmtBytes(tsDistSize + nodeExeSize)} '
-      '(vs. Dart\'s single ${_fmtBytes(dartSize)} binary)',
-    );
-  }
   stdout.writeln();
   stdout.writeln(
     'Note: numbers are wall-clock, single-run-per-operation on this '

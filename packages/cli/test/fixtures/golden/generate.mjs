@@ -1,6 +1,6 @@
 // Regenerates pretty-json.json, the Node JSON.stringify golden fixture that
 // pins Dart formatJsonPretty to byte-identical output.
-// Run from packages/cli_dart: node test/fixtures/golden/generate.mjs
+// Run from packages/cli: node test/fixtures/golden/generate.mjs
 // Keep this value in sync with test/lib/json_format_test.dart.
 import { writeFileSync } from "node:fs";
 

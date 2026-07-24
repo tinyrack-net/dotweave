@@ -52,7 +52,7 @@ Future<void> performSmoke({
 }) async {
   final resolvedExecutablePath = p.join(repoRoot, executablePath);
   final version = await readPubspecVersion(
-    p.join(repoRoot, 'packages', 'cli_dart', 'pubspec.yaml'),
+    p.join(repoRoot, 'packages', 'cli', 'pubspec.yaml'),
   );
 
   Future<CommandResult> runExecutable(List<String> args) {

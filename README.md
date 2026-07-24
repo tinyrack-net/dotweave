@@ -5,9 +5,7 @@
 **Git-backed configuration sync for your development environment.**
 
 [![CI](https://github.com/tinyrack-net/dotweave/actions/workflows/pipeline.yml/badge.svg)](https://github.com/tinyrack-net/dotweave/actions/workflows/pipeline.yml)
-[![npm](https://img.shields.io/npm/v/@tinyrack/dotweave)](https://www.npmjs.com/package/@tinyrack/dotweave)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](https://nodejs.org/)
 
 [Documentation](https://dotweave.tinyrack.net/en/) · [Getting Started](https://dotweave.tinyrack.net/en/getting-started/) · [한국어](https://dotweave.tinyrack.net/ko/)
 
@@ -41,13 +39,7 @@ winget install tinyrack.dotweave
 brew install tinyrack-net/tap/dotweave
 ```
 
-### npm
-
-Use npm on any platform, or as a cross-platform fallback.
-
-```bash
-npm install -g @tinyrack/dotweave
-```
+Prebuilt binaries for all supported platforms are also available on the [GitHub Releases](https://github.com/tinyrack-net/dotweave/releases) page.
 
 ## Quick Start
 

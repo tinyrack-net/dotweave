@@ -79,11 +79,11 @@ void main() {
   }
 
   group('release targets', () {
-    test('updates the cli package, cli_dart pubspec, and version.g.dart', () {
+    test('updates the cli package.json, pubspec, and version.g.dart', () {
       expect(releaseTargets.map((target) => target.path), [
         'packages/cli/package.json',
-        'packages/cli_dart/pubspec.yaml',
-        'packages/cli_dart/lib/src/lib/version.g.dart',
+        'packages/cli/pubspec.yaml',
+        'packages/cli/lib/src/lib/version.g.dart',
       ]);
     });
   });
@@ -92,7 +92,7 @@ void main() {
     test('bumps version, writes, stages, commits, and tags', () async {
       final targets = [
         FakeReleaseTarget('packages/cli/package.json'),
-        FakeReleaseTarget('packages/cli_dart/pubspec.yaml'),
+        FakeReleaseTarget('packages/cli/pubspec.yaml'),
       ];
 
       final result = await performRelease(
@@ -108,7 +108,7 @@ void main() {
       expect(gitCallsFor('add').single, [
         'add',
         'packages/cli/package.json',
-        'packages/cli_dart/pubspec.yaml',
+        'packages/cli/pubspec.yaml',
       ]);
       expect(gitCallsFor('commit').single, ['commit', '-m', 'release: v1.2.4']);
       expect(gitCalls.last, ['tag', '-s', 'v1.2.4', '-m', 'release: v1.2.4']);
@@ -216,10 +216,7 @@ void main() {
           releaseType: ReleaseType.patch,
           targets: [
             FakeReleaseTarget('packages/cli/package.json'),
-            FakeReleaseTarget(
-              'packages/cli_dart/pubspec.yaml',
-              version: '9.9.9',
-            ),
+            FakeReleaseTarget('packages/cli/pubspec.yaml', version: '9.9.9'),
           ],
         ),
         throwsA(

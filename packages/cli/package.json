@@ -1,8 +1,12 @@
 {
-  "name": "dotweave-cli-dart",
+  "name": "dotweave-cli",
   "private": true,
+  "version": "0.53.0",
   "scripts": {
     "analyze": "dart analyze",
     "test": "dart test"
+  },
+  "dependencies": {
+    "age-encryption": "^0.3.0"
   }
 }

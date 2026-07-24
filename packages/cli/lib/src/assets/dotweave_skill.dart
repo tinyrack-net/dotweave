@@ -1,5 +1,5 @@
-// Mirror of `assets/dotweave-skill.ts`: the embedded SKILL.md asset content,
-// preserved byte-for-byte.
+// The embedded SKILL.md asset content installed by `dotweave skill install`.
+// The YAML front matter `name: dotweave` is pinned by tests.
 
 const String dotweaveSkillContent = r'''---
 name: dotweave
@@ -21,16 +21,16 @@ Dotweave is a git-backed configuration synchronization tool for dotfiles. It tre
 
 ## Development Commands
 
-- Use `pnpm --filter @tinyrack/dotweave build` to build the CLI package.
-- Use `pnpm --filter @tinyrack/dotweave test` to run CLI tests.
-- Use `pnpm --filter @tinyrack/dotweave check` for package typecheck, lint, and tests.
-- Use `node packages/cli/bin/index.js` or `pnpm --filter @tinyrack/dotweave start` to run a local CLI build.
+- Use `dart test` (from `packages/cli`) to run CLI tests.
+- Use `dart analyze --fatal-infos` and `dart format .` to validate and format the code.
+- Use `dart run bin/dotweave.dart <args>` to run the CLI locally.
+- Use `dart compile exe bin/dotweave.dart` to build a native binary.
 
 ## Development Guidance
 
 - Add failing tests before implementing behavioral changes.
-- Keep CLI command modules thin and put filesystem or sync behavior in `src/services`.
-- Preserve the existing `@stricli/core` command style.
+- Keep CLI command modules thin and put filesystem or sync behavior in `lib/src/services`.
+- Preserve the existing command-routing style in `lib/src/cli`.
 - Use `DotweaveError` for user-facing failures.
 - Run formatting and validation before reporting completion.
 ''';

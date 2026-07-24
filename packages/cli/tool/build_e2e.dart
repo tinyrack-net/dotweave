@@ -41,7 +41,7 @@ String findPackageRoot([String? start]) {
       throw StateError(
         'Could not find the dotweave package root (a pubspec.yaml with '
         '"name: dotweave") above ${start ?? Directory.current.path}. Run '
-        'from within packages/cli_dart.',
+        'from within packages/cli.',
       );
     }
 

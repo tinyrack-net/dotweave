@@ -3,46 +3,51 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Node.js (>=24), TypeScript, pnpm (Monorepo), `@stricli/core` (CLI), `zod` (Validation), `age-encryption` (Secrets), `vitest` (Testing), React Router and `@tinyrack/docs` (Homepage/Docs).
-- **Architecture:** A monorepo containing a CLI package (`@tinyrack/dotweave`) and a documentation homepage (`@tinyrack/dotweave-homepage`).
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`packages/homepage`, built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** A monorepo containing the Dart CLI package (`packages/cli`), a Dart internal tooling package (`packages/tools`), and a documentation homepage (`@tinyrack/dotweave-homepage`). The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
 ## Mandatory Validation Loop
 You MUST execute a validation loop for every change to ensure system integrity.
-- **Build**: `pnpm run build`
-- **Test**: `pnpm run test`
-- **Lint/Format (biome)**: `pnpm run format` and `pnpm run format:check`
 
-If any step fails, you MUST fix the issues before proceeding or reporting completion. Specifically for the CLI package, you can use `pnpm --filter @tinyrack/dotweave check` for a comprehensive check.
+For Dart packages (run from `packages/cli` and/or `packages/tools`, whichever you changed):
+- **Format**: `dart format .`
+- **Analyze**: `dart analyze --fatal-infos`
+- **Test**: `dart test`
+
+For the homepage (run from the repo root):
+- **Build**: `pnpm --filter @tinyrack/dotweave-homepage build`
+- **Test**: `pnpm --filter @tinyrack/dotweave-homepage test`
+- **Typecheck**: `pnpm --filter @tinyrack/dotweave-homepage typecheck`
+
+If any step fails, you MUST fix the issues before proceeding or reporting completion.
 
 ---
 
 ## Workspace Structure
-Managed via `pnpm` workspaces:
-- `packages/cli`: The core CLI tool.
-- `packages/homepage`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui`.
+- `packages/cli`: The core CLI tool (Dart).
+- `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`).
+- `packages/homepage`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (pnpm workspace).
 
 ---
 
 ## Building and Running
 
-### Root Commands
-- **Install Dependencies:** `pnpm install`
-- **Build All:** `pnpm run build`
-- **Run All Dev:** `pnpm run dev`
-- **Format Code:** `pnpm run format`
-
 ### CLI Package (`packages/cli`)
-- **Development (Watch):** `pnpm --filter @tinyrack/dotweave dev`
-- **Build:** `pnpm --filter @tinyrack/dotweave build`
-- **Typecheck:** `pnpm --filter @tinyrack/dotweave typecheck`
-- **Run Tests:** `pnpm --filter @tinyrack/dotweave test`
-- **Full Check (Typecheck + Lint + Test):** `pnpm --filter @tinyrack/dotweave check`
-- **Run Local CLI:** `node packages/cli/bin/index.js` or `pnpm --filter @tinyrack/dotweave start`
-- **Executable Build:** `pnpm --filter @tinyrack/dotweave pkg:build`
+- **Fetch Dependencies:** `dart pub get`
+- **Run Local CLI:** `dart run bin/dotweave.dart <args>`
+- **Run Tests:** `dart test`
+- **Analyze:** `dart analyze --fatal-infos`
+- **Format:** `dart format .`
+- **Native Binary Build:** `dart compile exe bin/dotweave.dart`
+
+### Tools Package (`packages/tools`)
+- **Run a Tool Command:** `dart run bin/cli.dart <cmd>`
+- **Validate:** `dart format .`, `dart analyze --fatal-infos`, `dart test`
 
 ### Homepage Package (`packages/homepage`)
+- **Install Dependencies:** `pnpm install` (repo root)
 - **Dev Server:** `pnpm --filter @tinyrack/dotweave-homepage dev`
 - **Build Site:** `pnpm --filter @tinyrack/dotweave-homepage build`
 - **Typecheck:** `pnpm --filter @tinyrack/dotweave-homepage typecheck`
@@ -53,23 +58,22 @@ Managed via `pnpm` workspaces:
 ## Development Conventions
 
 ### General
-- **Tooling:** Use `biome` for linting and formatting. Always run `pnpm run format` before committing.
-- **Node.js:** Requires Node.js 24 or higher.
-- **Strict TypeScript:** `tsconfig.json` is configured with strict settings.
+- **Dart:** Requires Dart SDK 3.12 or higher. Always run `dart format` and keep `dart analyze --fatal-infos` clean before committing.
+- **Homepage tooling:** Uses pnpm and strict TypeScript.
 
 ### CLI Development
-- **Source Structure:**
-  - `src/cli/`: Command definitions and routing.
-  - `src/services/`: Core business logic (git operations, file system, sync logic).
-  - `src/config/`: Configuration schemas (Zod) and migrations.
-  - `src/lib/`: Low-level utilities.
-- **Import Aliases:** Use `#app/*` for all internal CLI imports (mapped to `src/*`).
-- **Commands:** Commands are built using `@stricli/core`. Root commands are defined in `src/cli/root-commands.ts`.
+- **Source Structure (under `packages/cli/lib/src/`):**
+  - `cli/`: Command definitions and routing.
+  - `services/`: Core business logic (git operations, file system, sync logic).
+  - `config/`: Configuration schemas and migrations.
+  - `lib/`: Low-level utilities.
+- **Commands:** Follow the existing command-routing style in `lib/src/cli` (root commands are defined in `lib/src/cli/root_commands.dart`).
 - **Testing:**
-  - Unit/Integration tests: `src/**/*.test.ts`.
-  - E2E tests: `tests/**/*.e2e.test.ts`.
+  - Unit/Integration tests: `test/**/*_test.dart`.
+  - E2E tests: `test/e2e/`.
   - E2E tests use isolated temporary environments for `HOME` and `XDG_CONFIG_HOME`.
-- **Error Handling:** Use the custom error types in `src/lib/error.ts`.
+- **Error Handling:** Use the custom error types in `lib/src/lib/error.dart`.
+- **Parity:** Intentional behavioral divergences from the pre-cutover TypeScript implementation are recorded in `packages/cli/PARITY.md`.
 
 ### Documentation / Homepage
 - **Localization:** Supports `en`, `ko`, and `ja`. Content is in `app/content/`.
@@ -78,8 +82,7 @@ Managed via `pnpm` workspaces:
 ---
 
 ## Key Files
-- `pnpm-workspace.yaml`: Monorepo configuration.
-- `biome.json`: Linting and formatting rules.
-- `packages/cli/src/application.ts`: CLI entry point and application building.
-- `packages/cli/src/config/sync-schema.ts`: Zod schema for the sync configuration.
+- `packages/cli/lib/src/application.dart`: CLI entry point and application building.
+- `packages/cli/lib/src/config/sync_schema.dart`: Schema for the sync configuration.
+- `packages/cli/PARITY.md`: Recorded divergences from the pre-cutover TypeScript implementation.
 - `packages/homepage/docs.config.ts`: Documentation manifest, navigation, localization, redirects, and site metadata.

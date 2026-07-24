@@ -10,19 +10,12 @@ import { TRSteps } from "@tinyrack/ui/components/steps";
 import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
-## 前提条件
-
-- **Node.js 24**以降
-
----
-
 ## インストール
 
 <TRTabs.Root defaultValue="windows">
 <TRTabs.List aria-label="Installation method">
 <TRTabs.Tab value="windows">Windows</TRTabs.Tab>
 <TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
-<TRTabs.Tab value="npm">npm</TRTabs.Tab>
 <TRTabs.Indicator />
 </TRTabs.List>
 <TRTabs.Panel value="windows">
@@ -36,15 +29,6 @@ winget install tinyrack.dotweave
 
 ```bash
 brew install tinyrack-net/tap/dotweave
-```
-
-</TRTabs.Panel>
-<TRTabs.Panel value="npm">
-
-npmはすべてのプラットフォームで使用でき、cross-platform fallbackとしても使えます。
-
-```bash
-npm install -g @tinyrack/dotweave
 ```
 
 </TRTabs.Panel>
