@@ -37,6 +37,12 @@ export const buildSyncConfigDocument = (
 
   return {
     version: AppConstants.SYNC.CONFIG_VERSION,
+    // Preserve the actual on-disk format marker rather than forcing the current
+    // value: rewriting the manifest (e.g. on track/untrack) must not claim the
+    // repository was format-migrated. Only ensureRepositoryFormat advances it.
+    ...(config.repositoryFormat === undefined
+      ? {}
+      : { repositoryFormat: config.repositoryFormat }),
     ...(config.age === undefined
       ? {}
       : {

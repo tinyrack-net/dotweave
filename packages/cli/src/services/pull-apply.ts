@@ -37,7 +37,11 @@ import {
   replacePathAtomically,
   writeFileNode,
 } from "#app/lib/filesystem.ts";
-import { buildDirectoryKey, normalizeLinkTarget } from "#app/lib/path.ts";
+import {
+  buildDirectoryKey,
+  normalizeLinkTarget,
+  toNativeLinkTarget,
+} from "#app/lib/path.ts";
 import { limitConcurrency } from "#app/lib/promise.ts";
 import type { FileLikeSnapshotNode, SnapshotNode } from "./local-snapshot.ts";
 import type { EffectiveSyncConfig } from "./sync-context.ts";
@@ -272,7 +276,7 @@ const stageAndReplacePath = async (
 
   try {
     if (node.type === "symlink") {
-      await createSymlink(node.linkTarget, stagedPath);
+      await createSymlink(toNativeLinkTarget(node.linkTarget), stagedPath);
     } else {
       await writeFileNode(stagedPath, node, fileMode);
     }

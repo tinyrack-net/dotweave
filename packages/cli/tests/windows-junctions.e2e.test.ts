@@ -1,6 +1,7 @@
 import { mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { AppConstants } from "../src/config/constants.ts";
 import {
   createSyncE2EContext,
   type SyncE2EContext,
@@ -74,19 +75,24 @@ describe("Windows junction and symlink target normalization", () => {
       await ctx.runCli(["track", linkPath]);
       await ctx.runCli(["push"]);
 
-      // 2. Manually modify the repo to have a RELATIVE path (simulating a push from Linux/Mac)
-      const repoLinkPath = join(
+      // 2. Manually modify the repo artifact to store a RELATIVE target
+      // (simulating a push from Linux/Mac). Symlinks are stored as regular
+      // metadata files whose contents are the POSIX-normalized target.
+      const repoLinkArtifact = join(
         ctx.xdgDir,
         "dotweave",
         "repository",
         "profiles",
         "default",
-        "link_entry",
+        `link_entry${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`,
       );
       const relativeTarget = relative(dirname(linkPath), targetDir);
 
-      await rm(repoLinkPath, { force: true });
-      await symlink(relativeTarget, repoLinkPath, "file");
+      await writeFile(
+        repoLinkArtifact,
+        relativeTarget.replace(/\\/g, "/"),
+        "utf8",
+      );
 
       // 3. Pull - should match the absolute local junction with the relative repo target
       // and report "Already up to date" because they point to the same location.

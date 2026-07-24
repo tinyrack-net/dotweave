@@ -10,6 +10,7 @@ export const managedSecretArtifactIgnoreBlock = `${beginMarker}
 !profiles/
 !profiles/**/
 !profiles/**/*.dotweave.secret
+!profiles/**/*.dotweave.symlink
 ${endMarker}
 `;
 

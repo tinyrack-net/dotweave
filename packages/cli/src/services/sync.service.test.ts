@@ -11,7 +11,9 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { AppConstants } from "#app/config/constants.ts";
 import { createSymlink } from "#app/lib/filesystem.ts";
+import { toPosixLinkTarget } from "#app/lib/path.ts";
 
 import {
   parseManifestEntries,
@@ -53,6 +55,23 @@ import { setTargetMode } from "./sync-mode.ts";
 import { trackTarget } from "./track.ts";
 
 const temporaryDirectories: string[] = [];
+
+// Symlinks are stored as regular metadata files suffixed with
+// `.dotweave.symlink`, whose contents are the POSIX-normalized link target.
+const symlinkArtifactPath = (plainArtifactPath: string) =>
+  `${plainArtifactPath}${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`;
+
+const expectSymlinkArtifact = async (
+  plainArtifactPath: string,
+  target: string,
+) => {
+  const metaPath = symlinkArtifactPath(plainArtifactPath);
+  const stats = await lstat(metaPath);
+
+  expect(stats.isFile()).toBe(true);
+  expect(stats.isSymbolicLink()).toBe(false);
+  expect(await readFile(metaPath, "utf8")).toBe(toPosixLinkTarget(target));
+};
 
 const createWorkspace = async () => {
   const directory = await createTemporaryDirectory("dotweave-sync-test-");
@@ -1664,8 +1683,7 @@ describe("sync service", () => {
       expect(result.plainFileCount).toBe(1);
       expect(result.symlinkCount).toBe(1);
       expect(result.deletedArtifactCount).toBe(1);
-      expect((await lstat(wslArtifact)).isSymbolicLink()).toBe(true);
-      expect(await readlink(wslArtifact)).toBe(".platform-target");
+      await expectSymlinkArtifact(wslArtifact, ".platform-target");
       await expect(lstat(defaultArtifact)).rejects.toThrow();
     },
   );
@@ -2493,7 +2511,7 @@ describe("sync service", () => {
       "default",
       ".zshenv",
     );
-    expect(await readlink(artifactPath)).toBe(".zshrc");
+    await expectSymlinkArtifact(artifactPath, ".zshrc");
 
     await writeFile(
       manifestPath,
@@ -2512,7 +2530,7 @@ describe("sync service", () => {
     const result = await pushChanges({ dryRun: false });
 
     expect(result.deletedArtifactCount).toBe(1);
-    await expect(lstat(artifactPath)).rejects.toThrow();
+    await expect(lstat(symlinkArtifactPath(artifactPath))).rejects.toThrow();
   });
 
   it("preserves directory-owned nested artifacts after a child entry is removed", async () => {
@@ -3135,8 +3153,7 @@ describe("sync service", () => {
     const result = await pushChanges({ dryRun: false });
 
     expect(result.deletedArtifactCount).toBe(1);
-    expect((await lstat(artifactPath)).isSymbolicLink()).toBe(true);
-    expect(await readlink(artifactPath)).toBe(".transition-link-target");
+    await expectSymlinkArtifact(artifactPath, ".transition-link-target");
   });
 
   it("replaces a repository directory root containing only stale empty descendants with a file artifact", async () => {
@@ -3353,8 +3370,7 @@ describe("sync service", () => {
     ]);
     expect(dryRunResult.deletedArtifactCount).toBe(1);
     expect(result.deletedArtifactCount).toBe(1);
-    expect((await lstat(artifactPath)).isSymbolicLink()).toBe(true);
-    expect(await readlink(artifactPath)).toBe(".empty-child-link-target");
+    await expectSymlinkArtifact(artifactPath, ".empty-child-link-target");
   });
 
   it("replaces an existing symlink artifact with a file artifact without following the symlink target", async () => {
@@ -3417,8 +3433,7 @@ describe("sync service", () => {
       ".config",
       "link-replacement",
     );
-    expect((await lstat(artifactPath)).isSymbolicLink()).toBe(true);
-    expect(await readlink(artifactPath)).toBe(symlinkTarget);
+    await expectSymlinkArtifact(artifactPath, symlinkTarget);
 
     await writeFile(
       manifestPath,
@@ -3445,16 +3460,22 @@ describe("sync service", () => {
     const dryRunResult = await pushChanges({ dryRun: true });
     const result = await pushChanges({ dryRun: false });
 
-    expect(status.push.changes.added).toEqual([]);
-    expect(status.push.changes.modified).toEqual([".config/link-replacement"]);
-    expect(status.push.changes.deleted).toEqual([]);
-    expect(dryRunResult.deletedArtifactCount).toBe(0);
-    expect(result.deletedArtifactCount).toBe(0);
+    // The symlink is stored as a separate `.dotweave.symlink` metadata file, so
+    // switching the entry to a regular file adds the plain artifact and prunes
+    // the stale symlink metadata file (rather than an in-place modify).
+    expect(status.push.changes.added).toEqual([".config/link-replacement"]);
+    expect(status.push.changes.modified).toEqual([]);
+    expect(status.push.changes.deleted).toEqual([
+      `default/.config/link-replacement${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`,
+    ]);
+    expect(dryRunResult.deletedArtifactCount).toBe(1);
+    expect(result.deletedArtifactCount).toBe(1);
     expect((await lstat(artifactPath)).isFile()).toBe(true);
     expect(await readFile(artifactPath, "utf8")).toBe("replacement file\n");
     expect(await readFile(symlinkTarget, "utf8")).toBe(
       "local target content\n",
     );
+    await expect(lstat(symlinkArtifactPath(artifactPath))).rejects.toThrow();
   });
 
   it("preserves still-owned inactive nested directory artifacts from file replacement", async () => {
@@ -3683,7 +3704,10 @@ describe("sync service", () => {
     const dryRunResult = await pushChanges({ dryRun: true });
     const result = await pushChanges({ dryRun: false });
 
-    expect(status.push.changes.added).toEqual([]);
+    // The symlink is stored as a separate `.dotweave.symlink` metadata file, so
+    // it is simply added alongside the still-owned nested directory artifacts,
+    // which are preserved untouched (no directory-root replacement occurs).
+    expect(status.push.changes.added).toEqual([".config/inactive-child-link"]);
     expect(status.push.changes.modified).toEqual([]);
     expect(status.push.changes.deleted).toEqual([]);
     expect(dryRunResult.deletedArtifactCount).toBe(0);
@@ -3691,6 +3715,7 @@ describe("sync service", () => {
     expect((await lstat(artifactPath)).isDirectory()).toBe(true);
     expect((await lstat(childArtifactPath)).isDirectory()).toBe(true);
     await expect(readlink(artifactPath)).rejects.toThrow();
+    await expectSymlinkArtifact(artifactPath, ".inactive-child-link-target");
   });
 
   it("preserves inactive profile-owned nested artifacts during default parent replacements", async () => {
@@ -3845,14 +3870,18 @@ describe("sync service", () => {
     const linkDryRunResult = await pushChanges({ dryRun: true });
     const linkResult = await pushChanges({ dryRun: false });
 
-    expect(linkStatus.push.deletedArtifactCount).toBe(0);
-    expect(linkStatus.push.changes.added).toEqual([]);
-    expect(linkStatus.push.changes.modified).toEqual(["apps/profile-ns"]);
-    expect(linkStatus.push.changes.deleted).toEqual([]);
-    expect(linkDryRunResult.deletedArtifactCount).toBe(0);
-    expect(linkResult.deletedArtifactCount).toBe(0);
-    expect((await lstat(defaultArtifactPath)).isSymbolicLink()).toBe(true);
-    expect(await readlink(defaultArtifactPath)).toBe(".profile-ns-link-target");
+    // File -> symlink transition: the symlink metadata file is added and the
+    // stale plain-file artifact is pruned (the work-owned nested artifacts under
+    // the work profile stay untouched).
+    expect(linkStatus.push.deletedArtifactCount).toBe(1);
+    expect(linkStatus.push.changes.added).toEqual(["apps/profile-ns"]);
+    expect(linkStatus.push.changes.modified).toEqual([]);
+    expect(linkStatus.push.changes.deleted).toEqual([
+      "default/apps/profile-ns",
+    ]);
+    expect(linkDryRunResult.deletedArtifactCount).toBe(1);
+    expect(linkResult.deletedArtifactCount).toBe(1);
+    await expectSymlinkArtifact(defaultArtifactPath, ".profile-ns-link-target");
     expect(await readFile(workFileArtifactPath, "utf8")).toBe(
       '{"profile":"work","updated":true}\n',
     );
@@ -4550,7 +4579,9 @@ describe("sync service", () => {
     const dryRunResult = await pushChanges({ dryRun: true });
     const result = await pushChanges({ dryRun: false });
 
-    expect(status.push.changes.added).toEqual([]);
+    // The symlink is added as a separate `.dotweave.symlink` metadata file; the
+    // platform-variant-owned inactive directory root is preserved untouched.
+    expect(status.push.changes.added).toEqual([".config/variant-link"]);
     expect(status.push.changes.modified).toEqual([]);
     expect(status.push.changes.deleted).toEqual([]);
     expect(dryRunResult.deletedArtifactCount).toBe(0);
@@ -4558,6 +4589,7 @@ describe("sync service", () => {
     expect((await lstat(artifactPath)).isDirectory()).toBe(true);
     await expect(readFile(ownedArtifactPath, "utf8")).resolves.toBe("owned\n");
     await expect(readlink(artifactPath)).rejects.toThrow();
+    await expectSymlinkArtifact(artifactPath, linkTarget);
   });
 
   it("prunes registered profile artifacts when no entries own them", async () => {
@@ -5202,8 +5234,7 @@ describe("sync service", () => {
     );
     expect(dryRunResult.deletedArtifactCount).toBe(1);
     expect(result.deletedArtifactCount).toBe(1);
-    expect((await lstat(artifactPath)).isSymbolicLink()).toBe(true);
-    expect(await readlink(artifactPath)).toBe(".overlap-link-target");
+    await expectSymlinkArtifact(artifactPath, ".overlap-link-target");
   });
 
   it("restores file permission from entry permission on pull", async () => {
@@ -5929,7 +5960,9 @@ describe("sync service", () => {
       "current",
     );
 
-    await rm(repoCurrentPath);
+    // Simulate the repository changing the entry from a symlink to a regular
+    // file: drop the `.dotweave.symlink` metadata file and add a plain file.
+    await rm(symlinkArtifactPath(repoCurrentPath));
     await writeFile(repoCurrentPath, "plain\n", "utf8");
 
     await pullChanges({ dryRun: false });
@@ -6081,17 +6114,18 @@ describe("sync service", () => {
       "default",
       ".zshenv",
     );
-    const beforeStats = await lstat(artifactPath);
+    const metaPath = symlinkArtifactPath(artifactPath);
+    const beforeStats = await lstat(metaPath);
 
     await new Promise((resolve) => {
       setTimeout(resolve, 20);
     });
     await pushChanges({ dryRun: false });
 
-    const afterStats = await lstat(artifactPath);
+    const afterStats = await lstat(metaPath);
 
     expect(afterStats.ino).toBe(beforeStats.ino);
-    expect(await readlink(artifactPath)).toBe(".zshrc");
+    await expectSymlinkArtifact(artifactPath, ".zshrc");
   });
 
   it("updates repository artifacts when only the executable bit changes", async () => {

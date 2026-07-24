@@ -9,6 +9,7 @@ import { decryptSecretFile } from "#app/lib/crypto.ts";
 import { DotweaveError, wrapUnknownError } from "#app/lib/error.ts";
 import { isExecutableMode } from "#app/lib/file-mode.ts";
 import { getPathStats, listDirectoryEntries } from "#app/lib/filesystem.ts";
+import { toPosixLinkTarget } from "#app/lib/path.ts";
 import { addSnapshotNode, type SnapshotNode } from "./local-snapshot.ts";
 import {
   assertStorageSafeRepoPath,
@@ -156,9 +157,49 @@ const readArtifactLeaf = async (
     config.activeProfile,
     storagePath,
   );
+
+  if (artifact.symlink) {
+    if (mode === "secret") {
+      throw new DotweaveError(
+        "Secret sync path is stored as a plain artifact in the repository.",
+        {
+          code: "SECRET_STORED_PLAIN",
+          details: [`Repository path: ${storagePath}`],
+        },
+      );
+    }
+
+    const symlinkStats = await lstat(absolutePath);
+
+    if (!symlinkStats.isFile()) {
+      throw new DotweaveError(
+        "Symlink repository artifacts must be regular metadata files.",
+        {
+          code: "SYMLINK_ARTIFACT_NOT_FILE",
+          details: [`Repository path: ${storagePath}`],
+        },
+      );
+    }
+
+    addSnapshotNode(snapshot, artifact.repoPath, {
+      linkTarget: toPosixLinkTarget(await readFile(absolutePath, "utf8")),
+      type: "symlink",
+    });
+
+    return;
+  }
+
   const stats = await lstat(absolutePath);
 
   if (stats.isSymbolicLink()) {
+    // Repository format 0 compatibility: symlinks stored as physical links
+    // (pre-.dotweave.symlink). Still read them so format-0 repositories keep
+    // working; `migrations/repo-format-v1.ts` rewrites them to the portable
+    // metadata-file format on the next push.
+    //
+    // REMOVAL: when AppConstants.SYNC.MIN_SUPPORTED_REPOSITORY_FORMAT is raised
+    // to 1, delete this branch together with repo-format-v1.ts and its registry
+    // entry; format-0 repositories are then refused with REPO_FORMAT_TOO_OLD.
     if (mode === "secret") {
       throw new DotweaveError(
         "Secret sync path is stored as a plain artifact in the repository.",
@@ -170,7 +211,7 @@ const readArtifactLeaf = async (
     }
 
     addSnapshotNode(snapshot, artifact.repoPath, {
-      linkTarget: await readlink(absolutePath),
+      linkTarget: toPosixLinkTarget(await readlink(absolutePath)),
       type: "symlink",
     });
 

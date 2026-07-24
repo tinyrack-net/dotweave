@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { lstat, mkdir, readFile, readlink } from "node:fs/promises";
+import { lstat, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { AppConstants } from "#app/config/constants.ts";
@@ -31,13 +31,12 @@ import {
   getPathStats,
   listDirectoryEntries,
   writeFileNode,
-  writeSymlinkNode,
 } from "#app/lib/filesystem.ts";
 import { parseJsonc } from "#app/lib/jsonc.ts";
 import {
   buildDirectoryKey,
   isPathEqualOrNested,
-  normalizeLinkTarget,
+  toPosixLinkTarget,
 } from "#app/lib/path.ts";
 import { limitConcurrency } from "#app/lib/promise.ts";
 import type { SnapshotNode } from "./local-snapshot.ts";
@@ -476,9 +475,14 @@ export const buildArtifactKey = (artifact: RepoArtifact) => {
 };
 
 export const resolveArtifactLogicalPath = (
-  artifact: Pick<RepoArtifact, "category" | "profile" | "repoPath">,
+  artifact: Pick<RepoArtifact, "category" | "profile" | "repoPath"> &
+    Partial<Pick<RepoArtifact, "kind">>,
 ) => {
   const profileRelativePath = `${artifact.profile}/${artifact.repoPath}`;
+
+  if (artifact.kind === "symlink") {
+    return `${profileRelativePath}${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`;
+  }
 
   return artifact.category === "secret"
     ? `${profileRelativePath}${AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX}`
@@ -500,34 +504,65 @@ export const stripSecretArtifactSuffix = (relativePath: string) => {
   );
 };
 
+export const isSymlinkArtifactPath = (relativePath: string) => {
+  return relativePath.endsWith(AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX);
+};
+
+export const stripSymlinkArtifactSuffix = (relativePath: string) => {
+  if (!isSymlinkArtifactPath(relativePath)) {
+    return undefined;
+  }
+
+  return relativePath.slice(
+    0,
+    -AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX.length,
+  );
+};
+
 export const assertStorageSafeRepoPath = (repoPath: string) => {
   if (!hasReservedSyncArtifactSuffixSegment(repoPath)) {
     return;
   }
 
   throw new DotweaveError(
-    `Tracked sync paths must not use the reserved suffix ${AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX}.`,
+    `Tracked sync paths must not use the reserved suffixes ${AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX} or ${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}.`,
     {
-      code: "RESERVED_SECRET_SUFFIX",
+      code: "RESERVED_ARTIFACT_SUFFIX",
       details: [`Repository path: ${repoPath}`],
-      hint: "Rename the tracked path so no segment ends with the secret artifact suffix.",
+      hint: "Rename the tracked path so no segment ends with a reserved artifact suffix.",
     },
   );
 };
 
 export const resolveArtifactRelativePath = (
-  artifact: Pick<RepoArtifact, "category" | "profile" | "repoPath">,
+  artifact: Pick<RepoArtifact, "category" | "profile" | "repoPath"> &
+    Partial<Pick<RepoArtifact, "kind">>,
 ) => {
   return `${physicalProfilesRoot}/${resolveArtifactLogicalPath(artifact)}`;
 };
 
-export const parseArtifactRelativePath = (relativePath: string) => {
-  const secret = relativePath.endsWith(
-    AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX,
+const stripArtifactSuffix = (relativePath: string) => {
+  const symlink = relativePath.endsWith(
+    AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX,
   );
-  const logicalPath = secret
-    ? relativePath.slice(0, -AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX.length)
-    : relativePath;
+  const secret =
+    !symlink && relativePath.endsWith(AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX);
+  const suffixLength = symlink
+    ? AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX.length
+    : secret
+      ? AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX.length
+      : 0;
+
+  return {
+    logicalPath:
+      suffixLength === 0 ? relativePath : relativePath.slice(0, -suffixLength),
+    secret,
+    symlink,
+  };
+};
+
+export const parseArtifactRelativePath = (relativePath: string) => {
+  const { logicalPath, secret, symlink } = stripArtifactSuffix(relativePath);
   const segments = logicalPath.split("/");
 
   if (
@@ -551,16 +586,12 @@ export const parseArtifactRelativePath = (relativePath: string) => {
     profile: normalizedProfile,
     repoPath: repoPathSegments.join("/"),
     secret,
+    symlink,
   };
 };
 
 const parseArtifactLogicalPath = (relativePath: string) => {
-  const secret = relativePath.endsWith(
-    AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX,
-  );
-  const logicalPath = secret
-    ? relativePath.slice(0, -AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX.length)
-    : relativePath;
+  const { logicalPath, secret, symlink } = stripArtifactSuffix(relativePath);
   const segments = logicalPath.split("/");
 
   if (segments.length < 2 || segments[0] === undefined) {
@@ -576,6 +607,7 @@ const parseArtifactLogicalPath = (relativePath: string) => {
     profile: normalizeSyncProfileName(profile, "Repository artifact profile"),
     repoPath: repoPathSegments.join("/"),
     secret,
+    symlink,
   };
 };
 
@@ -872,14 +904,17 @@ export const isRepoArtifactCurrent = async (
   }
 
   if (artifact.kind === "symlink") {
-    const linkTarget =
-      stats?.isSymbolicLink() === true ? await readlink(artifactPath) : "";
+    // Symlinks are stored as regular metadata files whose contents are the
+    // POSIX-normalized link target. A legacy physical symlink (stats is a
+    // symlink, not a regular file) is treated as not current so the next push
+    // rewrites it to the portable format.
+    if (stats?.isFile() !== true) {
+      return false;
+    }
 
-    return (
-      stats?.isSymbolicLink() === true &&
-      normalizeLinkTarget(linkTarget) ===
-        normalizeLinkTarget(artifact.linkTarget)
-    );
+    const storedTarget = await readFile(artifactPath, "utf8");
+
+    return storedTarget === toPosixLinkTarget(artifact.linkTarget);
   }
 
   if (stats?.isFile() !== true) {
@@ -941,7 +976,13 @@ export const writeArtifactsToDirectory = async (
       }
 
       if (artifact.kind === "symlink") {
-        await writeSymlinkNode(artifactPath, artifact.linkTarget);
+        // Store the link as a regular metadata file (POSIX-normalized target)
+        // so git versions it as an ordinary blob on every platform, instead of
+        // a physical symlink/junction that git cannot portably track.
+        await writeFileNode(artifactPath, {
+          contents: toPosixLinkTarget(artifact.linkTarget),
+          executable: false,
+        });
         return;
       }
 
