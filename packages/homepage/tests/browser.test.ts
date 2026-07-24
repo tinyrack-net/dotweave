@@ -116,7 +116,7 @@ describe("Dotweave built documentation", () => {
       page.getByRole("heading", { name: "Your config, anywhere." }).isVisible(),
     ).resolves.toBe(true);
     await expect(
-      page.getByText("Dotweave v0.52.0").first().isVisible(),
+      page.getByText("Dotweave v0.53.0").first().isVisible(),
     ).resolves.toBe(true);
     expect(await page.locator("html").getAttribute("data-theme")).toBe(
       "tinyrack-light",
