@@ -1683,8 +1683,7 @@ describe("sync service", () => {
       expect(result.plainFileCount).toBe(1);
       expect(result.symlinkCount).toBe(1);
       expect(result.deletedArtifactCount).toBe(1);
-      expect((await lstat(wslArtifact)).isSymbolicLink()).toBe(true);
-      expect(await readlink(wslArtifact)).toBe(".platform-target");
+      await expectSymlinkArtifact(wslArtifact, ".platform-target");
       await expect(lstat(defaultArtifact)).rejects.toThrow();
     },
   );
