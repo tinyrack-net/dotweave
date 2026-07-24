@@ -1,0 +1,157 @@
+---
+title: Getting Started
+description: Install dotweave and set up your first sync in a few minutes.
+section: overview
+order: 2
+---
+
+import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRSteps } from "@tinyrack/ui/components/steps";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
+
+
+## Installation
+
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
+
+```powershell
+winget install tinyrack.dotweave
+```
+
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
+
+```bash
+brew install tinyrack-net/tap/dotweave
+```
+
+</TRTabs.Panel>
+</TRTabs.Root>
+
+---
+
+## Starting Fresh
+
+If this is your first time using dotweave, follow these steps to create a new sync directory.
+
+<TRSteps.Root>
+<TRSteps.Item>
+
+**Initialize**
+
+Create a new sync directory with a fresh age key for encrypting secrets.
+
+```bash
+dotweave init
+```
+
+This sets up the dotweave app-data directory with a Git repository and an age identity.
+
+</TRSteps.Item>
+<TRSteps.Item>
+
+**Track your files**
+
+Tell dotweave which files to sync. For example:
+
+```bash
+dotweave track ~/.zshrc
+dotweave track ~/.config/starship.toml
+dotweave track ~/.config/nvim
+```
+
+For sensitive files like SSH keys, use secret mode:
+
+```bash
+dotweave track --mode secret ~/.ssh/config
+```
+
+</TRSteps.Item>
+<TRSteps.Item>
+
+**Push to the sync directory**
+
+Copy your tracked files into the sync directory:
+
+```bash
+dotweave push
+```
+
+</TRSteps.Item>
+<TRSteps.Item>
+
+**Commit and push with Git**
+
+Open the sync directory and push to a remote:
+
+```bash
+dotweave cd
+git add -A && git commit -m "Initial sync"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+</TRSteps.Item>
+</TRSteps.Root>
+
+<TRCallout variant="tip">
+  After setting up, check out the [Directory Structure](/en/guides/directory-structure/) guide to see where dotweave stores your config and synced files.
+</TRCallout>
+
+---
+
+## Connecting an Existing Sync Directory
+
+On a new machine, clone your existing sync directory:
+
+<TRSteps.Root>
+<TRSteps.Item>
+
+**Clone and initialize**
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+```
+
+This clones the repository into the dotweave app-data directory under `repository/`. When connecting an existing sync repository, you must provide the same age private key used to decrypt its secret files:
+
+```bash
+dotweave init <your-repo-url>
+```
+
+</TRSteps.Item>
+<TRSteps.Item>
+
+**Pull your files**
+
+Restore all tracked files to their local paths:
+
+```bash
+dotweave pull
+```
+
+</TRSteps.Item>
+</TRSteps.Root>
+
+<TRCallout variant="note">
+  If your sync directory contains encrypted secrets, you need the same age private key on all machines. See [Syncing Secrets](/en/guides/syncing-secrets/) for details.
+</TRCallout>
+
+---
+
+## What's Next?
+
+Now that you're set up, explore the guides:
+
+- [Directory Structure](/en/guides/directory-structure/) — understand where dotweave stores files
+- [Tracking Files](/en/guides/tracking-files/) — learn more about tracking options
+- [Sync Modes](/en/guides/sync-modes/) — normal, secret, and ignore modes
+- [Syncing Secrets](/en/guides/syncing-secrets/) — encrypt sensitive files with age
+
+

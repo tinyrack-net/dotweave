@@ -27,35 +27,90 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Run lint
         run: pnpm run format:check
+        working-directory: homepage
 
-  typecheck:
-    name: Typecheck
+  dart-analyze:
+    name: Dart Analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Run typecheck
-        run: pnpm run typecheck
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed packages/cli packages/tools
+      - name: Analyze
+        run: dart analyze --fatal-infos
 
-  test:
-    name: Test (${{ matrix.os }})
+  dart-test:
+    name: Dart Test (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-latest
           - macos-26
-          - windows-2022
+          - windows-2025
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Build e2e binary
+        run: dart tool/build_e2e.dart
+        working-directory: packages/cli
+      - name: Run cli tests
+        # interop needs the Node toolchain; it runs in dart-interop.
+        run: dart test -x interop
+        working-directory: packages/cli
+      - name: Run tools tests
+        run: dart test
+        working-directory: packages/tools
+
+  dart-interop:
+    name: Dart Interop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2025
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      # Installs the standalone interop harness (the npm age-encryption
+      # reference implementation the age interop tests drive via node).
       - uses: ./.github/actions/setup
-      - name: Build
-        run: pnpm run build
-      - name: Run tests
-        run: pnpm run test
+        with:
+          working-directory: packages/cli/test/crypto/age/interop
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install Dart dependencies
+        run: dart pub get
+      - name: Run age interop tests
+        run: dart test -t interop
+        working-directory: packages/cli
 
   homepage:
     name: Homepage
@@ -64,14 +119,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup
+      - name: Typecheck
+        run: pnpm run typecheck
+        working-directory: homepage
+      - name: Run homepage tests
+        run: pnpm run test
+        working-directory: homepage
       - name: Build homepage
-        run: pnpm --filter @tinyrack/dotweave-homepage run build
+        run: pnpm run build
+        working-directory: homepage
       - name: Install Chromium
-        run: pnpm --filter @tinyrack/dotweave-homepage exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: homepage
       - name: Audit homepage in Chromium
-        run: pnpm --filter @tinyrack/dotweave-homepage run test:audit
+        run: pnpm run test:audit
+        working-directory: homepage
       - name: Verify Cloudflare deployment bundle
-        run: pnpm --filter @tinyrack/dotweave-homepage run deploy:dry-run
+        run: pnpm run deploy:dry-run
+        working-directory: homepage
 
   autocomplete-shell-smoke:
     name: Autocomplete (${{ matrix.os }} / ${{ matrix.shell }})
@@ -91,13 +156,19 @@ jobs:
             shell: zsh
           - os: macos-26
             shell: fish
-          - os: windows-2022
+          - os: windows-2025
             shell: powershell
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
       - name: Install zsh (Ubuntu)
         if: matrix.os == 'ubuntu-latest' && matrix.shell == 'zsh'
         shell: bash
@@ -110,153 +181,70 @@ jobs:
         if: startsWith(matrix.os, 'macos') && matrix.shell == 'fish'
         shell: bash
         run: brew install fish
-      - name: Build
-        run: pnpm --filter @tinyrack/dotweave run build
+      - name: Install dependencies
+        run: dart pub get
+      - name: Build e2e binary
+        run: dart tool/build_e2e.dart
+        working-directory: packages/cli
       - name: Run autocomplete shell smoke tests
         env:
           DOTWEAVE_AUTOCOMPLETE_SHELL: ${{ matrix.shell }}
-        run: pnpm --filter @tinyrack/dotweave run test:autocomplete
+        run: dart test test/e2e/autocomplete_e2e_test.dart
+          test/e2e/autocomplete_pty_e2e_test.dart
+        working-directory: packages/cli
 
-  build-pkg:
-    name: Build Pkg
+  build-and-package:
+    name: Build & Package (${{ matrix.target }})
     needs:
-      - lint
-      - typecheck
-      - test
-      - autocomplete-shell-smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Build pkg
-        run: pnpm --filter @tinyrack/dotweave run pkg:build --target
-          node24-linux-x64,node24-linux-arm64,node24-macos-x64,node24-macos-arm64,node24-win-x64,node24-win-arm64
-
-      - name: Upload Linux x64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-linux-x64
-          path: packages/cli/dist/pkg/dotweave-linux-x64
-          if-no-files-found: error
-
-      - name: Upload Linux arm64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-linux-arm64
-          path: packages/cli/dist/pkg/dotweave-linux-arm64
-          if-no-files-found: error
-
-      - name: Upload macOS x64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-darwin-x64
-          path: packages/cli/dist/pkg/dotweave-macos-x64
-          if-no-files-found: error
-
-      - name: Upload macOS arm64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-darwin-arm64
-          path: packages/cli/dist/pkg/dotweave-macos-arm64
-          if-no-files-found: error
-
-      - name: Upload Windows x64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-win32-x64.exe
-          path: packages/cli/dist/pkg/dotweave-win-x64.exe
-          if-no-files-found: error
-
-      - name: Upload Windows arm64
-        uses: actions/upload-artifact@v7
-        with:
-          name: dotweave-win32-arm64.exe
-          path: packages/cli/dist/pkg/dotweave-win-arm64.exe
-          if-no-files-found: error
-
-  smoke-test:
-    name: Smoke Test (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: build-pkg
-    if: github.event_name == 'pull_request'
+      - dart-analyze
+      - dart-test
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact: dotweave-linux-x64
-            arch: x64
+          - os: ubuntu-24.04
+            target: linux-x64
+            asset: dotweave-linux-x64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            asset: dotweave-linux-arm64
+          # macos-13 (the previous Intel label) was retired by GitHub;
+          # macos-15-intel is the supported Intel macOS runner.
+          - os: macos-15-intel
+            target: macos-x64
+            asset: dotweave-macos-x64
           - os: macos-26
-            platform: darwin
-            artifact: dotweave-darwin-x64
-            arch: x64
-          - os: macos-26
-            platform: darwin
-            artifact: dotweave-darwin-arm64
-            arch: arm64
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Download artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ matrix.artifact }}
-          path: packages/cli/dist/pkg
-
-      - name: Restore executable permissions
-        shell: bash
-        run: chmod +x packages/cli/dist/pkg/dotweave-*
-
-      - name: Smoke test binary
-        shell: bash
-        run: |
-          fname="dotweave-${{ matrix.platform == 'darwin' && 'macos' || 'linux' }}-${{ matrix.arch }}"
-          pnpm --filter @tinyrack/dotweave-tools run cli pkg smoke --skip-build --executablePath "packages/cli/dist/pkg/$fname"
-
-  sign-and-test:
-    name: Sign & Test (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: build-pkg
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact: dotweave-linux-x64
-            arch: x64
-          - os: ubuntu-latest
-            platform: linux
-            artifact: dotweave-linux-arm64
-            arch: arm64
-          - os: macos-26
-            platform: darwin
-            artifact: dotweave-darwin-x64
-            arch: x64
-          - os: macos-26
-            platform: darwin
-            artifact: dotweave-darwin-arm64
-            arch: arm64
+            target: macos-arm64
+            asset: dotweave-macos-arm64
+          - os: windows-2025
+            target: win-x64
+            asset: dotweave-win-x64.exe
+            msixarch: x64
+          - os: windows-11-arm
+            target: win-arm64
+            asset: dotweave-win-arm64.exe
+            msixarch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Download artifact
-        uses: actions/download-artifact@v8
+      - uses: dart-lang/setup-dart@v1
         with:
-          name: ${{ matrix.artifact }}
-          path: packages/cli/dist/pkg
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
 
-      - name: Restore executable permissions
-        shell: bash
-        run: chmod +x packages/cli/dist/pkg/dotweave-*
+      - name: Compile executable
+        run: dart compile exe bin/dotweave.dart -o ${{ matrix.asset }}
+        working-directory: packages/cli
 
       - name: Sign binary (macOS)
-        if: matrix.platform == 'darwin'
+        if: startsWith(matrix.target, 'macos') && (github.ref ==
+          'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -265,73 +253,29 @@ jobs:
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
         run: |
-          pnpm --filter @tinyrack/dotweave-tools run cli sign macos \
-            --executablePath packages/cli/dist/pkg/dotweave-macos-${{ matrix.arch }} \
+          dart run bin/cli.dart sign macos \
+            --executable-path packages/cli/${{ matrix.asset }} \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
+        working-directory: packages/tools
 
       - name: Smoke test binary
-        if: matrix.platform == 'darwin' || matrix.arch == 'x64'
-        shell: bash
-        run: |
-          fname="dotweave-${{ matrix.platform == 'darwin' && 'macos' || 'linux' }}-${{ matrix.arch }}"
-          pnpm --filter @tinyrack/dotweave-tools run cli pkg smoke --skip-build --executablePath "packages/cli/dist/pkg/$fname"
+        run: dart run bin/cli.dart smoke --executable-path
+          packages/cli/${{ matrix.asset }}
+        working-directory: packages/tools
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.artifact }}
-          path: packages/cli/dist/pkg/dotweave-*
-          overwrite: true
-          if-no-files-found: error
-
-  # Windows remains separate because MSIX packaging uses Windows SDK tools.
-  package-windows:
-    name: Package & Test (Windows)
-    needs: build-pkg
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Download Windows x64
-        uses: actions/download-artifact@v8
-        with:
-          name: dotweave-win32-x64.exe
-          path: packages/cli/dist/pkg
-
-      - name: Download Windows arm64
-        uses: actions/download-artifact@v8
-        with:
-          name: dotweave-win32-arm64.exe
-          path: packages/cli/dist/pkg
-
-      - name: Smoke test x64 binary
-        run: pnpm --filter @tinyrack/dotweave-tools run cli pkg smoke --skip-build
-          --executablePath packages/cli/dist/pkg/dotweave-win-x64.exe
-
-      - name: Build Windows x64 MSIX
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Build MSIX package (Windows)
+        if: matrix.msixarch && startsWith(github.ref, 'refs/tags/v')
         shell: powershell
         env:
           MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
-        run: pnpm --filter @tinyrack/dotweave-tools run cli msix build
-          --arch x64 --executablePath packages/cli/dist/pkg/dotweave-win-x64.exe
+        run: dart run bin/cli.dart msix build --arch ${{ matrix.msixarch }}
+          --executable-path packages/cli/${{ matrix.asset }}
+        working-directory: packages/tools
 
-      - name: Build Windows arm64 MSIX
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: powershell
-        env:
-          MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
-          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
-          MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
-        run: pnpm --filter @tinyrack/dotweave-tools run cli msix build
-          --arch arm64 --executablePath packages/cli/dist/pkg/dotweave-win-arm64.exe
-
-      - name: Smoke test MSIX alias
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Smoke test MSIX alias (Windows x64)
+        if: matrix.msixarch == 'x64' && startsWith(github.ref, 'refs/tags/v')
         shell: powershell
         env:
           MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
@@ -350,62 +294,66 @@ jobs:
             }
           }
 
-      - name: Bundle Windows MSIX packages
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: powershell
-        run: pnpm --filter @tinyrack/dotweave-tools run cli msix bundle
-
-      - name: Upload Windows x64
+      - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
-          name: dotweave-win32-x64.exe
-          path: packages/cli/dist/pkg/dotweave-win-x64.exe
-          overwrite: true
+          name: ${{ matrix.asset }}
+          path: packages/cli/${{ matrix.asset }}
           if-no-files-found: error
 
-      - name: Upload Windows arm64
+      - name: Upload MSIX (Windows)
+        if: matrix.msixarch && startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v7
         with:
-          name: dotweave-win32-arm64.exe
-          path: packages/cli/dist/pkg/dotweave-win-arm64.exe
-          overwrite: true
+          name: dotweave-win32-${{ matrix.msixarch }}-msix
+          path: packages/cli/dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
           if-no-files-found: error
 
-      - name: Upload Windows x64 MSIX
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v7
+  bundle-msix:
+    name: Bundle MSIX
+    needs: build-and-package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Download Windows x64 MSIX
+        uses: actions/download-artifact@v8
         with:
           name: dotweave-win32-x64-msix
-          path: packages/cli/dist/pkg/dotweave-win-x64.msix
-          overwrite: true
-          if-no-files-found: error
-
-      - name: Upload Windows arm64 MSIX
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v7
+          path: packages/cli/dist/pkg
+      - name: Download Windows arm64 MSIX
+        uses: actions/download-artifact@v8
         with:
           name: dotweave-win32-arm64-msix
-          path: packages/cli/dist/pkg/dotweave-win-arm64.msix
-          overwrite: true
-          if-no-files-found: error
-
+          path: packages/cli/dist/pkg
+      - name: Bundle Windows MSIX packages
+        shell: powershell
+        run: dart run bin/cli.dart msix bundle
+        working-directory: packages/tools
       - name: Upload Windows MSIX bundle
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v7
         with:
           name: dotweave-windows-msixbundle
           path: packages/cli/dist/pkg/dotweave-windows.msixbundle
-          overwrite: true
           if-no-files-found: error
 
   build-appimage:
     name: Build AppImage (${{ matrix.arch }})
     needs:
       - lint
-      - typecheck
-      - test
-      - build-pkg
-      - sign-and-test
+      - dart-analyze
+      - dart-test
+      - build-and-package
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
@@ -421,18 +369,29 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-      - name: Download pkg artifact
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Download binary artifact
         uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.artifact }}
-          path: packages/cli/dist/pkg
-
+          path: release-bin
+      - name: Restore executable permissions
+        shell: bash
+        run: chmod +x release-bin/dotweave-*
       - name: Build AppImage
-        run: pnpm --filter @tinyrack/dotweave-tools run cli appimage build
-          --executablePath packages/cli/dist/pkg/${{ matrix.artifact }}
-          --outputPath ${{ matrix.artifact }}.AppImage --arch ${{ matrix.arch }}
-
+        run: dart run bin/cli.dart appimage build
+          --executable-path release-bin/${{ matrix.artifact }}
+          --output-path ${{ matrix.artifact }}.AppImage
+          --arch ${{ matrix.arch }}
+        working-directory: packages/tools
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v7
         with:
@@ -443,45 +402,35 @@ jobs:
     name: Publish Release
     needs:
       - lint
-      - typecheck
-      - test
-      - build-pkg
-      - sign-and-test
-      - package-windows
+      - dart-analyze
+      - dart-test
+      - dart-interop
+      - homepage
+      - autocomplete-shell-smoke
+      - build-and-package
+      - bundle-msix
       - build-appimage
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - uses: dart-lang/setup-dart@v1
         with:
-          install: 'true'
-
-      - name: Set up registry
-        uses: actions/setup-node@v6
+          sdk: 3.12.2
+      - uses: actions/cache@v4
         with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+      - name: Install dependencies
+        run: dart pub get
 
       - name: Verify tag matches package version
-        run: pnpm --filter @tinyrack/dotweave-tools run cli verify release-tag
-
-      - name: Copy README and LICENSE
-        run: |
-          cp README.md packages/cli/
-          cp LICENSE packages/cli/
-
-      - name: Verify published package contents
-        run: pnpm --filter @tinyrack/dotweave pack --dry-run
-
-      - name: Publish package to npm
-        run: pnpm --filter @tinyrack/dotweave publish --provenance --access public
-          --no-git-checks
+        run: dart run bin/cli.dart verify release-tag
+        working-directory: packages/tools
 
       - name: Create GitHub Release
         env:
@@ -493,14 +442,14 @@ jobs:
             gh release create "${GITHUB_REF_NAME}" --generate-notes
           fi
 
-      - name: Download pkg artifacts
+      - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
           pattern: dotweave-*
           path: release-assets
           merge-multiple: true
 
-      - name: Upload pkg artifacts to GitHub Release
+      - name: Upload artifacts to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -509,9 +458,10 @@ jobs:
           done < <(find release-assets -type f | sort)
 
       - name: Generate Homebrew Formula
-        run: pnpm --filter @tinyrack/dotweave-tools run cli homebrew generate --version
+        run: dart run bin/cli.dart homebrew generate --version
           "${GITHUB_REF_NAME}" --artifacts-dir "${{ github.workspace
           }}/release-assets"
+        working-directory: packages/tools
 
       - name: Checkout Homebrew Tap
         uses: actions/checkout@v5
@@ -535,7 +485,7 @@ jobs:
     name: Publish WinGet
     needs: publish-release
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 15
     permissions:
       contents: read
@@ -567,7 +517,7 @@ jobs:
     needs: publish-release
     if: false # Temporarily disabled
     # if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
@@ -608,10 +558,9 @@ jobs:
     name: Publish Snap (${{ matrix.artifact }})
     needs:
       - lint
-      - typecheck
-      - test
-      - build-pkg
-      - sign-and-test
+      - dart-analyze
+      - dart-test
+      - build-and-package
     if: false # Temporarily disabled
     strategy:
       fail-fast: false
@@ -625,7 +574,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-      - name: Download pkg artifact
+      - name: Download binary artifact
         uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.artifact }}

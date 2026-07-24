@@ -1,0 +1,5 @@
+tags:
+  # Cross-implementation tests against the npm age-encryption package (needs node).
+  interop:
+  # PTY-driven shell tests (POSIX only).
+  pty:

@@ -1,5 +1,5 @@
-name: 'Setup Dotweave'
-description: 'Standard checkout and setup for Dotweave'
+name: 'Setup Node project'
+description: 'Node/pnpm setup and install for a standalone Node project directory'
 inputs:
   node-version:
     description: 'Node version to use'
@@ -7,6 +7,9 @@ inputs:
   install:
     description: 'Whether to run pnpm install'
     default: 'true'
+  working-directory:
+    description: 'Directory containing the pnpm project to install'
+    default: 'homepage'
 
 runs:
   using: "composite"
@@ -28,8 +31,10 @@ runs:
       if: inputs.install == 'true' && runner.os == 'Windows'
       run: pnpm install --frozen-lockfile
       shell: powershell
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Install dependencies (Non-Windows)
       if: inputs.install == 'true' && runner.os != 'Windows'
       run: pnpm install --frozen-lockfile
       shell: bash
+      working-directory: ${{ inputs.working-directory }}

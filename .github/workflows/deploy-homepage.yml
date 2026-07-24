@@ -24,10 +24,12 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Build homepage
-        run: pnpm --filter @tinyrack/dotweave-homepage run build
+        run: pnpm run build
+        working-directory: homepage
 
       - name: Deploy homepage to Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm --filter @tinyrack/dotweave-homepage run deploy
+        run: pnpm run deploy
+        working-directory: homepage

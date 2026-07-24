@@ -1,0 +1,36 @@
+{
+  "version": 8,
+  "repositoryFormat": 1,
+  "age": {
+    "recipients": [
+      "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+    ]
+  },
+  "profiles": [
+    "default",
+    "work"
+  ],
+  "entries": [
+    {
+      "kind": "file",
+      "localPath": {
+        "default": "~/.zshrc",
+        "win": "%USERPROFILE%\\.zshrc"
+      },
+      "repoPath": "zshrc",
+      "mode": "normal",
+      "permission": "0600",
+      "profiles": []
+    },
+    {
+      "kind": "directory",
+      "localPath": {
+        "default": "~/테스트/config dir"
+      },
+      "empty": {},
+      "floaty": 0.5,
+      "negative": -3,
+      "escaped": "line1\nline2\ttab \"quoted\" back\\slash / emoji 🎉"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "name": "@tinyrack/dotweave-homepage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dotweave documentation built with Tinyrack Docs and React Router.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "vite preview",
+    "preview:worker": "wrangler dev",
+    "start": "react-router dev",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "test": "vitest run --exclude tests/browser.test.ts",
+    "test:audit": "vitest run tests/browser.test.ts",
+    "format": "biome format --write .",
+    "format:check": "biome check .",
+    "deploy": "wrangler deploy",
+    "deploy:dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@react-router/node": "8.2.0",
+    "@tinyrack/docs": "0.8.0",
+    "@tinyrack/ui": "0.8.0",
+    "cobe": "^2.0.1",
+    "isbot": "5.2.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router": "8.2.0",
+    "shiki": "4.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.2",
+    "@react-router/dev": "8.2.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "playwright": "1.61.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.107.0"
+  }
+}
