@@ -208,7 +208,9 @@ jobs:
           - os: ubuntu-24.04-arm
             target: linux-arm64
             asset: dotweave-linux-arm64
-          - os: macos-13
+          # macos-13 (the previous Intel label) was retired by GitHub;
+          # macos-15-intel is the supported Intel macOS runner.
+          - os: macos-15-intel
             target: macos-x64
             asset: dotweave-macos-x64
           - os: macos-26
