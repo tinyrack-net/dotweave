@@ -38,6 +38,14 @@ Future<void> _tryRun(String executable, List<String> args) async {
   }
 }
 
+/// Decodes a base64 secret leniently, like Node's `Buffer.from(s, 'base64')`
+/// which the pre-cutover TS signing flow used: CI secrets produced with the
+/// `base64` CLI wrap at 64/76 columns, and Dart's strict decoder rejects the
+/// embedded newlines ("Invalid padding character").
+List<int> decodeBase64Secret(String value) {
+  return base64Decode(value.replaceAll(RegExp(r'\s'), ''));
+}
+
 Future<void> _deleteIfExists(String path) async {
   final file = File(path);
 
@@ -80,7 +88,9 @@ Future<void> performMacosSign({
     }
 
     stdout.writeln('Importing Apple Certificate...');
-    await File('certificate.p12').writeAsBytes(base64Decode(appleCertificate));
+    await File(
+      'certificate.p12',
+    ).writeAsBytes(decodeBase64Secret(appleCertificate));
 
     try {
       await _tryRun('security', ['delete-keychain', 'build.keychain']);
@@ -166,7 +176,7 @@ Future<void> performMacosSign({
         stdout.writeln('Notarizing macOS binary...');
         await File(
           'AuthKey.p8',
-        ).writeAsBytes(base64Decode(appleNotaryKeyP8Base64));
+        ).writeAsBytes(decodeBase64Secret(appleNotaryKeyP8Base64));
 
         final zipPath = '$resolvedExecutablePath.zip';
         await runChecked('zip', ['-j', zipPath, resolvedExecutablePath]);
