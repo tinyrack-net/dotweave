@@ -3,6 +3,7 @@ import 'package:dotweave/src/lib/collation.dart';
 import 'package:dotweave/src/lib/concurrency.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/git.dart';
+import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/repo_format.dart';
@@ -140,28 +141,40 @@ Future<PushPlan> buildPushPlan(
 ]) async {
   final effectiveOwnershipConfig =
       ownershipConfig ?? (entries: config.entries, profiles: config.profiles);
-  final snapshot = await buildLocalSnapshot(config);
-  final artifacts = await buildRepoArtifacts(snapshot, config);
+  final snapshot = await tracePhase(
+    'pushPlan.localSnapshot',
+    () => buildLocalSnapshot(config),
+  );
+  final artifacts = await tracePhase(
+    'pushPlan.buildArtifacts',
+    () => buildRepoArtifacts(snapshot, config),
+  );
   final artifactKeyPairs = [
     for (final artifact in artifacts)
       (artifact: artifact, key: buildArtifactKey(artifact)),
   ];
   final desiredArtifactKeys = {for (final pair in artifactKeyPairs) pair.key};
-  final existingArtifactKeys = await collectExistingArtifactKeys(
-    syncDirectory,
-    config,
-    effectiveOwnershipConfig,
+  final existingArtifactKeys = await tracePhase(
+    'pushPlan.existingKeys',
+    () => collectExistingArtifactKeys(
+      syncDirectory,
+      config,
+      effectiveOwnershipConfig,
+    ),
   );
   final staleArtifactKeys = [
     for (final key in existingArtifactKeys)
       if (!desiredArtifactKeys.contains(key)) key,
   ];
   final staleArtifactKeySet = Set<String>.of(staleArtifactKeys);
-  final replacementPlan = await _collectStaleReplacementDirectoryRoots(
-    syncDirectory,
-    artifacts,
-    staleArtifactKeySet,
-    effectiveOwnershipConfig,
+  final replacementPlan = await tracePhase(
+    'pushPlan.staleReplacements',
+    () => _collectStaleReplacementDirectoryRoots(
+      syncDirectory,
+      artifacts,
+      staleArtifactKeySet,
+      effectiveOwnershipConfig,
+    ),
   );
   final writableArtifacts = [
     for (final pair in artifactKeyPairs)

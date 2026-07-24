@@ -52,6 +52,36 @@ archaeology. Keep entries short: what differs, why, and which tests pin it.
   and fails with CONFIG_MIGRATION_NOT_FOUND; Dart (`is int` check) falls
   through to validation failure. JSON-integer versions behave identically.
 
+## Performance notes (behavior-neutral)
+
+- **Stat fast path** (`lib/src/lib/native_stat.dart`): `getPathStats`,
+  `pathExists`, `getFollowedPathStats`, and the rename/remove type
+  dispatchers answer plain-file/dir/missing cases with one synchronous
+  `GetFileAttributesExW` FFI call on Windows. Reparse points, unusual error
+  codes, long paths, and non-Windows platforms delegate to the original
+  dart:io implementation kept verbatim, so link/tag semantics are unchanged.
+  Pinned by `test/lib/native_stat_test.dart` (field-for-field agreement with
+  the dart:io reference, including the CRT mode synthesis for readonly/.exe
+  fixtures).
+- **Warm-up prefetch** (`_warmArtifactCache` in repo_snapshot.dart,
+  `_warmLocalCache` in local_snapshot.dart): a best-effort 64-wide
+  read-and-discard pass before each sequential snapshot walk. On Windows the
+  first read of a freshly written/cloned file pays a multi-ms filter-driver
+  scan; serialized over 10k files this dominated cold push/pull. The walks
+  themselves (and thus snapshot insertion order and all error semantics) are
+  untouched; the prefetch ignores all failures.
+- **Batch hoists**: `writeFileNode` gained `ensureParent` (default true —
+  identical behavior); artifact writes precompute the unique parent-dir set
+  per batch; pull staging caches `resolveSymbolicLinksSync` per parent
+  directory for the process lifetime (TS resolves per file — observable only
+  if a parent's symlink chain is swapped mid-pull, which nothing does).
+- **`DOTWEAVE_PERF_TRACE=1`** (Dart-only diagnostic): dumps aggregated phase
+  timings to stderr from push/pull. Inert without the env var; not part of
+  the TS surface.
+- Result on the 10k-file benchmark (`tool/benchmark_large_repo.dart`,
+  Windows): cold push 89.5s → 13.8s (TS 10.1s), pull 130.3s → 34.5s
+  (TS 20.6s), incremental push and status now faster than TS (1.17x/1.42x).
+
 ## Release/distribution status (M8)
 
 - The Dart CLI is currently distributed **only as raw binaries attached to

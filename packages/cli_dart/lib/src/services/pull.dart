@@ -4,6 +4,7 @@ import 'package:dotweave/src/lib/collation.dart';
 import 'package:dotweave/src/lib/concurrency.dart';
 import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/pull_apply.dart';
 import 'package:dotweave/src/services/repo_snapshot.dart';
@@ -249,16 +250,19 @@ Future<PullPlan> buildPullPlan(
   effectiveCollectChangedLocalPaths =
       dependencies.collectChangedLocalPaths ?? collectChangedLocalPaths;
 
-  final snapshot = await effectiveBuildRepositorySnapshot(
-    syncDirectory,
-    config,
+  final snapshot = await tracePhase(
+    'plan.repoSnapshot',
+    () => effectiveBuildRepositorySnapshot(syncDirectory, config),
   );
-  final materializations = <EntryMaterialization?>[
-    for (final entry in config.entries)
-      entry.mode == 'ignore'
-          ? null
-          : effectiveBuildEntryMaterialization(entry, snapshot, config),
-  ];
+  final materializations = await tracePhase(
+    'plan.materializations',
+    () async => <EntryMaterialization?>[
+      for (final entry in config.entries)
+        entry.mode == 'ignore'
+            ? null
+            : effectiveBuildEntryMaterialization(entry, snapshot, config),
+    ],
+  );
 
   var deletedLocalCount = 0;
   final existingKeys = <String>{};
@@ -278,13 +282,16 @@ Future<PullPlan> buildPullPlan(
     final entryExistingKeys = <String>{};
     final entryKeyToLocalPath = <String, String>{};
 
-    deletedLocalCount += await effectiveCountDeletedLocalNodes(
-      entry,
-      materialization.desiredKeys,
-      config,
-      entryExistingKeys,
-      entryKeyToLocalPath,
-      deletedKeys,
+    deletedLocalCount += await tracePhase(
+      'plan.countDeletedWalk',
+      () => effectiveCountDeletedLocalNodes(
+        entry,
+        materialization.desiredKeys,
+        config,
+        entryExistingKeys,
+        entryKeyToLocalPath,
+        deletedKeys,
+      ),
     );
 
     for (final key in entryExistingKeys) {
@@ -307,10 +314,13 @@ Future<PullPlan> buildPullPlan(
   );
   final deletedLocalPathSet = Set<String>.of(deletedLocalPaths);
   final updatedLocalPaths = [
-    for (final path in await _buildUpdatedLocalPaths(
-      config,
-      materializations,
-      effectiveCollectChangedLocalPaths,
+    for (final path in await tracePhase(
+      'plan.collectChangedPaths',
+      () => _buildUpdatedLocalPaths(
+        config,
+        materializations,
+        effectiveCollectChangedLocalPaths,
+      ),
     ))
       if (!deletedLocalPathSet.contains(path)) path,
   ];
@@ -375,7 +385,11 @@ Future<PreparedPull> preparePull(
     syncDirectory,
     profile: request.profile,
   )).effectiveConfig;
-  final plan = await buildPullPlan(config, syncDirectory, dependencies);
+  final plan = await tracePhase(
+    'prepare.buildPullPlan',
+    () => buildPullPlan(config, syncDirectory, dependencies),
+  );
+  dumpPerfTrace('preparePull');
 
   return PreparedPull(config: config, plan: plan, syncDirectory: syncDirectory);
 }
@@ -452,4 +466,6 @@ Future<void> applyPullPlan(
       },
     );
   }
+
+  dumpPerfTrace('applyPullPlan');
 }
