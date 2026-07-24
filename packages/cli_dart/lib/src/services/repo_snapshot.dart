@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
+import 'package:dotweave/src/lib/concurrency.dart';
 import 'package:dotweave/src/lib/crypto.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/file_mode.dart';
@@ -290,6 +291,67 @@ Future<void> _walkArtifactTree(
   }
 }
 
+/// Files above this size are skipped by the warm-up prefetch: they are rare
+/// in config trees and the transient allocation would not be worth it.
+const int _warmupMaxFileBytes = 8 * 1024 * 1024;
+
+/// Best-effort concurrent read-and-discard over every artifact file before
+/// the sequential snapshot walk.
+///
+/// The walk itself reads leaves one at a time (order is observable through
+/// snapshot insertion order, so it must stay sequential). On Windows the
+/// first read of a freshly cloned/pushed file pays a per-file filter-driver
+/// (Defender) scan of several milliseconds; serialized over 10k files that
+/// dominated pull wall-clock. Prefetching the same bytes 20-wide absorbs
+/// that latency concurrently, after which the walk's reads hit warm caches.
+/// Failures are ignored — the real read reports them with the existing
+/// error semantics.
+Future<void> _warmArtifactCache(
+  String syncDirectory,
+  Set<String> artifactProfiles,
+) async {
+  final files = <String>[];
+
+  for (final profile in artifactProfiles) {
+    final profileDirectory = Directory(
+      p.join(syncDirectory, 'profiles', profile),
+    );
+
+    try {
+      await for (final entity in profileDirectory.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is File) {
+          files.add(entity.path);
+        }
+      }
+    } on FileSystemException {
+      // Missing/unreadable profile directories are handled by the walk.
+    }
+  }
+
+  // Wider than the sync engine's own concurrency: this phase only exists to
+  // saturate the filter-driver scan queue, has no ordering constraints, and
+  // is not part of the TS-parity surface.
+  const warmupConcurrency = 64;
+
+  await limitConcurrency<String, void>(warmupConcurrency, files, (
+    path,
+    _,
+  ) async {
+    try {
+      final file = File(path);
+      if (await file.length() > _warmupMaxFileBytes) {
+        return;
+      }
+      await file.readAsBytes();
+    } on FileSystemException {
+      // Best effort only.
+    }
+  });
+}
+
 Future<Map<String, SnapshotNode>> buildRepositorySnapshot(
   String syncDirectory,
   EffectiveSyncConfig config,
@@ -303,6 +365,8 @@ Future<Map<String, SnapshotNode>> buildRepositorySnapshot(
       artifactProfiles.add(profile);
     }
   }
+
+  await _warmArtifactCache(syncDirectory, artifactProfiles);
 
   await Future.wait([
     for (final profile in artifactProfiles)

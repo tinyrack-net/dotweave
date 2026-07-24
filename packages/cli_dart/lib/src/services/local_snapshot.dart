@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
+import 'package:dotweave/src/lib/concurrency.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/file_mode.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
@@ -210,11 +211,73 @@ Future<void> _walkLocalDirectory(
   }
 }
 
+/// Files above this size are skipped by the warm-up prefetch: they are rare
+/// in config trees and the transient allocation would not be worth it.
+const int _warmupMaxFileBytes = 8 * 1024 * 1024;
+
+/// Best-effort concurrent read-and-discard over the tracked local trees
+/// before the sequential snapshot walk.
+///
+/// Same rationale as the repo-snapshot warm-up: the walk reads files one at
+/// a time (snapshot insertion order is observable, so it stays sequential),
+/// and on Windows the first read of a freshly written file pays a per-file
+/// filter-driver (Defender) scan of several milliseconds — serialized over a
+/// large tree that dominated cold-push wall-clock. Prefetching wide absorbs
+/// the latency concurrently; failures are left for the real read to report.
+Future<void> _warmLocalCache(EffectiveSyncConfig config) async {
+  final files = <String>[];
+
+  for (final entry in config.entries) {
+    try {
+      final type = await FileSystemEntity.type(
+        entry.localPath,
+        followLinks: false,
+      );
+
+      if (type == FileSystemEntityType.file) {
+        files.add(entry.localPath);
+      } else if (type == FileSystemEntityType.directory) {
+        await for (final entity in Directory(
+          entry.localPath,
+        ).list(recursive: true, followLinks: false)) {
+          if (entity is File) {
+            files.add(entity.path);
+          }
+        }
+      }
+    } on FileSystemException {
+      // Missing/unreadable entries are handled by the walk.
+    }
+  }
+
+  // Wider than the sync engine's own concurrency: this phase only exists to
+  // saturate the filter-driver scan queue, has no ordering constraints, and
+  // is not part of the TS-parity surface.
+  const warmupConcurrency = 64;
+
+  await limitConcurrency<String, void>(warmupConcurrency, files, (
+    path,
+    _,
+  ) async {
+    try {
+      final file = File(path);
+      if (await file.length() > _warmupMaxFileBytes) {
+        return;
+      }
+      await file.readAsBytes();
+    } on FileSystemException {
+      // Best effort only.
+    }
+  });
+}
+
 Future<Map<String, SnapshotNode>> buildLocalSnapshot(
   EffectiveSyncConfig config,
 ) async {
   final snapshot = <String, SnapshotNode>{};
   final queryConfig = _toResolvedSyncConfig(config);
+
+  await _warmLocalCache(config);
 
   for (final entry in config.entries) {
     final stats = await getPathStats(entry.localPath);
