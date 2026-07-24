@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
@@ -9,14 +8,6 @@ import config from "../docs.config.ts";
 
 const root = resolve(import.meta.dirname, "..");
 const contentRoot = join(root, "app", "content");
-
-// The docs manifest surfaces the CLI package version, so read it from the same
-// source instead of hardcoding it (keeps releases from breaking this contract).
-const cliVersion = (
-  JSON.parse(
-    readFileSync(new URL("../../cli/package.json", import.meta.url), "utf8"),
-  ) as { version: string }
-).version;
 
 async function contentFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -38,7 +29,8 @@ describe("Dotweave documentation contract", () => {
 
     expect(manifest.pages).toHaveLength(66);
     expect(manifest.redirects).toEqual({ "/": "/en/" });
-    expect(manifest.header?.version).toBe(cliVersion);
+    expect(manifest.header?.version).toBeUndefined();
+    expect(manifest.header?.title).toBe(true);
 
     for (const locale of ["en", "ko", "ja"]) {
       const pages = manifest.pages.filter((page) => page.locale === locale);
