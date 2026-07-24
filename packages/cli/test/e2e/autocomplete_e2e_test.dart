@@ -20,12 +20,14 @@ import 'package:test/test.dart';
 import '../helpers/e2e_context.dart';
 import '../helpers/pty.dart'
     show
+        bashPath,
         fishPath,
         isBashAvailable,
         isFishAvailable,
         isPowerShellAvailable,
         isZshAvailable,
-        powerShellPath;
+        powerShellPath,
+        zshPath;
 import '../helpers/sync_fixture.dart' show stripAnsi;
 
 const String _completeCommand =
@@ -272,7 +274,10 @@ Future<CliRunResult> _runBashCompletion(
 
   try {
     return await _execShell(
-      'bash',
+      // Always execute the probed absolute path: on Windows, CreateProcess
+      // searches System32 before PATH, so a bare `bash` resolves to the WSL
+      // launcher stub even when Git Bash is the shell the probe accepted.
+      bashPath ?? 'bash',
       [
         '-lc',
         [
@@ -338,7 +343,7 @@ Future<CliRunResult> _runZshCompletion(
 
   try {
     return await _execShell(
-      'zsh',
+      zshPath ?? 'zsh',
       [
         '-lc',
         [
