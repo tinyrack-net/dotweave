@@ -1,0 +1,311 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dotweave/src/lib/error.dart';
+
+class GitCommandOptions {
+  const GitCommandOptions({this.cwd});
+
+  final String? cwd;
+}
+
+class GitCommandResult {
+  const GitCommandResult({required this.stderr, required this.stdout});
+
+  final String stderr;
+  final String stdout;
+}
+
+/// Mirrors the Node execFile failure shape that carries captured output.
+class GitExecFileException implements Exception {
+  GitExecFileException(this.message, {this.stderr, this.stdout});
+
+  final String message;
+  final String? stderr;
+  final String? stdout;
+
+  @override
+  String toString() => message;
+}
+
+typedef GitExecFileAsync =
+    Future<GitCommandResult> Function(
+      String file,
+      List<String> args, {
+      String? cwd,
+    });
+
+/// Mirrors the Node spawn child: output streams plus a future that completes
+/// with the exit code (null when the child closed without one) or errors when
+/// spawning fails.
+class GitStreamingChild {
+  const GitStreamingChild({this.stderr, this.stdout, required this.result});
+
+  final Stream<String>? stderr;
+  final Stream<String>? stdout;
+  final Future<int?> result;
+}
+
+typedef GitSpawn =
+    GitStreamingChild Function(
+      String command,
+      List<String> args, {
+      String? cwd,
+    });
+
+class GitCommandDependencies {
+  const GitCommandDependencies({required this.execFileAsync});
+
+  final GitExecFileAsync execFileAsync;
+}
+
+class StreamingGitCommandDependencies {
+  const StreamingGitCommandDependencies({required this.spawnGit});
+
+  final GitSpawn spawnGit;
+}
+
+class InitializeRepositoryResult {
+  const InitializeRepositoryResult({required this.action, this.source});
+
+  final String action;
+  final String? source;
+}
+
+const _missingGitExecutableCode = 'GIT_EXECUTABLE_NOT_FOUND';
+
+bool _isEnoentError(Object error) {
+  return error is ProcessException && error.errorCode == 2;
+}
+
+DotweaveError _createMissingGitExecutableError() {
+  return DotweaveError(
+    'Git is not installed or not on PATH.',
+    code: _missingGitExecutableCode,
+    hint:
+        'Install Git and ensure the git executable is available on PATH, '
+        'then run dotweave again.',
+  );
+}
+
+bool isMissingGitExecutableError(Object? error) {
+  return error is DotweaveError && error.code == _missingGitExecutableCode;
+}
+
+/// Runs a git command and normalizes failures into concise errors.
+Future<GitCommandResult> runGitCommandWithDependencies(
+  List<String> args,
+  GitCommandOptions? options,
+  GitCommandDependencies dependencies,
+) async {
+  try {
+    final result = await dependencies.execFileAsync(
+      'git',
+      List.of(args),
+      cwd: options?.cwd,
+    );
+
+    return GitCommandResult(stderr: result.stderr, stdout: result.stdout);
+  } catch (error) {
+    if (_isEnoentError(error)) {
+      throw _createMissingGitExecutableError();
+    }
+
+    if (error is GitExecFileException) {
+      final stderr = error.stderr?.trim();
+      final stdout = error.stdout?.trim();
+      final message = stderr != null && stderr.isNotEmpty
+          ? stderr
+          : stdout != null && stdout.isNotEmpty
+          ? stdout
+          : error.message;
+
+      throw Exception(message);
+    }
+
+    throw Exception(
+      error is Exception || error is Error
+          ? extractErrorMessage(error)
+          : 'git failed.',
+    );
+  }
+}
+
+Future<GitCommandResult> _execFileAsync(
+  String file,
+  List<String> args, {
+  String? cwd,
+}) async {
+  final result = await Process.run(
+    file,
+    args,
+    workingDirectory: cwd,
+    runInShell: false,
+    stdoutEncoding: utf8,
+    stderrEncoding: utf8,
+  );
+  final stdout = result.stdout as String;
+  final stderr = result.stderr as String;
+
+  if (result.exitCode != 0) {
+    throw GitExecFileException(
+      'Command failed: $file ${args.join(' ')}',
+      stderr: stderr,
+      stdout: stdout,
+    );
+  }
+
+  return GitCommandResult(stderr: stderr, stdout: stdout);
+}
+
+Future<GitCommandResult> _runGitCommand(
+  List<String> args, [
+  GitCommandOptions? options,
+]) async {
+  return await runGitCommandWithDependencies(
+    args,
+    options,
+    const GitCommandDependencies(execFileAsync: _execFileAsync),
+  );
+}
+
+/// Runs a git command while collecting output.
+Future<GitCommandResult> runStreamingGitCommandWithDependencies(
+  List<String> args,
+  GitCommandOptions? options,
+  StreamingGitCommandDependencies dependencies,
+) async {
+  final child = dependencies.spawnGit('git', List.of(args), cwd: options?.cwd);
+  final stdoutBuffer = StringBuffer();
+  final stderrBuffer = StringBuffer();
+  final stdoutDone =
+      child.stdout?.forEach(stdoutBuffer.write) ?? Future<void>.value();
+  final stderrDone =
+      child.stderr?.forEach(stderrBuffer.write) ?? Future<void>.value();
+
+  final int? code;
+  try {
+    code = await child.result;
+  } catch (error) {
+    if (_isEnoentError(error)) {
+      throw _createMissingGitExecutableError();
+    }
+
+    throw Exception(
+      error is Exception || error is Error
+          ? extractErrorMessage(error)
+          : 'git failed.',
+    );
+  }
+
+  await stdoutDone;
+  await stderrDone;
+
+  final stdout = stdoutBuffer.toString();
+  final stderr = stderrBuffer.toString();
+
+  if (code == 0) {
+    return GitCommandResult(stderr: stderr, stdout: stdout);
+  }
+
+  final trimmedStderr = stderr.trim();
+  final trimmedStdout = stdout.trim();
+
+  throw Exception(
+    trimmedStderr.isNotEmpty
+        ? trimmedStderr
+        : trimmedStdout.isNotEmpty
+        ? trimmedStdout
+        : 'git exited with code ${code ?? 'unknown'}.',
+  );
+}
+
+GitStreamingChild _spawnGitProcess(
+  String command,
+  List<String> args, {
+  String? cwd,
+}) {
+  final stdoutController = StreamController<String>();
+  final stderrController = StreamController<String>();
+  final resultCompleter = Completer<int?>();
+
+  unawaited(
+    Process.start(command, args, workingDirectory: cwd, runInShell: false).then(
+      (process) async {
+        final stdoutDone = stdoutController.addStream(
+          process.stdout.transform(utf8.decoder),
+        );
+        final stderrDone = stderrController.addStream(
+          process.stderr.transform(utf8.decoder),
+        );
+        final code = await process.exitCode;
+
+        await stdoutDone;
+        await stderrDone;
+        await stdoutController.close();
+        await stderrController.close();
+        resultCompleter.complete(code);
+      },
+      onError: (Object error) async {
+        await stdoutController.close();
+        await stderrController.close();
+        resultCompleter.completeError(error);
+      },
+    ),
+  );
+
+  return GitStreamingChild(
+    stderr: stderrController.stream,
+    stdout: stdoutController.stream,
+    result: resultCompleter.future,
+  );
+}
+
+Future<GitCommandResult> _runStreamingGitCommand(
+  List<String> args, [
+  GitCommandOptions? options,
+]) async {
+  return await runStreamingGitCommandWithDependencies(
+    args,
+    options,
+    const StreamingGitCommandDependencies(spawnGit: _spawnGitProcess),
+  );
+}
+
+/// Verifies that a directory is already a git working tree.
+Future<void> verifyIsGitRepository(String directory) async {
+  await _runGitCommand(['-C', directory, 'rev-parse', '--is-inside-work-tree']);
+}
+
+/// Creates a sync directory locally or clones it from a remote source.
+Future<InitializeRepositoryResult> initializeRepository(
+  String directory, [
+  String? source,
+]) async {
+  if (source == null) {
+    await _runStreamingGitCommand(['init', '-b', 'main', directory]);
+
+    return const InitializeRepositoryResult(action: 'initialized');
+  }
+
+  await _runStreamingGitCommand(['clone', source, directory]);
+
+  return InitializeRepositoryResult(action: 'cloned', source: source);
+}
+
+/// Ensures the sync directory is a usable git repository for dotweave
+/// commands.
+Future<void> requireGitRepository(String syncDirectory) async {
+  try {
+    await verifyIsGitRepository(syncDirectory);
+  } catch (error) {
+    throw wrapUnknownError(
+      'Sync repository is not initialized.',
+      error,
+      code: 'SYNC_REPO_INVALID',
+      details: ['Sync directory: $syncDirectory'],
+      hint: "Run 'dotweave init' to create or clone the sync directory.",
+    );
+  }
+}
