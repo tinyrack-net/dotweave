@@ -27,6 +27,7 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Run lint
         run: pnpm run format:check
+        working-directory: homepage
 
   dart-analyze:
     name: Dart Analyze
@@ -93,9 +94,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      # pnpm install materializes packages/cli/node_modules/age-encryption,
-      # the npm reference implementation the age interop tests drive via node.
+      # Installs the standalone interop harness (the npm age-encryption
+      # reference implementation the age interop tests drive via node).
       - uses: ./.github/actions/setup
+        with:
+          working-directory: packages/cli/test/crypto/age/interop
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: 3.12.2
@@ -118,16 +121,22 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Typecheck
         run: pnpm run typecheck
+        working-directory: homepage
       - name: Run homepage tests
-        run: pnpm --filter @tinyrack/dotweave-homepage run test
+        run: pnpm run test
+        working-directory: homepage
       - name: Build homepage
-        run: pnpm --filter @tinyrack/dotweave-homepage run build
+        run: pnpm run build
+        working-directory: homepage
       - name: Install Chromium
-        run: pnpm --filter @tinyrack/dotweave-homepage exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: homepage
       - name: Audit homepage in Chromium
-        run: pnpm --filter @tinyrack/dotweave-homepage run test:audit
+        run: pnpm run test:audit
+        working-directory: homepage
       - name: Verify Cloudflare deployment bundle
-        run: pnpm --filter @tinyrack/dotweave-homepage run deploy:dry-run
+        run: pnpm run deploy:dry-run
+        working-directory: homepage
 
   autocomplete-shell-smoke:
     name: Autocomplete (${{ matrix.os }} / ${{ matrix.shell }})

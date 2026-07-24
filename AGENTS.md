@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`packages/homepage`, built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** A monorepo containing the Dart CLI package (`packages/cli`), a Dart internal tooling package (`packages/tools`), and a documentation homepage (`@tinyrack/dotweave-homepage`). The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/cli` and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -16,19 +16,20 @@ For Dart packages (run from `packages/cli` and/or `packages/tools`, whichever yo
 - **Analyze**: `dart analyze --fatal-infos`
 - **Test**: `dart test`
 
-For the homepage (run from the repo root):
-- **Build**: `pnpm --filter @tinyrack/dotweave-homepage build`
-- **Test**: `pnpm --filter @tinyrack/dotweave-homepage test`
-- **Typecheck**: `pnpm --filter @tinyrack/dotweave-homepage typecheck`
+For the homepage (run from `homepage/`):
+- **Build**: `pnpm run build`
+- **Test**: `pnpm run test`
+- **Typecheck**: `pnpm run typecheck`
+- **Lint/format**: `pnpm run format:check`
 
 If any step fails, you MUST fix the issues before proceeding or reporting completion.
 
 ---
 
 ## Workspace Structure
-- `packages/cli`: The core CLI tool (Dart).
-- `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`).
-- `packages/homepage`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (pnpm workspace).
+- `packages/cli`: The core CLI tool (Dart, pub workspace member).
+- `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`, pub workspace member).
+- `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `packages/cli/pubspec.yaml` at build time).
 
 ---
 
@@ -46,12 +47,12 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - **Run a Tool Command:** `dart run bin/cli.dart <cmd>`
 - **Validate:** `dart format .`, `dart analyze --fatal-infos`, `dart test`
 
-### Homepage Package (`packages/homepage`)
-- **Install Dependencies:** `pnpm install` (repo root)
-- **Dev Server:** `pnpm --filter @tinyrack/dotweave-homepage dev`
-- **Build Site:** `pnpm --filter @tinyrack/dotweave-homepage build`
-- **Typecheck:** `pnpm --filter @tinyrack/dotweave-homepage typecheck`
-- **Preview:** `pnpm --filter @tinyrack/dotweave-homepage preview`
+### Homepage (`homepage/`)
+- **Install Dependencies:** `pnpm install` (run from `homepage/`)
+- **Dev Server:** `pnpm run dev`
+- **Build Site:** `pnpm run build`
+- **Typecheck:** `pnpm run typecheck`
+- **Preview:** `pnpm run preview`
 
 ---
 
@@ -85,4 +86,4 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - `packages/cli/lib/src/application.dart`: CLI entry point and application building.
 - `packages/cli/lib/src/config/sync_schema.dart`: Schema for the sync configuration.
 - `packages/cli/PARITY.md`: Recorded divergences from the pre-cutover TypeScript implementation.
-- `packages/homepage/docs.config.ts`: Documentation manifest, navigation, localization, redirects, and site metadata.
+- `homepage/docs.config.ts`: Documentation manifest, navigation, localization, redirects, and site metadata.
