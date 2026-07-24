@@ -57,7 +57,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-26
-          - windows-2022
+          - windows-2025
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -89,7 +89,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-2022
+          - windows-2025
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -156,7 +156,7 @@ jobs:
             shell: zsh
           - os: macos-26
             shell: fish
-          - os: windows-2022
+          - os: windows-2025
             shell: powershell
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -216,7 +216,7 @@ jobs:
           - os: macos-26
             target: macos-arm64
             asset: dotweave-macos-arm64
-          - os: windows-2022
+          - os: windows-2025
             target: win-x64
             asset: dotweave-win-x64.exe
             msixarch: x64
@@ -313,7 +313,7 @@ jobs:
     name: Bundle MSIX
     needs: build-and-package
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -485,7 +485,7 @@ jobs:
     name: Publish WinGet
     needs: publish-release
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 15
     permissions:
       contents: read
@@ -517,7 +517,7 @@ jobs:
     needs: publish-release
     if: false # Temporarily disabled
     # if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
