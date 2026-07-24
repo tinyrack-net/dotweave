@@ -102,8 +102,8 @@ String convertVersionToMsixVersion(String version) {
 }
 
 Future<String> _readCliPackageVersion(String repoRoot) async {
-  final packageJsonPath = p.join(repoRoot, 'packages', 'cli', 'package.json');
-  final version = await readPackageJsonVersion(packageJsonPath);
+  final pubspecPath = p.join(repoRoot, 'packages', 'cli', 'pubspec.yaml');
+  final version = await readPubspecVersion(pubspecPath);
 
   return convertVersionToMsixVersion(version);
 }

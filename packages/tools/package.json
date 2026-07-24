@@ -1,8 +1,0 @@
-{
-  "name": "dotweave-tools",
-  "private": true,
-  "scripts": {
-    "analyze": "dart analyze",
-    "test": "dart test"
-  }
-}

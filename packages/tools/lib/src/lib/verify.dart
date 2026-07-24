@@ -5,7 +5,6 @@ import 'package:path/path.dart' as p;
 import 'error.dart';
 import 'version_files.dart';
 
-const String _packageJsonPath = 'packages/cli/package.json';
 const String _pubspecPath = 'packages/cli/pubspec.yaml';
 const String _versionConstantPath = 'packages/cli/lib/src/lib/version.g.dart';
 
@@ -16,9 +15,6 @@ Future<void> performVerifyReleaseTag({
   Map<String, String>? environment,
 }) async {
   final env = environment ?? Platform.environment;
-  final packageJsonVersion = await readPackageJsonVersion(
-    p.join(repoRoot, _packageJsonPath),
-  );
   final pubspecVersion = await readPubspecVersion(
     p.join(repoRoot, _pubspecPath),
   );
@@ -26,11 +22,9 @@ Future<void> performVerifyReleaseTag({
     p.join(repoRoot, _versionConstantPath),
   );
 
-  if (pubspecVersion != constantVersion ||
-      packageJsonVersion != pubspecVersion) {
+  if (pubspecVersion != constantVersion) {
     throw ToolException(
       'Release versions do not match: '
-      '$_packageJsonPath=$packageJsonVersion, '
       '$_pubspecPath=$pubspecVersion, '
       '$_versionConstantPath=$constantVersion',
     );
@@ -44,13 +38,13 @@ Future<void> performVerifyReleaseTag({
     );
   }
 
-  final expectedTag = 'v$packageJsonVersion';
+  final expectedTag = 'v$pubspecVersion';
 
   if (tag != expectedTag) {
     throw ToolException(
-      'Tag $tag does not match package.json version $expectedTag',
+      'Tag $tag does not match pubspec.yaml version $expectedTag',
     );
   }
 
-  stdout.writeln('Verified tag $tag matches version $packageJsonVersion');
+  stdout.writeln('Verified tag $tag matches version $pubspecVersion');
 }

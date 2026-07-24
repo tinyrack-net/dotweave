@@ -15,23 +15,6 @@ abstract class ReleaseTarget {
   Future<void> writeVersion(String repoRoot, String version);
 }
 
-class PackageJsonReleaseTarget implements ReleaseTarget {
-  const PackageJsonReleaseTarget(this.path);
-
-  @override
-  final String path;
-
-  @override
-  Future<String> readVersion(String repoRoot) {
-    return readPackageJsonVersion(p.join(repoRoot, path));
-  }
-
-  @override
-  Future<void> writeVersion(String repoRoot, String version) {
-    return writePackageJsonVersion(p.join(repoRoot, path), version);
-  }
-}
-
 class PubspecReleaseTarget implements ReleaseTarget {
   const PubspecReleaseTarget(this.path);
 
@@ -68,7 +51,6 @@ class VersionConstantReleaseTarget implements ReleaseTarget {
 
 /// Files whose versions are bumped together by `release`.
 const List<ReleaseTarget> releaseTargets = [
-  PackageJsonReleaseTarget('packages/cli/package.json'),
   PubspecReleaseTarget('packages/cli/pubspec.yaml'),
   VersionConstantReleaseTarget('packages/cli/lib/src/lib/version.g.dart'),
 ];

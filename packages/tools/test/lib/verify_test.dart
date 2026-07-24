@@ -19,7 +19,6 @@ void main() {
   });
 
   Future<String> createRepo({
-    String packageJsonVersion = '1.2.3',
     String pubspecVersion = '1.2.3',
     String constantVersion = '1.2.3',
   }) async {
@@ -32,12 +31,6 @@ void main() {
       p.join(repoRoot, 'packages', 'cli', 'lib', 'src', 'lib'),
     ).create(recursive: true);
 
-    await File(
-      p.join(repoRoot, 'packages', 'cli', 'package.json'),
-    ).writeAsString(
-      '{\n  "name": "@tinyrack/dotweave",\n'
-      '  "version": "$packageJsonVersion"\n}\n',
-    );
     await File(
       p.join(repoRoot, 'packages', 'cli', 'pubspec.yaml'),
     ).writeAsString('name: dotweave\nversion: $pubspecVersion\n');
@@ -94,21 +87,25 @@ void main() {
     );
   });
 
-  test('throws when pubspec version disagrees with package.json', () async {
-    final repoRoot = await createRepo(pubspecVersion: '1.2.4');
+  test(
+    'throws when the pubspec version disagrees with version.g.dart',
+    () async {
+      final repoRoot = await createRepo(pubspecVersion: '1.2.4');
 
-    await expectLater(
-      performVerifyReleaseTag(
-        repoRoot: repoRoot,
-        environment: const {'GITHUB_REF_NAME': 'v1.2.3'},
-      ),
-      throwsA(
-        predicate(
-          (Object? error) => '$error'.contains('Release versions do not match'),
+      await expectLater(
+        performVerifyReleaseTag(
+          repoRoot: repoRoot,
+          environment: const {'GITHUB_REF_NAME': 'v1.2.3'},
         ),
-      ),
-    );
-  });
+        throwsA(
+          predicate(
+            (Object? error) =>
+                '$error'.contains('Release versions do not match'),
+          ),
+        ),
+      );
+    },
+  );
 
   test('throws when version.g.dart disagrees with pubspec', () async {
     final repoRoot = await createRepo(constantVersion: '1.2.9');

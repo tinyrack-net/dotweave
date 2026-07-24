@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotweave_tools/src/lib/version_files.dart';
@@ -30,13 +29,6 @@ void main() {
     return directory;
   }
 
-  Future<String> writePackageJson(Directory dir, Object? data) async {
-    final filePath = p.join(dir.path, 'package.json');
-    const encoder = JsonEncoder.withIndent('  ');
-    await File(filePath).writeAsString('${encoder.convert(data)}\n');
-    return filePath;
-  }
-
   Future<String> writeRawFile(
     Directory dir,
     String name,
@@ -46,100 +38,6 @@ void main() {
     await File(filePath).writeAsString(content);
     return filePath;
   }
-
-  group('readPackageJsonVersion', () {
-    test('reads version from valid package.json', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {
-        'name': 'foo',
-        'version': '1.2.3',
-      });
-
-      expect(await readPackageJsonVersion(filePath), '1.2.3');
-    });
-
-    test('throws when version field is missing', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {'name': 'foo'});
-
-      await expectLater(
-        readPackageJsonVersion(filePath),
-        _throwsMessage('Missing version'),
-      );
-    });
-
-    test('throws when version is a number', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {'version': 42});
-
-      await expectLater(
-        readPackageJsonVersion(filePath),
-        _throwsMessage('Missing version'),
-      );
-    });
-
-    test('throws when version is null', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {'version': null});
-
-      await expectLater(
-        readPackageJsonVersion(filePath),
-        _throwsMessage('Missing version'),
-      );
-    });
-
-    test('throws for JSON array', () async {
-      final dir = await createTempDir();
-      final filePath = await writeRawFile(dir, 'package.json', '[1, 2, 3]');
-
-      await expectLater(
-        readPackageJsonVersion(filePath),
-        _throwsMessage('Invalid package.json'),
-      );
-    });
-
-    test('throws for JSON null', () async {
-      final dir = await createTempDir();
-      final filePath = await writeRawFile(dir, 'package.json', 'null');
-
-      await expectLater(
-        readPackageJsonVersion(filePath),
-        _throwsMessage('Invalid package.json'),
-      );
-    });
-  });
-
-  group('writePackageJsonVersion', () {
-    test('writes updated version preserving other fields', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {
-        'description': 'bar',
-        'name': 'foo',
-        'version': '1.0.0',
-      });
-
-      await writePackageJsonVersion(filePath, '2.0.0');
-
-      final raw = await File(filePath).readAsString();
-      final parsed = jsonDecode(raw) as Map<String, Object?>;
-
-      expect(parsed['version'], '2.0.0');
-      expect(parsed['name'], 'foo');
-      expect(parsed['description'], 'bar');
-    });
-
-    test('preserves 2-space indent and trailing newline', () async {
-      final dir = await createTempDir();
-      final filePath = await writePackageJson(dir, {'version': '1.0.0'});
-
-      await writePackageJsonVersion(filePath, '2.0.0');
-
-      final raw = await File(filePath).readAsString();
-
-      expect(raw.endsWith('\n'), isTrue);
-      expect(raw, matches(RegExp(r'^\{\n {2}"')));
-    });
-  });
 
   group('pubspec version helpers', () {
     test('reads version from pubspec.yaml', () async {

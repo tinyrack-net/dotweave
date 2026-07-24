@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'exec.dart';
 
 String getAppImageIconPath(String repoRoot) {
-  return p.join(repoRoot, 'packages/homepage/public/logo.svg');
+  return p.join(repoRoot, 'homepage/public/logo.svg');
 }
 
 const String _desktopEntry = '''

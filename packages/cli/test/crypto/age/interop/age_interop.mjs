@@ -12,10 +12,10 @@
 //     stdin: armored ciphertext (ASCII) -> stdout: base64 plaintext
 
 // Resolve the package relative to this file so the script works regardless of
-// the working directory (pnpm installs it under this package's node_modules
-// via the age-encryption dependency in packages/cli/package.json).
+// the working directory (the harness has its own package.json here; run
+// `pnpm install` in this directory to materialize node_modules).
 const agePackageUrl = new URL(
-  "../../../../node_modules/age-encryption/dist/index.js",
+  "./node_modules/age-encryption/dist/index.js",
   import.meta.url,
 );
 const { Encrypter, Decrypter, armor, generateIdentity, identityToRecipient } =

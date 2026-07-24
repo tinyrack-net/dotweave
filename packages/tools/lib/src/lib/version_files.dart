@@ -1,45 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import 'error.dart';
-
-/// Reads the `version` field from a package.json file.
-Future<String> readPackageJsonVersion(String filePath) async {
-  final packageJson = await _readPackageJson(filePath);
-  final version = packageJson['version'];
-
-  if (version is! String) {
-    throw ToolException('Missing version in $filePath');
-  }
-
-  return version;
-}
-
-/// Writes the `version` field to a package.json file, preserving the other
-/// fields, 2-space indentation, and the trailing newline.
-Future<void> writePackageJsonVersion(String filePath, String version) async {
-  final packageJson = await _readPackageJson(filePath);
-
-  packageJson['version'] = version;
-
-  const encoder = JsonEncoder.withIndent('  ');
-
-  await File(filePath).writeAsString('${encoder.convert(packageJson)}\n');
-}
-
-Future<Map<String, Object?>> _readPackageJson(String filePath) async {
-  final content = await File(filePath).readAsString();
-  final Object? parsed = jsonDecode(content);
-
-  if (parsed is! Map<String, Object?>) {
-    throw ToolException('Invalid package.json at $filePath');
-  }
-
-  return parsed;
-}
 
 /// Reads the `version` field from a pubspec.yaml file.
 Future<String> readPubspecVersion(String filePath) async {

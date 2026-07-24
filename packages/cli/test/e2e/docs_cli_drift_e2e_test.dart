@@ -16,13 +16,7 @@ import 'package:test/test.dart';
 import '../helpers/e2e_context.dart';
 
 final String _workspaceRoot = p.dirname(p.dirname(e2ePackageRoot()));
-final String _docsRoot = p.join(
-  _workspaceRoot,
-  'packages',
-  'homepage',
-  'app',
-  'content',
-);
+final String _docsRoot = p.join(_workspaceRoot, 'homepage', 'app', 'content');
 
 final RegExp _contentFilePattern = RegExp(r'\.(md|mdx)$');
 

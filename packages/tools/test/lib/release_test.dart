@@ -79,9 +79,8 @@ void main() {
   }
 
   group('release targets', () {
-    test('updates the cli package.json, pubspec, and version.g.dart', () {
+    test('updates the cli pubspec and version.g.dart', () {
       expect(releaseTargets.map((target) => target.path), [
-        'packages/cli/package.json',
         'packages/cli/pubspec.yaml',
         'packages/cli/lib/src/lib/version.g.dart',
       ]);
