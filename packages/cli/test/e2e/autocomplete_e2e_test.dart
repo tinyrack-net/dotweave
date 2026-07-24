@@ -373,9 +373,11 @@ Future<CliRunResult> _runFishCompletion(
     'dotweave-autocomplete-fish-',
   );
   final binDirectory = p.join(configDirectory, 'bin');
+  final homeDirectory = p.join(configDirectory, 'home');
   final shimPath = p.join(binDirectory, 'dotweave');
 
   await Directory(binDirectory).create(recursive: true);
+  await Directory(homeDirectory).create(recursive: true);
   await File(shimPath).writeAsString(await _createShellShimScript());
   await _makeExecutable(shimPath);
 
@@ -393,7 +395,17 @@ Future<CliRunResult> _runFishCompletion(
         ].join('; '),
       ],
       cwd: cwd,
-      env: {'FORCE_COLOR': '0', 'NO_COLOR': '1'},
+      env: {
+        'FORCE_COLOR': '0',
+        'NO_COLOR': '1',
+        // Isolate fish's data/history dirs per invocation: concurrent fish
+        // processes sharing the runner's real HOME race on creating
+        // ~/.local/share/fish ("File exists") and print history warnings to
+        // stderr, breaking the empty-stderr assertions.
+        'HOME': homeDirectory,
+        'XDG_CONFIG_HOME': p.join(homeDirectory, '.config'),
+        'XDG_DATA_HOME': p.join(homeDirectory, '.local', 'share'),
+      },
     );
   } finally {
     await removeE2eWorkspace(configDirectory);
