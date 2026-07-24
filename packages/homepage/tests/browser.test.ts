@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { extname, join, normalize } from "node:path";
@@ -6,6 +7,14 @@ import { type Browser, chromium } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const buildRoot = join(import.meta.dirname, "..", "build", "client");
+
+// Read the CLI version from source so the rendered "Dotweave v<version>" badge
+// assertion tracks releases automatically instead of being hardcoded.
+const cliVersion = (
+  JSON.parse(
+    readFileSync(new URL("../../cli/package.json", import.meta.url), "utf8"),
+  ) as { version: string }
+).version;
 let browser: Browser;
 let origin: string;
 let server: Server;
@@ -116,7 +125,7 @@ describe("Dotweave built documentation", () => {
       page.getByRole("heading", { name: "Your config, anywhere." }).isVisible(),
     ).resolves.toBe(true);
     await expect(
-      page.getByText("Dotweave v0.53.0").first().isVisible(),
+      page.getByText(`Dotweave v${cliVersion}`).first().isVisible(),
     ).resolves.toBe(true);
     expect(await page.locator("html").getAttribute("data-theme")).toBe(
       "tinyrack-light",
