@@ -1,25 +1,20 @@
-import { readFile, writeFile } from "node:fs/promises";
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  posix,
-  relative,
-  sep,
-} from "node:path";
+import { readFile } from "node:fs/promises";
+import { isAbsolute, join, posix, relative, sep } from "node:path";
 import { z } from "zod";
 import { AppConstants } from "#app/config/constants.ts";
-import { applyConfigMigrations } from "#app/config/migration.ts";
+import {
+  applyConfigMigrations,
+  persistMigratedConfig,
+} from "#app/config/migration.ts";
 import {
   type PlatformKey,
   type PlatformStringValue,
   resolvePlatformValue,
 } from "#app/config/platform.ts";
+import { assertRepositoryFormatSupported } from "#app/config/repo-format-migration.ts";
 import { resolveConfiguredAbsolutePath } from "#app/config/xdg.ts";
 import { DotweaveError } from "#app/lib/error.ts";
 import { parsePermissionOctal } from "#app/lib/file-mode.ts";
-import { writeTextFileAtomically } from "#app/lib/filesystem.ts";
 import { parseJsonc, validateJsoncConfigPath } from "#app/lib/jsonc.ts";
 import { doPathsOverlap } from "#app/lib/path.ts";
 import { ensureTrailingNewline } from "#app/lib/string.ts";
@@ -104,6 +99,10 @@ const syncConfigAgeSchema = z.object({
 
 const syncConfigSchemaV7 = z.object({
   version: z.union([z.literal(7), z.literal(AppConstants.SYNC.CONFIG_VERSION)]),
+  // On-disk artifact format marker (see AppConstants.SYNC.REPOSITORY_FORMAT).
+  // Optional and additive: an absent field means format 0 (legacy). Not tied to
+  // the config `version`, so no config migration is needed to introduce it.
+  repositoryFormat: z.number().int().min(0).optional(),
   age: syncConfigAgeSchema.optional(),
   profiles: syncProfileRegistrySchema,
   entries: z.array(syncConfigEntrySchema),
@@ -155,6 +154,7 @@ export type ResolvedSyncConfig = Readonly<{
   age?: AgeConfig;
   entries: readonly ResolvedSyncConfigEntry[];
   profiles?: readonly string[];
+  repositoryFormat?: number;
   version: 7 | typeof AppConstants.SYNC.CONFIG_VERSION;
 }>;
 
@@ -184,11 +184,11 @@ export const normalizeSyncRepoPath = (value: string) => {
 
   if (hasReservedSyncArtifactSuffixSegment(normalizedValue)) {
     throw new DotweaveError(
-      `Repository path must not use the reserved suffix ${AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX}.`,
+      `Repository path must not use the reserved suffixes ${AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX} or ${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}.`,
       {
-        code: "RESERVED_SECRET_SUFFIX",
+        code: "RESERVED_ARTIFACT_SUFFIX",
         details: [`Repository path: ${value}`],
-        hint: "Rename the path so no segment ends with the secret artifact suffix.",
+        hint: "Rename the path so no segment ends with a reserved artifact suffix.",
       },
     );
   }
@@ -251,8 +251,10 @@ export const hasReservedSyncArtifactSuffixSegment = (value: string) => {
   return value
     .replaceAll("\\", "/")
     .split("/")
-    .some((segment) =>
-      segment.endsWith(AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX),
+    .some(
+      (segment) =>
+        segment.endsWith(AppConstants.SYNC.SECRET_ARTIFACT_SUFFIX) ||
+        segment.endsWith(AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX),
     );
 };
 
@@ -736,6 +738,9 @@ export const parseSyncConfig = (
     ...(age === undefined ? {} : { age }),
     entries,
     profiles,
+    ...(result.data.repositoryFormat === undefined
+      ? {}
+      : { repositoryFormat: result.data.repositoryFormat }),
     version: result.data.version,
   };
 };
@@ -745,6 +750,8 @@ export const createInitialSyncConfig = (age: {
 }): RawSyncConfig => {
   return {
     version: AppConstants.SYNC.CONFIG_VERSION,
+    // A freshly created repository is at the current format by construction.
+    repositoryFormat: AppConstants.SYNC.REPOSITORY_FORMAT,
     age,
     profiles: [],
     entries: [],
@@ -777,19 +784,21 @@ export const readSyncConfig = async (
     );
     const resolved = parseSyncConfig(migration.config, context);
 
+    assertRepositoryFormatSupported(
+      resolved.repositoryFormat ?? 0,
+      AppConstants.SYNC.REPOSITORY_FORMAT,
+      AppConstants.SYNC.MIN_SUPPORTED_REPOSITORY_FORMAT,
+      `Config file: ${filePath}`,
+    );
+
+    // Persist only after validation succeeds, via the shared writer, so an
+    // invalid migration result is never written to disk.
     if (migration.migrated && migration.originalVersion !== undefined) {
-      const backupPath = join(
-        dirname(filePath),
-        `${basename(filePath)}.v${migration.originalVersion}.bak`,
-      );
-      await writeFile(
-        backupPath,
-        ensureTrailingNewline(JSON.stringify(parsed, null, 2)),
-        "utf8",
-      );
-      await writeTextFileAtomically(
+      await persistMigratedConfig(
         filePath,
-        ensureTrailingNewline(JSON.stringify(migration.config, null, 2)),
+        parsed,
+        migration.config,
+        migration.originalVersion,
       );
     }
 

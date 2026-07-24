@@ -104,6 +104,19 @@ const collectEntryArtifactCounts = async (
         counts,
         secretRelativePath,
       );
+
+      const symlinkRelativePath = resolveArtifactRelativePath({
+        category: "plain",
+        kind: "symlink",
+        profile,
+        repoPath: entry.repoPath,
+      });
+
+      await collectRepoArtifactCounts(
+        join(artifactsRoot, ...symlinkRelativePath.split("/")),
+        counts,
+        symlinkRelativePath,
+      );
     }
   }
 
@@ -177,6 +190,19 @@ const removeTrackedEntryArtifacts = async (
 
       await removePathAtomically(secretPath);
       await pruneEmptyParentDirectories(dirname(secretPath), artifactsRoot);
+
+      const symlinkPath = join(
+        artifactsRoot,
+        ...resolveArtifactRelativePath({
+          category: "plain",
+          kind: "symlink",
+          profile,
+          repoPath: entry.repoPath,
+        }).split("/"),
+      );
+
+      await removePathAtomically(symlinkPath);
+      await pruneEmptyParentDirectories(dirname(symlinkPath), artifactsRoot);
     }
   }
 };

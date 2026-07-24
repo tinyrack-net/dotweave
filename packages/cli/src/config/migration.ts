@@ -111,6 +111,36 @@ export const applyConfigMigrations = (
 };
 
 /**
+ * @description
+ * Persists a migrated config: writes a `.v<originalVersion>.bak` backup of the
+ * original raw config, then atomically rewrites the file with the migrated one.
+ * Shared by every config reader so backup/rewrite behaves identically, and is
+ * always called AFTER semantic validation so an invalid migration is never
+ * persisted.
+ */
+export const persistMigratedConfig = async (
+  filePath: string,
+  originalRawConfig: unknown,
+  migratedConfig: unknown,
+  originalVersion: number,
+): Promise<void> => {
+  const backupPath = join(
+    dirname(filePath),
+    `${basename(filePath)}.v${originalVersion}.bak`,
+  );
+  await writeFile(
+    backupPath,
+    ensureTrailingNewline(JSON.stringify(originalRawConfig, null, 2)),
+    "utf8",
+  );
+
+  await writeTextFileAtomically(
+    filePath,
+    ensureTrailingNewline(JSON.stringify(migratedConfig, null, 2)),
+  );
+};
+
+/**
  * Applies sequential config migrations from the detected version up to targetVersion.
  * Creates a backup file before the first migration step, then saves the result.
  * Returns the migrated config (or the original if no migration was needed).
@@ -132,20 +162,7 @@ export const runConfigMigrations = async (
     return config;
   }
 
-  const backupPath = join(
-    dirname(filePath),
-    `${basename(filePath)}.v${originalVersion}.bak`,
-  );
-  await writeFile(
-    backupPath,
-    ensureTrailingNewline(JSON.stringify(rawConfig, null, 2)),
-    "utf8",
-  );
-
-  await writeTextFileAtomically(
-    filePath,
-    ensureTrailingNewline(JSON.stringify(config, null, 2)),
-  );
+  await persistMigratedConfig(filePath, rawConfig, config, originalVersion);
 
   return config;
 };

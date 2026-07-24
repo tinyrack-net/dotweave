@@ -2,7 +2,10 @@ import { readFile } from "node:fs/promises";
 
 import { z } from "zod";
 import { AppConstants } from "#app/config/constants.ts";
-import { runConfigMigrations } from "#app/config/migration.ts";
+import {
+  applyConfigMigrations,
+  persistMigratedConfig,
+} from "#app/config/migration.ts";
 import { DotweaveError } from "#app/lib/error.ts";
 import { parseJsonc, validateJsoncConfigPath } from "#app/lib/jsonc.ts";
 import { ensureTrailingNewline } from "#app/lib/string.ts";
@@ -65,14 +68,26 @@ export const readGlobalDotweaveConfig = async (filePath: string) => {
   try {
     const contents = await readFile(resolvedPath, "utf8");
     const parsed = parseJsonc(contents);
-    const migrated = await runConfigMigrations(
+    const migration = applyConfigMigrations(
       parsed,
       globalConfigMigrationRegistry,
       AppConstants.GLOBAL_CONFIG.CURRENT_VERSION,
       resolvedPath,
     );
+    const validated = parseGlobalDotweaveConfig(migration.config);
 
-    return parseGlobalDotweaveConfig(migrated);
+    // Persist only after validation succeeds (shared writer, same behavior as
+    // the manifest reader).
+    if (migration.migrated && migration.originalVersion !== undefined) {
+      await persistMigratedConfig(
+        resolvedPath,
+        parsed,
+        migration.config,
+        migration.originalVersion,
+      );
+    }
+
+    return validated;
   } catch (error: unknown) {
     if (error instanceof DotweaveError) {
       throw error;

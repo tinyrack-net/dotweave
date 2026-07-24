@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { AppConstants } from "../src/config/constants.ts";
 import {
   createSyncE2EContext,
   type SyncE2EContext,
@@ -146,19 +147,22 @@ describe.runIf(process.platform === "win32")(
       await ctx.runCli(["track", linkPath]);
       await ctx.runCli(["push"]);
 
-      // Manually lowercase the link target in the repo artifact
-      const repoLinkPath = join(
+      // Manually lowercase the link target in the repo artifact. Symlinks are
+      // stored as regular metadata files whose contents are the POSIX target.
+      const repoLinkArtifact = join(
         ctx.xdgDir,
         "dotweave",
         "repository",
         "profiles",
         "default",
-        "link",
+        `link${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`,
       );
-      await rename(repoLinkPath, `${repoLinkPath}.tmp`);
-      // Use lowercase target path
       const targetDirLower = join(ctx.homeDir, "target");
-      await symlink(targetDirLower, repoLinkPath, "junction");
+      await writeFile(
+        repoLinkArtifact,
+        targetDirLower.replace(/\\/g, "/"),
+        "utf8",
+      );
 
       // First pull - with the fix, it should say "Already up to date" because it's case-insensitive
       const firstPull = await ctx.runCli(["pull", "-y"]);

@@ -207,6 +207,7 @@ describe("repo-artifacts service", () => {
       profile: "work",
       repoPath: ".gitconfig",
       secret: false,
+      symlink: false,
     });
 
     expect(
@@ -217,6 +218,18 @@ describe("repo-artifacts service", () => {
       profile: "work",
       repoPath: ".ssh/id",
       secret: true,
+      symlink: false,
+    });
+
+    expect(
+      parseArtifactRelativePath(
+        `profiles/work/.claude/skills${AppConstants.SYNC.SYMLINK_ARTIFACT_SUFFIX}`,
+      ),
+    ).toEqual({
+      profile: "work",
+      repoPath: ".claude/skills",
+      secret: false,
+      symlink: true,
     });
 
     expect(() => parseArtifactRelativePath("docs/readme.md")).toThrow();

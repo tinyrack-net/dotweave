@@ -118,7 +118,6 @@ export const createSymlink = async (
   }
 
   // On Windows, the symlink type (file, dir, junction) must be specified.
-  // Junctions are preferred for directories as they don't require admin privileges.
   if (type !== undefined) {
     await symlink(target, path, type);
     return;
@@ -128,9 +127,32 @@ export const createSymlink = async (
     ? target
     : join(dirname(path), target);
   const stats = await getFollowedPathStats(absoluteTarget);
-  const resolvedType = stats?.isDirectory() ? "junction" : "file";
 
-  await symlink(target, path, resolvedType);
+  if (stats?.isDirectory()) {
+    // Prefer a real directory symlink: it stores the target verbatim, so a
+    // relative target stays relative and the link remains portable across
+    // machines. A junction always stores an absolute target, so it is only a
+    // fallback for when the OS denies symlink creation (no Developer Mode or
+    // administrator privileges).
+    try {
+      await symlink(target, path, "dir");
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        (error.code === "EPERM" || error.code === "EINVAL")
+      ) {
+        await symlink(absoluteTarget, path, "junction");
+        return;
+      }
+
+      throw error;
+    }
+
+    return;
+  }
+
+  await symlink(target, path, "file");
 };
 
 /**

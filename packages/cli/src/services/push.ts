@@ -17,6 +17,7 @@ import {
   resolveArtifactRelativePath,
   writeArtifactsToDirectory,
 } from "./repo-artifacts.ts";
+import { ensureRepositoryFormat } from "./repo-format.ts";
 import { ensureManagedSecretArtifactIgnoreRules } from "./repository-ignore.ts";
 import {
   type EffectiveSyncConfig,
@@ -246,6 +247,14 @@ export const pushChanges = async (
       ...(request.profile === undefined ? {} : { profile: request.profile }),
     },
   );
+
+  // Bring the repository up to the current on-disk format (e.g. convert legacy
+  // physical symlinks to metadata files) before planning, so the plan reflects
+  // the migrated state. Skipped on dry-run since it writes to the repository.
+  if (!request.dryRun) {
+    await ensureRepositoryFormat(syncDirectory, fullConfig);
+  }
+
   const plan = await buildPushPlan(config, syncDirectory, fullConfig);
 
   if (!request.dryRun) {

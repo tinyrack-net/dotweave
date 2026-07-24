@@ -8,6 +8,7 @@ import {
 import { DotweaveError } from "#app/lib/error.ts";
 import { isExecutableMode } from "#app/lib/file-mode.ts";
 import { getPathStats, listDirectoryEntries } from "#app/lib/filesystem.ts";
+import { toPosixLinkTarget } from "#app/lib/path.ts";
 import { assertStorageSafeRepoPath } from "./repo-artifacts.ts";
 import type { EffectiveSyncConfig } from "./sync-context.ts";
 
@@ -86,7 +87,7 @@ const addLocalNode = async (
     }
 
     addSnapshotNode(snapshot, repoPath, {
-      linkTarget: await readlink(path),
+      linkTarget: toPosixLinkTarget(await readlink(path)),
       type: "symlink",
     });
 

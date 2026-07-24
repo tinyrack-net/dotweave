@@ -50,6 +50,29 @@ export const isExplicitLocalPath = (target: string) => {
   );
 };
 
+/**
+ * @description
+ * Canonicalizes a symlink target for portable repository storage and comparison
+ * by converting Windows backslash separators to POSIX forward slashes. The
+ * relative/absolute nature of the target is preserved verbatim.
+ */
+export const toPosixLinkTarget = (target: string) => {
+  return target.replaceAll("\\", "/");
+};
+
+/**
+ * @description
+ * Converts a POSIX-normalized symlink target back to the native separator for
+ * the current platform when materializing an OS link. Only Windows needs the
+ * conversion; POSIX platforms keep forward slashes.
+ */
+export const toNativeLinkTarget = (
+  target: string,
+  platform: NodeJS.Platform = process.platform,
+) => {
+  return platform === "win32" ? target.replaceAll("/", "\\") : target;
+};
+
 export type LinkTargetNormalizerPlatform = NodeJS.Platform;
 
 interface NormalizeLinkTargetDependencies {
