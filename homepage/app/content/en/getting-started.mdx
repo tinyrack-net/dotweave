@@ -5,7 +5,7 @@ section: overview
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 import { TRTabs } from "@tinyrack/ui/components/tabs";
 
@@ -100,9 +100,9 @@ git push -u origin main
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
   After setting up, check out the [Directory Structure](/en/guides/directory-structure/) guide to see where dotweave stores your config and synced files.
-</TRCallout>
+</TRAlert.Root>
 
 ---
 
@@ -139,9 +139,9 @@ dotweave pull
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="note">
+<TRAlert.Root variant="info">
   If your sync directory contains encrypted secrets, you need the same age private key on all machines. See [Syncing Secrets](/en/guides/syncing-secrets/) for details.
-</TRCallout>
+</TRAlert.Root>
 
 ---
 

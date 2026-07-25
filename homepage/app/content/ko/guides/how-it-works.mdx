@@ -5,7 +5,7 @@ section: guides
 order: 7
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
@@ -102,11 +102,11 @@ dotweave는 뒤에서 몰래 파일을 수정하지 않아요. `push`로 미러�
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `push`도 `pull`도 Git commit을 만들지 않아요. `git add`, `git commit`,
 `git push`는 직접 실행해야 해요. 이렇게 해서 commit 히스토리를 완전히
 통제할 수 있어요.
-</TRCallout>
+</TRAlert.Root>
 
 ## 설계 결정
 
@@ -149,9 +149,9 @@ sync 디렉터리는 예측 가능한 레이아웃을 가진 일반 Git 저장�
 └── ...              ← dotweave push로 생성된 파일들
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 `dotweave cd`를 실행하면 sync 디렉터리로 바로 이동해서 직접 확인하거나 관리할 수
 있어요.
-</TRCallout>
+</TRAlert.Root>
 
 

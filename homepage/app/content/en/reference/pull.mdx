@@ -5,7 +5,7 @@ section: reference
 order: 3
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Apply the git-backed sync directory to local config paths.
@@ -45,7 +45,7 @@ Pull only the work profile layer:
 dotweave pull --profile work
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 Run `dotweave status` first to see what `pull` would change before applying.
-</TRCallout>
+</TRAlert.Root>
 

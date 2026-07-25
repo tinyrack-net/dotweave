@@ -5,7 +5,7 @@ section: guides
 order: 7
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
@@ -104,10 +104,10 @@ syncディレクトリ内の`repoPath`に書き込まれます。
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `push`も`pull`もGitのcommitを作成しません。`git add`、`git commit`、
 `git push`は自分で実行します。これにより、commit履歴を完全にコントロールできます。
-</TRCallout>
+</TRAlert.Root>
 
 ## 設計上の判断
 
@@ -151,8 +151,8 @@ syncディレクトリは予測可能なレイアウトの通常のGitリポジ�
 └── ...              ← dotweave pushで書き込まれるアーティファクト
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 syncディレクトリを直接確認・管理したいときは、`dotweave cd`で移動できます。
-</TRCallout>
+</TRAlert.Root>
 
 

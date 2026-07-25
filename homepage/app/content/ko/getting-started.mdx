@@ -5,7 +5,7 @@ section: overview
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 import { TRTabs } from "@tinyrack/ui/components/tabs";
 
@@ -100,9 +100,9 @@ git push -u origin main
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
   설정을 마쳤다면, [디렉터리 구조](/ko/guides/directory-structure/) 가이드에서 dotweave가 config과 동기화된 파일을 어디에 저장하는지 확인해 보세요.
-</TRCallout>
+</TRAlert.Root>
 
 ---
 
@@ -139,9 +139,9 @@ dotweave pull
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="note">
+<TRAlert.Root variant="info">
   sync 디렉터리에 암호화된 시크릿이 있다면, 모든 기기에 같은 age 비밀 키가 있어야 해요. 자세한 내용은 [시크릿 파일 동기화](/ko/guides/syncing-secrets/)를 참고하세요.
-</TRCallout>
+</TRAlert.Root>
 
 ---
 

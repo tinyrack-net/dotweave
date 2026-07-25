@@ -5,7 +5,7 @@ section: reference
 order: 5
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 同期対象のパスのトラッキングを停止します。
@@ -43,7 +43,7 @@ trackされたディレクトリ内の子オーバーライドを削除する:
 dotweave untrack .ssh/config
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `untrack` は `manifest.jsonc` を更新するだけです。ローカルファイルやsyncディレクトリのアーティファクトは削除**しません**。
-</TRCallout>
+</TRAlert.Root>
 

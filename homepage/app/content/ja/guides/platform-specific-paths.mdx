@@ -5,7 +5,7 @@ section: guides
 order: 5
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 ほとんどの設定ファイルは、OSによって異なるパスに保存されます。
@@ -101,11 +101,11 @@ Linux、macOS、Windowsで動作するVS Code設定の完全なエントリで�
 }
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 `dotweave track`を実行すると、現在のプラットフォームのパスが自動的に`default`キーとして
 記録されます。プラットフォーム固有のパスが必要な場合は、`manifest.jsonc`を直接編集して
 他のキーを追加してください。
-</TRCallout>
+</TRAlert.Root>
 
 ## 編集のヒント
 

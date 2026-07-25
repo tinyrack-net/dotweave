@@ -5,7 +5,7 @@ section: reference
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 ローカルの設定をgitベースのsyncディレクトリにミラーリングします。
@@ -45,7 +45,7 @@ workプロファイルのレイヤーのみpushする:
 dotweave push --profile work
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `push` はリモートへの通信を行いません。ローカルのsyncディレクトリに書き込むだけです。commitやリモートへのpushには、別途 `git` を使用してください。
-</TRCallout>
+</TRAlert.Root>
 

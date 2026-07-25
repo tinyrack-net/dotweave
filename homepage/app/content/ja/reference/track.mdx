@@ -5,7 +5,7 @@ section: reference
 order: 1
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 ローカルファイルやディレクトリを同期対象として登録します。
@@ -67,7 +67,7 @@ dotweave track .ssh/config --mode ignore
 dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `track` は `manifest.jsonc` を更新するだけです。ファイルをsyncディレクトリにコピーするには、続けて `dotweave push` を実行してください。
-</TRCallout>
+</TRAlert.Root>
 

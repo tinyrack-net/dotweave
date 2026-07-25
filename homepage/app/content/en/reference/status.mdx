@@ -5,7 +5,7 @@ section: reference
 order: 4
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Show planned push and pull changes for the current sync config.
@@ -38,7 +38,7 @@ Show status for a specific profile:
 dotweave status --profile work
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `status` reads `manifest.jsonc` and compares file contents. It does **not** run `git status` — it only reports dotweave-level differences.
-</TRCallout>
+</TRAlert.Root>
 

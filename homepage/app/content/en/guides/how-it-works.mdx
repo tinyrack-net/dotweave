@@ -5,7 +5,7 @@ section: guides
 order: 7
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
@@ -103,10 +103,10 @@ restored so nothing ends up world-readable by accident.
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 Neither `push` nor `pull` creates Git commits. You run `git add`, `git commit`,
 and `git push` yourself. This keeps you in full control of your commit history.
-</TRCallout>
+</TRAlert.Root>
 
 ## Design decisions
 
@@ -152,9 +152,9 @@ At a glance:
 └── ...              ← artifacts written by dotweave push
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 Run `dotweave cd` to jump into the sync directory whenever you need to inspect
 or manage it directly.
-</TRCallout>
+</TRAlert.Root>
 
 

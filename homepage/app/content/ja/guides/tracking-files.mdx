@@ -5,7 +5,7 @@ section: guides
 order: 1
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 dotweaveで何かを同期するには、まず**トラッキング**する必要があります。トラッキングとは、「このファイルを管理したい」とdotweaveに伝えることで、`manifest.jsonc`にエントリが追加されます。ファイルのコピーやpushは、`dotweave push`を実行するまで行われません。
@@ -34,9 +34,9 @@ dotweave track ~/.config/nvim
 dotweave track ~/.config/fish
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 ディレクトリをトラッキングすると、後から追加されたファイルも次回のpush時に自動的に含まれます — 個別にトラッキングする必要はありません。
-</TRCallout>
+</TRAlert.Root>
 
 ---
 

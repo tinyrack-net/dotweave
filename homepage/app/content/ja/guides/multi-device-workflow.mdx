@@ -5,7 +5,7 @@ section: guides
 order: 6
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
@@ -65,9 +65,9 @@ exit
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 pushやpullの前にいつでも`dotweave status`を実行して、変更内容をプレビューできます。
-</TRCallout>
+</TRAlert.Root>
 
 ## マシンBのセットアップ
 
@@ -118,10 +118,10 @@ exit
 dotweave pull
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 パターンは常に、一方で**dotweave push → git push**、
 もう一方で**git pull → dotweave pull**です。
-</TRCallout>
+</TRAlert.Root>
 
 ## コンフリクトの解決
 
@@ -138,11 +138,11 @@ exit
 dotweave pull        # 解決後の状態をローカルに適用
 ```
 
-<TRCallout variant="caution">
+<TRAlert.Root variant="warning">
 2台のマシンが、いずれかが`git pull`する前に同じファイルに異なる編集をpushすると、
 通常のGitマージコンフリクトが発生します。syncディレクトリ内で解決してください — 
 dotweave自体は自動マージを行いません。
-</TRCallout>
+</TRAlert.Root>
 
 ## ヘルスチェック
 
@@ -159,10 +159,10 @@ syncディレクトリの存在、Gitの設定、暗号化キーの状態、ト�
 `dotweave init`してから`dotweave pull`。以降の日常的なpush/pullサイクルは、
 すべてのデバイスで同じです。
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 新しいマシンのOSが異なる場合、dotweaveはプラットフォーム別パスを自動的に解決します。
 [プラットフォーム別パス](/ja/guides/platform-specific-paths/)ガイドをご覧ください。
-</TRCallout>
+</TRAlert.Root>
 
 ## クイックリファレンス
 

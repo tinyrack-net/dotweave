@@ -5,7 +5,7 @@ section: reference
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Mirror local config into the git-backed sync directory.
@@ -45,7 +45,7 @@ Push only the work profile layer:
 dotweave push --profile work
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `push` does not contact any remote. It only writes to the local sync directory. Use `git` separately to commit and push upstream.
-</TRCallout>
+</TRAlert.Root>
 

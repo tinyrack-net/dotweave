@@ -5,7 +5,7 @@ section: guides
 order: 1
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Before dotweave can sync anything, you need to **track** it. Tracking tells dotweave "hey, I care about this file" by adding an entry to `manifest.jsonc`. Nothing gets copied or pushed until you explicitly run `dotweave push` afterward.
@@ -34,9 +34,9 @@ dotweave track ~/.config/nvim
 dotweave track ~/.config/fish
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 When you track a directory, new files added inside it later are automatically included in the next push — no need to track them individually.
-</TRCallout>
+</TRAlert.Root>
 
 ---
 
