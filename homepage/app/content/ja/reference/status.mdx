@@ -5,7 +5,7 @@ section: reference
 order: 4
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 現在のsync設定におけるpushとpullの変更予定を表示します。
@@ -38,7 +38,7 @@ dotweave status
 dotweave status --profile work
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `status` は `manifest.jsonc` を読み込み、ファイルの内容を比較します。`git status` は実行**しません** — dotweaveレベルの差分のみ表示します。
-</TRCallout>
+</TRAlert.Root>
 

@@ -5,7 +5,7 @@ section: guides
 order: 5
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Most config files live at different paths depending on your operating system.
@@ -103,11 +103,11 @@ Windows:
 }
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 When you run `dotweave track`, the file's path is recorded under the `default`
 key automatically. If you need platform-specific paths, edit `manifest.jsonc`
 directly and add the extra keys.
-</TRCallout>
+</TRAlert.Root>
 
 ## Editing tips
 

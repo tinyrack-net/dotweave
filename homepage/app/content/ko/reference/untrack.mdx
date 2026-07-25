@@ -5,7 +5,7 @@ section: reference
 order: 5
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 추적 중인 경로의 동기화를 중단해요.
@@ -43,7 +43,7 @@ dotweave untrack ~/.config/starship.toml
 dotweave untrack .ssh/config
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `untrack`은 `manifest.jsonc`만 갱신해요. 로컬 파일이나 sync 디렉터리의 파일을 **삭제하지 않아요**.
-</TRCallout>
+</TRAlert.Root>
 

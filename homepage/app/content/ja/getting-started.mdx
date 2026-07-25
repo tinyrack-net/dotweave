@@ -5,7 +5,7 @@ section: overview
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 import { TRTabs } from "@tinyrack/ui/components/tabs";
 
@@ -100,9 +100,9 @@ git push -u origin main
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
   セットアップが完了したら、[ディレクトリ構造](/ja/guides/directory-structure/)ガイドで、dotweaveが設定ファイルと同期データをどこに保存するかを確認してみてください。
-</TRCallout>
+</TRAlert.Root>
 
 ---
 
@@ -139,9 +139,9 @@ dotweave pull
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="note">
+<TRAlert.Root variant="info">
   syncディレクトリに暗号化されたシークレットが含まれている場合、すべてのマシンで同じageプライベートキーが必要です。詳しくは[シークレットファイルの同期](/ja/guides/syncing-secrets/)をご覧ください。
-</TRCallout>
+</TRAlert.Root>
 
 ---
 

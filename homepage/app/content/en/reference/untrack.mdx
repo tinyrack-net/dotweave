@@ -5,7 +5,7 @@ section: reference
 order: 5
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Stop tracking a synced path.
@@ -43,7 +43,7 @@ Remove a child override inside a tracked directory:
 dotweave untrack .ssh/config
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `untrack` only updates `manifest.jsonc`. It does **not** delete local files or sync directory artifacts.
-</TRCallout>
+</TRAlert.Root>
 

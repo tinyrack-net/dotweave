@@ -5,7 +5,7 @@ section: guides
 order: 0
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRFileTree } from "@tinyrack/ui/components/file-tree";
 
 
@@ -71,9 +71,9 @@ If you use [profiles](/en/guides/profiles), each profile gets its own subdirecto
 
 Your age private key for encrypting and decrypting [secret files](/en/guides/syncing-secrets). This is created during `dotweave init`. It starts with `AGE-SECRET-KEY-`.
 
-<TRCallout variant="caution">
+<TRAlert.Root variant="warning">
 Back up your `keys.txt` somewhere safe — a password manager works great. If you lose it, you won't be able to decrypt your secret files.
-</TRCallout>
+</TRAlert.Root>
 
 ### `settings.jsonc` — user preferences
 
@@ -122,7 +122,7 @@ Here's a simple example with a few tracked entries:
   - **`profiles`** — which [profiles](/en/guides/profiles) this entry belongs to (optional, global if omitted)
   - **`permission`** — file permission in octal like `"0600"` (optional)
 
-<TRCallout variant="note">
+<TRAlert.Root variant="info">
 You rarely need to edit `manifest.jsonc` by hand. The `dotweave track` and `dotweave untrack` commands handle it for you.
-</TRCallout>
+</TRAlert.Root>
 

@@ -5,7 +5,7 @@ section: guides
 order: 6
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
@@ -65,10 +65,10 @@ exit
 </TRSteps.Item>
 </TRSteps.Root>
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 Run `dotweave status` at any point to preview what would change before you
 actually push or pull.
-</TRCallout>
+</TRAlert.Root>
 
 ## Setting up Machine B
 
@@ -119,10 +119,10 @@ exit
 dotweave pull
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 The pattern is always **dotweave push → git push** on one side and
 **git pull → dotweave pull** on the other.
-</TRCallout>
+</TRAlert.Root>
 
 ## Handling conflicts
 
@@ -139,11 +139,11 @@ exit
 dotweave pull        # apply the resolved state locally
 ```
 
-<TRCallout variant="caution">
+<TRAlert.Root variant="warning">
 If two machines push different edits to the same file before either does a
 `git pull`, you'll get a normal Git merge conflict. Resolve it inside the sync
 directory — dotweave itself doesn't auto-merge.
-</TRCallout>
+</TRAlert.Root>
 
 ## Checking health
 
@@ -160,11 +160,11 @@ Adding a third (or fourth, or fifth) machine follows the same steps as
 Machine B — `dotweave init` with the remote URL, then `dotweave pull`. From
 there the daily push/pull cycle is identical on every device.
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 If the new machine runs a different OS, dotweave automatically resolves
 platform-specific paths. See the
 [Platform-Specific Paths](/en/guides/platform-specific-paths/) guide.
-</TRCallout>
+</TRAlert.Root>
 
 ## Quick reference
 

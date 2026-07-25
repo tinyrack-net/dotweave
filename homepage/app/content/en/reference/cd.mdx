@@ -5,7 +5,7 @@ section: reference
 order: 6
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 Launch a shell in the sync directory.
@@ -18,7 +18,7 @@ Like `chezmoi cd`, this opens a new child shell rooted at the local sync directo
 dotweave cd
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 Use this to run git commands (`commit`, `push`, `pull`) directly inside the sync directory.
-</TRCallout>
+</TRAlert.Root>
 

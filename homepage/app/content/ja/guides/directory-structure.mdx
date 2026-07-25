@@ -5,7 +5,7 @@ section: guides
 order: 0
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 import { TRFileTree } from "@tinyrack/ui/components/file-tree";
 
 
@@ -71,9 +71,9 @@ syncリポジトリは`$DOTWEAVE_HOME/repository`に保存されます。
 
 [シークレットファイル](/ja/guides/syncing-secrets)の暗号化と復号に使うageプライベートキーです。`dotweave init`の実行時に作成され、`AGE-SECRET-KEY-`で始まります。
 
-<TRCallout variant="caution">
+<TRAlert.Root variant="warning">
 `keys.txt`は安全な場所にバックアップしてください — パスワードマネージャーがおすすめです。紛失すると、シークレットファイルを復号できなくなります。
-</TRCallout>
+</TRAlert.Root>
 
 ### `settings.jsonc` — ユーザー設定
 
@@ -122,7 +122,7 @@ syncリポジトリは`$DOTWEAVE_HOME/repository`に保存されます。
   - **`profiles`** — このエントリが属する[プロファイル](/ja/guides/profiles)（省略可。省略時はグローバル）
   - **`permission`** — `"0600"`のような8進数のファイルパーミッション（省略可）
 
-<TRCallout variant="note">
+<TRAlert.Root variant="info">
 `manifest.jsonc`を手動で編集する必要はほとんどありません。`dotweave track`や`dotweave untrack`コマンドが管理してくれます。
-</TRCallout>
+</TRAlert.Root>
 

@@ -5,7 +5,7 @@ section: reference
 order: 2
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 로컬 설정을 git 기반 sync 디렉터리에 반영해요.
@@ -45,7 +45,7 @@ work profile 레이어만 반영해요:
 dotweave push --profile work
 ```
 
-<TRCallout>
+<TRAlert.Root variant="neutral">
 `push`는 원격 서버에 접속하지 않아요. 로컬 sync 디렉터리에만 기록해요. 원격 저장소에 올리려면 `git`을 따로 사용하세요.
-</TRCallout>
+</TRAlert.Root>
 

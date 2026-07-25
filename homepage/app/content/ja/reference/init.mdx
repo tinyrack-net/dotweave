@@ -5,7 +5,7 @@ section: reference
 order: 0
 ---
 
-import { TRCallout } from "@tinyrack/ui/components/callout";
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
 gitベースのsyncディレクトリを初期化します。
@@ -51,7 +51,7 @@ dotweave init https://github.com/user/dotfiles.git
 dotweave init --key-file ~/dotweave.agekey
 ```
 
-<TRCallout variant="tip">
+<TRAlert.Root variant="success">
 別のマシンで使用しているage identityがある場合は、`--key-file`で指定するか、既存リポジトリを取り込むときの対話プロンプトに入力すると、secretファイルを復号できます。
-</TRCallout>
+</TRAlert.Root>
 
