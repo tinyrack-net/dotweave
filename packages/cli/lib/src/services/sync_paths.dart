@@ -73,7 +73,10 @@ String? tryBuildRepoPathWithinRoot(
 ) {
   try {
     return buildRepoPathWithinRoot(absolutePath, rootPath, description);
-  } catch (_) {
+  } on DotweaveError {
+    // "Is this path inside the root?" is a question, so a rejection is an
+    // answer rather than a failure. Narrowed so that only the validation
+    // errors this asks about are absorbed.
     return null;
   }
 }
@@ -81,7 +84,7 @@ String? tryBuildRepoPathWithinRoot(
 String? tryNormalizeRepoPathInput(String value) {
   try {
     return normalizeSyncRepoPath(value);
-  } catch (_) {
+  } on DotweaveError {
     return null;
   }
 }
