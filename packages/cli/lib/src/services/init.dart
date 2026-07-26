@@ -323,7 +323,12 @@ Future<InitResult> initializeSyncDirectory(
 
   try {
     await effectiveVerifyIsGitRepository(syncDirectory);
-  } catch (_) {
+  } on DotweaveError {
+    // Any git-level failure here means "not a usable repository yet", and the
+    // recovery below re-runs git so a missing executable still surfaces with
+    // its own message and hint. Narrowed from a bare catch so that a defect
+    // in the Dart code above is no longer silently read as "not a repo".
+
     final syncDirectoryExists = await pathExists(syncDirectory);
 
     if (syncDirectoryExists) {

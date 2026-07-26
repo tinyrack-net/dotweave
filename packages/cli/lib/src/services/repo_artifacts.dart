@@ -210,9 +210,17 @@ Future<Set<String>?> readCommittedProfileRegistry(
     ], cwd: syncDirectory);
 
     return _collectRawManifestProfiles(parseJsonc(result.stdout));
-  } catch (_) {
+  } on GitExecFileException {
+    // git could not produce the blob: no HEAD yet, or the manifest is not in
+    // the committed tree. Both legitimately mean "no committed registry".
+    return null;
+  } on ProcessException {
+    // git could not be spawned at all.
     return null;
   }
+  // A manifest that IS committed but fails to parse is a corrupt repository,
+  // not an absent registry. That used to be indistinguishable from "no HEAD";
+  // it now propagates.
 }
 
 List<String> _collectConfiguredRepoPathVariants(ResolvedSyncConfigEntry entry) {
@@ -981,7 +989,10 @@ Future<bool> _isSecretArtifactUnchanged(
 
   try {
     existingCiphertext = await File(artifactPath).readAsString();
-  } catch (_) {
+  } on FileSystemException {
+    // No readable artifact yet, so it cannot match: report "changed" and let
+    // the caller write it. Anything that is not a filesystem failure is a bug
+    // and must not be mistaken for a missing artifact.
     return false;
   }
 
@@ -996,7 +1007,13 @@ Future<bool> _isSecretArtifactUnchanged(
       plaintext,
       normalizeTextLineEndings: shouldNormalizeTextLineEndings(),
     );
-  } catch (_) {
+  } on DotweaveError {
+    // `decryptSecretFile` reports an unusable identity or corrupt ciphertext
+    // as a DotweaveError. This is only a currency check, and the same
+    // decryption already runs (and fails loudly) while building the
+    // repository snapshot, so preferring a rewrite over a hard failure here
+    // is deliberate. Narrowed to DotweaveError so that a genuine defect in
+    // `fileContentsEqual` no longer silently reads as "changed".
     return false;
   }
 }
