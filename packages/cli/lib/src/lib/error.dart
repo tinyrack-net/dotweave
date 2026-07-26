@@ -1,3 +1,9 @@
+/// Mirror of the TS `CommandError` shape (`Error & { exitCode?: number }`).
+/// Errors that should drive a custom process exit code implement this.
+abstract interface class CommandExitCode {
+  int? get exitCode;
+}
+
 /// Removes empty lines before error details are rendered or stored.
 List<String> compactLines(Iterable<String?> lines) {
   return [

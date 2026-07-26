@@ -93,7 +93,7 @@ Future<ShellCommand> resolveShellCommand({
   final resolvePlatformKey =
       dependencies?.resolveCurrentPlatformKey ?? resolveCurrentPlatformKey;
 
-  return await resolveShellCommandForPlatform(
+  return resolveShellCommandForPlatform(
     resolvePlatformKey(),
     env: dependencies?.env,
   );

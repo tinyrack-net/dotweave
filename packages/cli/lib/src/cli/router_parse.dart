@@ -482,9 +482,9 @@ final class _FlagMatch {
 
 Object? _flagDefault(Flag flag) {
   return switch (flag) {
-    BooleanFlag f => f.defaultValue,
-    EnumFlag f => f.defaultValue,
-    ParsedFlag f => f.defaultValue,
+    final BooleanFlag f => f.defaultValue,
+    final EnumFlag f => f.defaultValue,
+    final ParsedFlag f => f.defaultValue,
     CounterFlag() => null,
   };
 }
@@ -499,8 +499,8 @@ bool _isOptionalAtRuntime(Flag flag) => flag.optional ?? _hasDefault(flag);
 bool _isVariadicFlag(Flag flag) {
   return switch (flag) {
     CounterFlag() => true,
-    EnumFlag f => f.variadic || f.variadicSeparator != null,
-    ParsedFlag f => f.variadic || f.variadicSeparator != null,
+    final EnumFlag f => f.variadic || f.variadicSeparator != null,
+    final ParsedFlag f => f.variadic || f.variadicSeparator != null,
     BooleanFlag() => false,
   };
 }
@@ -508,8 +508,8 @@ bool _isVariadicFlag(Flag flag) {
 /// The TS `variadic: string` separator form, when configured.
 String? _variadicSeparator(Flag flag) {
   return switch (flag) {
-    EnumFlag f => f.variadicSeparator,
-    ParsedFlag f => f.variadicSeparator,
+    final EnumFlag f => f.variadicSeparator,
+    final ParsedFlag f => f.variadicSeparator,
     _ => null,
   };
 }
@@ -745,9 +745,9 @@ Future<Object?> _parseInputsForFlag(
   if (inputs == null) {
     if (_hasDefault(flag)) {
       switch (flag) {
-        case BooleanFlag f:
+        case final BooleanFlag f:
           return f.defaultValue;
-        case EnumFlag f:
+        case final EnumFlag f:
           final defaultValue = f.defaultValue;
           if (_isVariadicFlag(f) && defaultValue is List<String>) {
             for (final value in defaultValue) {
@@ -768,7 +768,7 @@ Future<Object?> _parseInputsForFlag(
             return defaultValue;
           }
           return defaultValue;
-        case ParsedFlag f:
+        case final ParsedFlag f:
           final defaultValue = f.defaultValue;
           if (_isVariadicFlag(f) && defaultValue is List<String>) {
             return [

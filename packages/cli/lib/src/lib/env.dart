@@ -88,3 +88,14 @@ class Env {
 }
 
 final Env ENV = Env(Platform.environment);
+
+/// Mirrors node:os `homedir()` for the platforms dotweave supports.
+///
+/// Single source of truth for the "Windows reads `%USERPROFILE%`, everything
+/// else reads `$HOME`" rule, which used to be reimplemented independently in
+/// the XDG resolver, the runtime-env resolver, and path completion.
+String osHomedir({Env? env}) {
+  final source = env ?? ENV;
+
+  return (Platform.isWindows ? source.USERPROFILE : source.HOME) ?? '';
+}

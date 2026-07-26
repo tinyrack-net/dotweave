@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:dotweave/src/config/constants.dart';
+import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/lib/string.dart';
 import 'package:path/path.dart' as p;
 
@@ -11,14 +10,6 @@ String _resolve(List<String> paths) {
   return p.normalize(p.joinAll([p.current, ...paths]));
 }
 
-/// Mirrors node:os `homedir()` for the platforms dotweave supports.
-String _osHomedir() {
-  if (Platform.isWindows) {
-    return Platform.environment['USERPROFILE'] ?? '';
-  }
-  return Platform.environment['HOME'] ?? '';
-}
-
 String resolveHomeDirectory(String? home) {
   final configuredValue = normalizeConfiguredValue(home);
 
@@ -26,7 +17,7 @@ String resolveHomeDirectory(String? home) {
     return _resolve([configuredValue]);
   }
 
-  return _resolve([_osHomedir()]);
+  return _resolve([osHomedir()]);
 }
 
 String resolveXdgConfigHome(String? home, String? xdgConfigHome) {
@@ -84,7 +75,7 @@ String resolveDotweaveHomeDirectory({
     }
 
     return _resolve([
-      normalizeConfiguredValue(osHomeDirectory) ?? _osHomedir(),
+      normalizeConfiguredValue(osHomeDirectory) ?? osHomedir(),
       'AppData',
       'Roaming',
       AppConstants.xdg.appDirectoryName,

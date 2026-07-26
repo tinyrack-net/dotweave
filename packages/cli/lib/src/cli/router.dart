@@ -22,7 +22,7 @@
 import 'dart:async';
 
 import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/services/terminal/logger.dart' show Stream;
+import 'package:dotweave/src/services/terminal/logger.dart' show WriteStream;
 
 part 'router_help.dart';
 part 'router_parse.dart';
@@ -48,8 +48,8 @@ class RunProcess {
   RunProcess({required this.stdout, required this.stderr, Env? env})
     : env = env ?? ENV;
 
-  final Stream stdout;
-  final Stream stderr;
+  final WriteStream stdout;
+  final WriteStream stderr;
   final Env env;
   int? exitCode;
 }
@@ -1125,7 +1125,7 @@ bool _checkEnvironmentVariable(Env env, String varName) {
 /// `stream.getColorDepth() >= 4`.
 bool _shouldUseAnsiColor(
   RunProcess process,
-  Stream stream,
+  WriteStream stream,
   DocumentationConfig config,
 ) {
   return !config.disableAnsiColor &&
@@ -1133,13 +1133,13 @@ bool _shouldUseAnsiColor(
       stream.isTTY;
 }
 
-void _writeError(Stream stream, String message, bool ansiColor) {
+void _writeError(WriteStream stream, String message, bool ansiColor) {
   stream.write(
     ansiColor ? '\x1B[1m\x1B[31m$message\x1B[39m\x1B[22m\n' : '$message\n',
   );
 }
 
-void _writeWarning(Stream stream, String message, bool ansiColor) {
+void _writeWarning(WriteStream stream, String message, bool ansiColor) {
   stream.write(
     ansiColor ? '\x1B[1m\x1B[33m$message\x1B[39m\x1B[22m\n' : '$message\n',
   );

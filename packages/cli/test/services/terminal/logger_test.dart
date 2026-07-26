@@ -76,7 +76,7 @@ CliLogger _createLogger({MockStream? stdout, MockStream? stderr, String? tag}) {
     stderr: stderr,
     tag: tag,
     color: _TagColorTheme(),
-    createSpinner: (Stream stream, String text) => _NoopSpinner(),
+    createSpinner: (WriteStream stream, String text) => _NoopSpinner(),
   );
 }
 
@@ -255,11 +255,11 @@ void main() {
     group('spinner', () {
       test('delegates to createSpinner with stdout', () {
         final stdout = createMockStream();
-        Stream? receivedStream;
+        WriteStream? receivedStream;
         final logger = createCliLogger(
           stdout: stdout,
           color: _TagColorTheme(),
-          createSpinner: (Stream stream, String text) {
+          createSpinner: (WriteStream stream, String text) {
             receivedStream = stream;
             return _NoopSpinner();
           },

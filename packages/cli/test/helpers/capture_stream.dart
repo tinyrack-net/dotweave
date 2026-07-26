@@ -3,7 +3,7 @@
 
 import 'package:dotweave/src/services/terminal/logger.dart';
 
-class CaptureStream implements Stream {
+class CaptureStream implements WriteStream {
   final StringBuffer _buffer = StringBuffer();
 
   @override

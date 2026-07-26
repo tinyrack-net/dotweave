@@ -8,6 +8,7 @@
 import 'dart:io';
 
 import 'package:dotweave/src/lib/collation.dart';
+import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/fs_errors.dart';
 import 'package:path/path.dart' as p;
@@ -27,14 +28,6 @@ typedef _CompletionBase = ({
 /// result is normalized.
 String _resolvePath(List<String> paths) {
   return p.normalize(p.joinAll(paths));
-}
-
-/// Mirrors node:os `homedir()` for the platforms dotweave supports.
-String _osHomedir() {
-  if (Platform.isWindows) {
-    return Platform.environment['USERPROFILE'] ?? '';
-  }
-  return Platform.environment['HOME'] ?? '';
 }
 
 /// Mirrors node `process.cwd()`.
@@ -173,7 +166,7 @@ Future<List<String>> proposePathCompletions(
   final base = _resolveCompletionBase(
     partial,
     cwd ?? _processCwd,
-    homedir ?? _osHomedir,
+    homedir ?? osHomedir,
   );
 
   if (base == null) {
