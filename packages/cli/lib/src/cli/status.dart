@@ -1,5 +1,6 @@
 // Dart port of `packages/cli/src/cli/status.ts`.
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/config/constants.dart';
@@ -113,7 +114,7 @@ final Command statusCommand = buildCommand(
         'Compare the tracked local files with the sync directory and report what push would write to the repository and what pull would write back locally.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
 
     final spin = logger.spinner('Checking sync status...');
     StatusResult result;

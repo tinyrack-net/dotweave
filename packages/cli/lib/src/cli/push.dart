@@ -1,9 +1,9 @@
 // Dart port of `packages/cli/src/cli/push.ts`.
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/services/push.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 
 final Command pushCommand = buildCommand(
   docs: const CommandDocs(
@@ -12,7 +12,7 @@ final Command pushCommand = buildCommand(
         'Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
 
     final spin = logger.spinner('Pushing changes...');
 

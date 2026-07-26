@@ -1,8 +1,8 @@
 // Dart port of `packages/cli/src/cli/profile/list.ts`.
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/profile.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 
 final Command profileListCommand = buildCommand(
   docs: const CommandDocs(
@@ -11,7 +11,7 @@ final Command profileListCommand = buildCommand(
         'List the implicit default profile and manifest-registered profiles, and show which profile is active through ~/.config/dotweave/settings.jsonc.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
 
     final result = await listProfiles();
 

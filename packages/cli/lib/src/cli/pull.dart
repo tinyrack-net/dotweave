@@ -2,6 +2,7 @@
 
 import 'dart:io' as io;
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/lib/error.dart';
@@ -33,7 +34,7 @@ final Command pullCommand = buildCommand(
   ),
   func: (context, flags, positional) async {
     final dryRun = flags['dryRun'] as bool? ?? false;
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
 
     final spin = logger.spinner('Preparing pull...');
     PreparedPull prepared;

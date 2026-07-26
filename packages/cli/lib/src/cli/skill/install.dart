@@ -1,8 +1,8 @@
 // Dart port of `packages/cli/src/cli/skill/install.ts`.
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/skill_install.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 
 String _formatInstallMessage(String action) {
   switch (action) {
@@ -24,7 +24,7 @@ final Command skillInstallCommand = buildCommand(
         "Install Dotweave's bundled portable agent skill into the specified skills directory.",
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
     final result = await installDotweaveSkill(
       SkillInstallRequest(
         directory: positional[0] as String,

@@ -6,13 +6,13 @@
 
 import 'dart:io' as io;
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/platform_flags.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/profile.dart';
 import 'package:dotweave/src/services/sync_mode.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 import 'package:dotweave/src/services/terminal/path_completion.dart';
 import 'package:dotweave/src/services/track.dart';
 
@@ -27,7 +27,7 @@ final Command trackCommand = buildCommand(
         'Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If a target is already tracked, specified manifest fields are updated and unspecified fields are preserved.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
     final profiles = [...?_normalizeFlagValues(flags['profile'])];
     final cwd = io.Directory.current.path;
     final targets = positional.cast<String>();

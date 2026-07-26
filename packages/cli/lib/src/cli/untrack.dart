@@ -2,8 +2,8 @@
 
 import 'dart:io' as io;
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 import 'package:dotweave/src/services/untrack.dart';
 
 final Command untrackCommand = buildCommand(
@@ -13,7 +13,7 @@ final Command untrackCommand = buildCommand(
         'Remove a tracked root entry or a nested override from dotweave configuration. This only updates the sync config; actual file changes happen on the next push or pull. Use a local path to remove the main tracked target, or use a repository-relative child path inside a tracked directory to remove only that override.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
 
     final target = positional[0] as String;
     final result = await untrackTarget(
