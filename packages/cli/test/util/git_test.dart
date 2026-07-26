@@ -102,6 +102,125 @@ void main() {
     }
   });
 
+  group('pumpProcessOutput', () {
+    // These drive the pump directly because the `spawnGit` seam replaces the
+    // whole spawn function, so nothing else in the suite ever executes it.
+
+    ({
+      StreamController<String> stdoutSink,
+      StreamController<String> stderrSink,
+      Completer<int?> result,
+    })
+    makeSinks() => (
+      stdoutSink: StreamController<String>(),
+      stderrSink: StreamController<String>(),
+      result: Completer<int?>(),
+    );
+
+    test('forwards output and completes with the exit code', () async {
+      final sinks = makeSinks();
+      final stdoutText = sinks.stdoutSink.stream.join();
+      final stderrText = sinks.stderrSink.stream.join();
+
+      await pumpProcessOutput(
+        stdout: Stream.value(utf8.encode('out')),
+        stderr: Stream.value(utf8.encode('err')),
+        exitCode: Future.value(0),
+        stdoutSink: sinks.stdoutSink,
+        stderrSink: sinks.stderrSink,
+        result: sinks.result,
+      );
+
+      expect(await sinks.result.future, 0);
+      expect(await stdoutText, 'out');
+      expect(await stderrText, 'err');
+      expect(sinks.stdoutSink.isClosed, isTrue);
+      expect(sinks.stderrSink.isClosed, isTrue);
+    });
+
+    test('completes with an error when the exit code fails', () async {
+      // The regression. `result` used to be left uncompleted here, so every
+      // caller awaiting `GitStreamingChild.result` hung forever with no error
+      // and no exit code. The timeout turns a reintroduced hang into a fast
+      // failure rather than a 30-second wait.
+      final sinks = makeSinks();
+      unawaited(sinks.stdoutSink.stream.drain<void>());
+      unawaited(sinks.stderrSink.stream.drain<void>());
+      // Listen before pumping: a completer that errors with no listener
+      // attached reports an unhandled async error instead.
+      final resultSettled = expectLater(
+        sinks.result.future.timeout(const Duration(seconds: 5)),
+        throwsA(isA<ProcessException>()),
+      );
+
+      await pumpProcessOutput(
+        stdout: const Stream<List<int>>.empty(),
+        stderr: const Stream<List<int>>.empty(),
+        exitCode: Future<int>.error(const ProcessException('git', [])),
+        stdoutSink: sinks.stdoutSink,
+        stderrSink: sinks.stderrSink,
+        result: sinks.result,
+      );
+
+      await resultSettled;
+      expect(sinks.stdoutSink.isClosed, isTrue);
+      expect(sinks.stderrSink.isClosed, isTrue);
+    });
+
+    test('completes with an error when a sink rejects the stream', () async {
+      // The other way the pump can throw: `addStream` raises synchronously on
+      // a sink that is already closed. Same requirement — `result` must still
+      // resolve, and both sinks must still be closed.
+      final sinks = makeSinks();
+      // Both need a listener: `close()` on an unlistened controller never
+      // completes, which would hang the setup and then the pump's own cleanup.
+      unawaited(sinks.stdoutSink.stream.drain<void>());
+      unawaited(sinks.stderrSink.stream.drain<void>());
+      await sinks.stdoutSink.close();
+      final resultSettled = expectLater(
+        sinks.result.future.timeout(const Duration(seconds: 5)),
+        throwsA(isA<StateError>()),
+      );
+
+      await pumpProcessOutput(
+        stdout: const Stream<List<int>>.empty(),
+        stderr: const Stream<List<int>>.empty(),
+        exitCode: Future.value(0),
+        stdoutSink: sinks.stdoutSink,
+        stderrSink: sinks.stderrSink,
+        result: sinks.result,
+      );
+
+      await resultSettled;
+      expect(sinks.stderrSink.isClosed, isTrue);
+    });
+
+    test('surfaces a failing output stream to its consumer', () async {
+      // An erroring source stream is NOT a pump failure: `addStream` forwards
+      // the error to the sink rather than throwing, so the consumer sees it
+      // and `result` still reports the exit code. Pinned so the distinction
+      // does not get "fixed" into a spurious result error later.
+      final sinks = makeSinks();
+      final stdoutDone = expectLater(
+        sinks.stdoutSink.stream,
+        emitsError(isA<SocketException>()),
+      );
+      unawaited(sinks.stderrSink.stream.drain<void>());
+
+      await pumpProcessOutput(
+        stdout: Stream<List<int>>.error(const SocketException('pipe broke')),
+        stderr: const Stream<List<int>>.empty(),
+        exitCode: Future.value(0),
+        stdoutSink: sinks.stdoutSink,
+        stderrSink: sinks.stderrSink,
+        result: sinks.result,
+      );
+
+      await stdoutDone;
+      expect(await sinks.result.future.timeout(const Duration(seconds: 5)), 0);
+    });
+  });
+
   group('git helpers', () {
     group('runGitCommandWithDependencies', () {
       test('uses trimmed stderr before stdout or error message', () async {

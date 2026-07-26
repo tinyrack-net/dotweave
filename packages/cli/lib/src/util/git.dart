@@ -255,6 +255,63 @@ Future<GitCommandResult> runStreamingGitCommandWithDependencies(
   );
 }
 
+/// Pumps a spawned child's output into [stdoutSink]/[stderrSink] and completes
+/// [result] with its exit code.
+///
+/// Takes the streams rather than the `Process` on purpose. The one way this
+/// can go wrong is for the pump to fail without completing [result], which
+/// leaves every caller of `GitStreamingChild.result` awaiting forever — and
+/// that failure is only reachable in a test if the streams can be supplied
+/// directly.
+Future<void> pumpProcessOutput({
+  required Stream<List<int>> stdout,
+  required Stream<List<int>> stderr,
+  required Future<int> exitCode,
+  required StreamController<String> stdoutSink,
+  required StreamController<String> stderrSink,
+  required Completer<int?> result,
+}) async {
+  Future<void>? stdoutDone;
+  Future<void>? stderrDone;
+
+  try {
+    stdoutDone = stdoutSink.addStream(stdout.transform(utf8.decoder));
+    stderrDone = stderrSink.addStream(stderr.transform(utf8.decoder));
+
+    final code = await exitCode;
+
+    await stdoutDone;
+    await stderrDone;
+    result.complete(code);
+  } catch (error, stackTrace) {
+    if (!result.isCompleted) {
+      result.completeError(error, stackTrace);
+    }
+  } finally {
+    // `close()` throws while an `addStream` is still in flight, so a pump left
+    // running by the failure path above has to settle first. The child is gone
+    // by then, so its streams end promptly.
+    await _settle(stdoutDone);
+    await _settle(stderrDone);
+    await stdoutSink.close();
+    await stderrSink.close();
+  }
+}
+
+/// Awaits [pending], discarding any error: it has already been reported
+/// through the pump's result completer.
+Future<void> _settle(Future<void>? pending) async {
+  if (pending == null) {
+    return;
+  }
+
+  try {
+    await pending;
+  } catch (_) {
+    // Intentionally ignored; see doc comment.
+  }
+}
+
 GitStreamingChild _spawnGitProcess(
   String command,
   List<String> args, {
@@ -266,31 +323,14 @@ GitStreamingChild _spawnGitProcess(
 
   unawaited(
     Process.start(command, args, workingDirectory: cwd, runInShell: false).then(
-      (process) async {
-        // Every exit path must complete `resultCompleter`; otherwise a
-        // failure while pumping the output streams leaves callers of
-        // `GitStreamingChild.result` awaiting forever.
-        try {
-          final stdoutDone = stdoutController.addStream(
-            process.stdout.transform(utf8.decoder),
-          );
-          final stderrDone = stderrController.addStream(
-            process.stderr.transform(utf8.decoder),
-          );
-          final code = await process.exitCode;
-
-          await stdoutDone;
-          await stderrDone;
-          resultCompleter.complete(code);
-        } catch (error, stackTrace) {
-          if (!resultCompleter.isCompleted) {
-            resultCompleter.completeError(error, stackTrace);
-          }
-        } finally {
-          await stdoutController.close();
-          await stderrController.close();
-        }
-      },
+      (process) => pumpProcessOutput(
+        stdout: process.stdout,
+        stderr: process.stderr,
+        exitCode: process.exitCode,
+        stdoutSink: stdoutController,
+        stderrSink: stderrController,
+        result: resultCompleter,
+      ),
       onError: (Object error, StackTrace stackTrace) async {
         await stdoutController.close();
         await stderrController.close();
