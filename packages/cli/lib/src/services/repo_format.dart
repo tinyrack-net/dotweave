@@ -1,6 +1,6 @@
 import 'package:dotweave/src/config/constants.dart';
+import 'package:dotweave/src/config/migrations/repo_format_v1.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
-import 'package:dotweave/src/migrations/repo_format_v1.dart';
 import 'package:dotweave/src/services/config_file.dart';
 
 // Mirror of `services/repo-format.ts`: orchestrates on-disk repository format

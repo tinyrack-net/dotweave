@@ -4,7 +4,7 @@ import 'dart:io' as io;
 
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
-import 'package:dotweave/src/services/terminal/shell.dart';
+import 'package:dotweave/src/services/shell.dart';
 
 final Command cdCommand = buildCommand(
   docs: const CommandDocs(

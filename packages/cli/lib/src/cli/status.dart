@@ -5,8 +5,8 @@ import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/services/status.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
-import 'package:dotweave/src/services/terminal/theme.dart';
+import 'package:dotweave/src/terminal/logger.dart';
+import 'package:dotweave/src/terminal/theme.dart';
 
 const int _maxDisplayItems = 10;
 

@@ -3,8 +3,8 @@
 import 'dart:async' show Timer;
 
 import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/services/terminal/logger.dart' show WriteStream;
-import 'package:dotweave/src/services/terminal/theme.dart';
+import 'package:dotweave/src/terminal/logger.dart' show WriteStream;
+import 'package:dotweave/src/terminal/theme.dart';
 
 /// Mirror of the TS `Spinner` interface.
 abstract class Spinner {

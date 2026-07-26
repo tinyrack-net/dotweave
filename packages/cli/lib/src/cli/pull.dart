@@ -8,7 +8,7 @@ import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/prompt.dart';
 import 'package:dotweave/src/services/pull.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
+import 'package:dotweave/src/terminal/logger.dart';
 
 void _logPullPlanChanges(
   CliLogger logger,

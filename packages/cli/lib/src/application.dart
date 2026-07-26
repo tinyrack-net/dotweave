@@ -14,7 +14,7 @@ import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/version.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
+import 'package:dotweave/src/terminal/logger.dart';
 
 /// Mirror of `stringifyThrownValue`.
 String _stringifyThrownValue(Object? error) {
