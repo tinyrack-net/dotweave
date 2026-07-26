@@ -1,51 +1,81 @@
 ---
 title: "dotweave pull"
-description: "Apply the sync directory contents to your local config paths."
+description: Materialize sync directory artifacts back onto local paths, decrypting secrets first.
 section: reference
-order: 3
+order: 4
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Apply the git-backed sync directory to local config paths.
-
-Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave pull [flags]
+dotweave pull [--dry-run] [--profile <profile>] [--yes]
 ```
+
+Read the stored artifacts for the tracked entries and write them back to the resolved local paths under your home directory.
 
 ## Flags
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--dry-run`        | Preview changes without writing.     |
-| `--profile <name>` | Use a specific profile layer.        |
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--dry-run` | boolean, `false` | Build and print the plan without touching any local path. `--no-dry-run` selects the default explicitly. |
+| `--profile` | `string`, none | Use one registered profile for this command instead of the active profile from `settings.jsonc`. |
+| `--yes`, `-y` | boolean, `false` | Apply the plan without prompting. This flag has no `--no-yes` form. |
 
-## Examples
+## Confirmation and non-interactive shells
 
-Apply all tracked artifacts to local paths:
+`pull` prints the plan first, then asks `Apply these changes? [y/N] `. Only the answer `y` proceeds; anything else leaves every local path untouched.
+
+Pass `--yes` or `-y` to apply without the prompt. Pass `--dry-run` to stop after printing the plan.
+
+In a non-interactive terminal without `-y`, `pull` fails with `Pull confirmation requires an interactive terminal.` and hints to re-run with `-y`. This is the failure a CI job hits, so scripted pulls need the flag.
+
+When nothing differs, `pull` prints that it is already up to date and returns without prompting.
+
+## Behavior
+
+Secret artifacts are decrypted with the identity in `keys.txt` before anything is written.
+
+Every local write is staged in a temporary directory beside the target and then renamed into place, so an interrupted pull cannot leave a half-written file. Stale local paths are deleted deepest-first, and a directory is deleted only when all of its children are already scheduled for deletion.
+
+Entries are applied in batches, grouped so that no two entries in one batch have overlapping local paths.
 
 ```bash
 dotweave pull
 ```
 
-Preview what would change locally:
+```
+· Preparing pull...
+~ Planned pull changes
 
-```bash
-dotweave pull --dry-run
+Update from repository (1)
+  + /home/you/.config/nvim/init.lua
+· Applying pull...
+✔ Pull complete
+  updated: 1 paths updated
+  removed: 0 paths removed
 ```
 
-Pull only the work profile layer:
+The plan has two sections. `Update from repository (n)` lists the paths that will be written, with `+` bullets. `Remove locally (n)` lists the paths that will be deleted, with `-` bullets. A section is omitted when it is empty.
 
-```bash
-dotweave pull --profile work
+A dry run prints the same plan and stops. Its closing lines are worded as a preview.
+
+```
+~ Pull preview (dry run)
+  updated: 1 paths would be updated
+  removed: 0 paths would be removed
 ```
 
-<TRAlert.Root variant="success">
-Run `dotweave status` first to see what `pull` would change before applying.
+<TRAlert.Root variant="warning">
+`pull` deletes local files that the repository does not have. Before your first `push`, every tracked path appears under removal. Run `dotweave status` or `dotweave pull --dry-run` first.
 </TRAlert.Root>
 
+## Errors
+
+`pull` fails when the sync directory is not a git work tree and when `manifest.jsonc` is missing, unreadable, or invalid. It fails when a secret artifact cannot be decrypted with your identity, and when a stored artifact contradicts its entry's `kind`, for example a file entry that resolves to a directory in the repository. Confirmation in a non-interactive terminal fails as described above. Read [Error messages](/en/config/errors/#secrets-and-age) for each message and its fix.
+
+## Related commands
+
+Read [`dotweave status`](/en/reference/status/) to preview both directions before you apply anything, or [Keep several devices in sync](/en/guides/multi-device-workflow/) for the loop that pairs `pull` with git on a second machine.

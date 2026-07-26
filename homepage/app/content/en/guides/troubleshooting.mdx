@@ -1,0 +1,82 @@
+---
+title: Troubleshoot a broken sync
+description: Read a Dotweave error, run doctor, and fix the failures it reports.
+section: guides
+order: 6
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Read the error format
+
+Every Dotweave failure prints in the same shape: the message line, then zero or more detail lines that name the file or path involved, then a hint prefixed with `→ `. Empty lines are dropped, so a failure with nothing to add is a single line.
+
+```
+Dotweave skill already exists.
+/home/you/.claude/skills/dotweave/SKILL.md
+→ Use '--force' to overwrite the existing skill.
+```
+
+Dotweave does not print the internal error code, so match on the message line. [Error messages](/en/config/errors/) lists every message with the condition that raises it and the fix.
+
+Every command exits `0` on success and `1` on any failure. `dotweave doctor` exits `1` when a check fails; warnings alone do not fail it, so a script can treat a warning as tolerable.
+
+## Run doctor first
+
+`dotweave doctor` inspects the local setup and changes nothing, which makes it the cheapest first step for any failure whose cause you cannot see from the message.
+
+```bash
+dotweave doctor
+```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+It runs six checks in order, and the `git` and `config` checks fail fast. If the sync directory is not a git repository, or the manifest cannot be read, the run stops there and the later checks never report at all. Fix what those two report, then run `doctor` again to see the rest.
+
+When checks are not ok, `doctor` prints at most three of them and then a `... N more issues` line, so re-run it after each fix rather than treating one report as the complete list. [`dotweave doctor`](/en/reference/doctor/) documents what each check inspects.
+
+## Fix a repository git cannot read
+
+`Sync repository is not initialized.` means the sync directory is not a git work tree. Either it was never set up on this machine, or its `.git` directory is gone. Run [`dotweave init`](/en/reference/init/) to set the directory up, then `dotweave pull` to bring your files back.
+
+`Git is not installed or not on PATH.` means the `git` executable could not be found. Install git and confirm that `git --version` runs in the same shell you run Dotweave in. Every command except `dotweave skill install` needs git.
+
+If both look right but Dotweave reports a directory you did not expect, check which paths it resolved: the sync directory location is configurable, and [Environment variables and paths](/en/config/environment/) lists what overrides it.
+
+## Fix a manifest that fails validation
+
+`Sync configuration is invalid.` means `manifest.jsonc` parsed as JSON but failed validation, and the detail lines name each field that failed. `dotweave status` validates the manifest and writes nothing, so it is the cheapest check after a hand edit.
+
+Validation collects every failure it can find instead of stopping at the first, so one run can list several problems. The causes worth checking first:
+
+- Two entries resolving to the same `repoPath`, or to the same `localPath`.
+- Two entries whose local paths partially overlap. A tracked directory with a separately tracked child is fine; a partial overlap is not.
+- A path segment ending in a reserved artifact suffix, `.dotweave.secret` or `.dotweave.symlink`.
+- A `localPath` that resolves outside your home directory. On Windows this also happens across drive letters.
+- An entry naming a profile that the top-level `profiles` registry does not list.
+
+Fix the fields the detail lines name, then re-run `dotweave status`. [manifest.jsonc](/en/config/manifest/) documents the expected shape of every field.
+
+## Fix a secret that will not decrypt
+
+`Failed to decrypt a secret artifact.` means the identity in `keys.txt` matches no recipient of that artifact, or the stored data is corrupt.
+
+Work through it in that order. Confirm `keys.txt` exists at the configured path and holds an age private key; `dotweave doctor` reports this as the identity check. Then confirm this machine's public key is listed in `manifest.jsonc` under `age.recipients`.
+
+If it is not listed, add it from a machine that can already decrypt. Editing `age.recipients` alone does not rewrite existing artifacts, because `push` compares decrypted plaintext and skips a secret whose content did not change. Delete the `.dotweave.secret` artifacts you need re-encrypted, run `dotweave push`, commit, and then pull here again. [Secrets and encryption](/en/concepts/secrets/) walks through the whole sequence.
+
+<TRAlert.Root variant="warning">
+If no surviving identity matches a recipient of an artifact, that artifact cannot be recovered. Dotweave keeps no escrow key. Restore the plaintext from a machine that still has it, or recreate the file.
+</TRAlert.Root>
+
+Two neighboring failures are mode mismatches rather than key problems. `Secret sync path is stored as a plain artifact in the repository.` means the entry is `secret` but the stored artifact is unencrypted; run `dotweave push` to re-encrypt it. `Plain sync path is stored as a secret artifact in the repository.` is the reverse — an encrypted artifact exists for an entry that is no longer `secret`.
+
+## Implementation and reference
+
+The identity file, the recipient list, and what Dotweave encrypts are described in [Secrets and encryption](/en/concepts/secrets/). Field-level detail for every manifest field lives in [manifest.jsonc](/en/config/manifest/).
+
+Read [Error messages](/en/config/errors/) for any message this page does not cover, or [Upgrade config and repository formats](/en/guides/upgrading/) when the failure started right after a Dotweave upgrade.

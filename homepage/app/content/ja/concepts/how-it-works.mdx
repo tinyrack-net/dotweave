@@ -1,0 +1,76 @@
+---
+title: 同期のしくみ
+description: push と pull のパイプライン、dotweave が git を代わりに実行しない理由、dry run が報告する内容を説明します。
+section: concepts
+order: 0
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 2 つのスナップショットと 1 つの計画
+
+データを動かす dotweave のコマンドは、いずれも 2 つのスナップショットを作って比較します。ローカルスナップショットはホームディレクトリ配下のトラッキング対象パスをたどります。リポジトリスナップショットは、同期ディレクトリの `profiles/` 配下にすでに保存されている artifact を読み取ります。
+
+この 2 つの差分が計画です。`dotweave status` は両方向の計画を表示し、何も書き込みません。`dotweave push` はローカルからリポジトリへの方向で計画を適用し、`dotweave pull` は逆方向に適用します。
+
+`push` と `pull` はどちらも `--dry-run` を受け取ります。計画を組み立てて表示するだけで、適用はしません。コマンドが何に触れるか確信が持てないときに使ってください。
+
+## push が書き込むもの
+
+`push` はトラッキング対象のパスを読み、`profiles/<profile>/` 配下の artifact をそれに合わせて書き直します。書き込む前に内容を比較するため、変更のないファイルには書き込みが一切発生しません。
+
+`normal` の項目はそのままコピーされます。`secret` の項目は `manifest.jsonc` のすべての recipient 向けに暗号化され、`.dotweave.secret` サフィックスを付けて保存されます。シンボリックリンクは、リンク先を保持する `<name>.dotweave.symlink` ファイルとして保存されます。`ignore` の項目はスキップされます。
+
+シークレットの比較では、保存された暗号文を復号して平文を比べます。そのため変更のないシークレットを push し直しても新しい暗号文は生まれず、git の履歴に意味のない差分が積み上がりません。
+
+`push` は不要になった artifact も取り除きます。ほかのプラットフォームのオーバーライドや別プロファイルが所有する artifact は保護するため、Linux マシンから push しても Windows マシンが保存した内容は消えません。
+
+```bash
+dotweave push
+```
+
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+## pull が書き込むもの
+
+`pull` は保存された artifact を読み、解決済みのローカルパスへ書き戻します。シークレットは先に `keys.txt` の identity で復号します。
+
+ローカルへの書き込みはすべて、対象の隣にある一時ディレクトリで用意してから所定の位置へ rename します。そのため pull が中断されても、設定ファイルが半分だけ書かれた状態にはなりません。古いローカルパスは最も深いパスから上へ向かって削除し、ディレクトリはすべての子項目が削除予定になっているときだけ削除します。
+
+`pull` は適用前に確認します。プロンプトを省くには `--yes` を渡してください。非対話型のターミナルでは推測せずにコマンドが失敗します。
+
+<TRAlert.Root variant="warning">
+`pull` はリポジトリに存在しないローカルファイルを削除します。最初の `push` より前は、すべてのトラッキング対象パスが `Remove locally` に並びます。先に `dotweave status` を実行してください。
+</TRAlert.Root>
+
+## dotweave は git を代わりに実行しません
+
+`push` と `pull` はディスク上のファイルだけを変更します。どちらも `git add`、`git commit`、`git push`、`git pull` を実行しません。dotweave が git を参照するのは、同期ディレクトリがワークツリーかを確認するときと、どの artifact が不要かを判断するためにコミット済みのプロファイル名を調べるときだけです。
+
+つまり公開は、独立した明示的な手順です。
+
+```bash
+dotweave push
+dotweave cd
+git add -A && git commit -m "Update config"
+git push
+```
+
+dotweave にはデーモンもファイルシステム監視も、バックグラウンドプロセスもありません。コマンドを実行しない限り何も同期されません。
+
+git が転送層なので、マシン間の分岐は git のコンフリクトであり、git で解決します。dotweave はマージしません。
+
+## 実装とリファレンス
+
+同期ディレクトリの構造は[ディレクトリとリポジトリの構造](/ja/concepts/repository-layout/)、項目ごとの `mode` の値は[同期モード](/ja/concepts/sync-modes/)で説明しています。
+
+適用せずに計画だけを見るには [`dotweave status`](/ja/reference/status/)、このモデルから生まれる日々の流れは[日々の push とコミットの流れ](/ja/guides/daily-workflow/)を参照してください。

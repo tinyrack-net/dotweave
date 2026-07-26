@@ -1,6 +1,6 @@
 ---
 title: "dotweave track"
-description: "ローカルファイルやディレクトリを同期対象として登録します。"
+description: ローカルのファイルやディレクトリを登録し、プラットフォームごとの同期モード、permission、パス、プロファイルを指定します。
 section: reference
 order: 1
 ---
@@ -8,66 +8,86 @@ order: 1
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-ローカルファイルやディレクトリを同期対象として登録します。
-
-ホームディレクトリ内のファイルやディレクトリを登録し、dotweaveがsyncディレクトリにミラーリングできるようにします。すでにtrackされているターゲットの場合は、指定したmanifestフィールドだけを更新し、未指定のフィールドは保持します。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave track <target> [flags]
+dotweave track [--kind file|directory] [--mode mode|platform=mode]... [--permission octal|platform=octal]... [--profile profile]... [--local platform=path]... [--repo path|platform=path]... <target>...
 ```
 
-## Arguments
+ファイルやディレクトリを `manifest.jsonc` に記録し、`push` と `pull` がホームディレクトリと同期ディレクトリの間でミラーリングできるようにします。
 
-| Argument   | Description                                      |
-| ---------- | ------------------------------------------------ |
-| `<target>` | trackするローカルパスまたはリポジトリパスです。  |
+## 引数
 
-## Flags
+| 引数 | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `target` | `string`、1 つ以上必須 | トラッキングするホームディレクトリ配下のローカルファイルまたはディレクトリです。カレントディレクトリからの相対パスや、トラッキング済みディレクトリ内のリポジトリパスも使えます。 |
 
-| Flag                             | Description                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `--kind <file\|directory>`       | まだ存在しないパスをtrackするときに使うターゲット種別です。                 |
-| `--repo <path\|platform=path>`   | リポジトリ相対パスです。platform別のoverrideも指定できます。                |
-| `--local <platform=path>`        | platform別のローカルパスoverrideです。                                      |
-| `--mode <mode\|platform=mode>`   | syncモード: `normal`（デフォルト）、`secret`、`ignore` のいずれかです。       |
-| `--permission <octal\|platform=octal>` | 復元するファイルpermissionです（4桁のoctal）。                       |
-| `--profile <profile>`            | 登録済みprofileに同期を限定します。複数指定する場合はflagを繰り返します。   |
+## フラグ
 
-## Examples
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--kind` | `file` または `directory`、値 1 つ、なし | まだ存在しないパスをトラッキングするときに使うターゲット種別です。 |
+| `--mode` | `mode` または `platform=mode`、繰り返し可、なし | トラッキング対象の同期モードです。`normal`、`secret`、`ignore` のいずれかを指定します。 |
+| `--permission` | `octal` または `platform=octal`、繰り返し可、なし | 復元するファイル permission です。`0600` のような 4 桁の octal 値を指定します。Windows では効果がありません。 |
+| `--profile` | `profile`、繰り返し可、なし | 登録済みのプロファイルに同期を限定します。空の値を 1 つだけ渡す `--profile ""` は、逆に割り当てを消去します。 |
+| `--repo` | `path` または `platform=path`、繰り返し可、なし | プロファイル名前空間配下のリポジトリ相対パスです。ターゲットがちょうど 1 つのときだけ使えます。 |
+| `--local` | `platform=path`、繰り返し可、なし | プラットフォーム別のローカルパス override です。`platform=` の接頭辞がない値は拒否されます。 |
 
-設定ファイルをtrackする:
+boolean フラグには `--no-` 形式も自動で用意されます。`track` に boolean フラグはないため、該当するものはありません。
+
+## プラットフォーム別フラグの書き方
+
+`--mode`、`--permission`、`--repo`、`--local` は `default`、`win`、`mac`、`linux`、`wsl` のキーを受け取ります。キーを付けずに値だけを渡すと `default` に入るので、`--mode secret` と `--mode default=secret` は同じ意味です。
+
+`--mode normal --mode win=ignore` のようにフラグを繰り返せば、複数のプラットフォームを一度に指定できます。1 つのフラグで同じキーを繰り返すと `DUPLICATE_PLATFORM_FLAG` で失敗し、認識できないキーは `INVALID_PLATFORM_FLAG` で失敗します。`--local` はキーの明示が必要で、`--permission` を使う場合は `default` の値が必ず必要です。
+
+## 動作
+
+新しいパスをトラッキングすると、`manifest.jsonc` に項目を 1 つ追加し、確定したフィールドを表示します。
 
 ```bash
-dotweave track ~/.config/starship.toml
+dotweave track ~/.gitconfig
 ```
 
-secretを含むディレクトリをtrackする:
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
+
+値を指定したフラグが増えると、出力のキー列もその分だけ広がります。
 
 ```bash
-dotweave track ~/.ssh --mode secret
+dotweave track ~/.ssh/config --mode secret --permission 0600
 ```
 
-特定のprofileに限定してファイルをtrackする:
-
-```bash
-dotweave track ~/.config/work-proxy.conf --profile work
+```
+✔ Started tracking .ssh/config
+  kind        file
+  path        /home/you/.ssh/config
+  repo        .ssh/config
+  mode        secret
+  permission  0600
 ```
 
-trackされたディレクトリ内の子パスのmodeを上書きする:
+すでにトラッキング中のパスに対して `track` をもう一度実行すると、指定したフィールドだけを更新し、残りは保持します。そのため `dotweave track ~/.ssh/config --profile work` を実行しても、先に設定した mode と permission はそのまま残ります。
 
-```bash
-dotweave track .ssh/config --mode ignore
-```
+ターゲットが manifest の既存項目ではなく、`--repo` も渡していない場合、`track` はトラッキング済みディレクトリ内のネストしたパスに同期モードやプロファイルを設定し、子の override 項目を作成します。このとき出力は `Updated sync mode for <path>` または `Sync mode unchanged for <path>` になります。トラッキング済みディレクトリ内のネストしたパスを調整する方法はこれだけです。
 
-リポジトリパスと復元permissionを指定する:
+子の項目は親のディレクトリ項目より優先されます。`mode`、`permission`、`profiles` はそれぞれ独立に、最も近い上位の `directory` 項目から継承されます。そのため `mode` だけを指定した子の項目は、親の `permission` と `profiles` をそのまま引き継ぎます。
 
-```bash
-dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
-```
+ターゲットはホームディレクトリの内側に解決される必要があり、ホームディレクトリ自体は指定できません。同期ディレクトリと重なるパスや `keys.txt` を含むパスは指定しないでください。
 
 <TRAlert.Root variant="neutral">
-`track` は `manifest.jsonc` を更新するだけです。ファイルをsyncディレクトリにコピーするには、続けて `dotweave push` を実行してください。
+`track` が書き込むのは `manifest.jsonc` だけです。`dotweave push` を実行するまで、同期ディレクトリへファイルはコピーされません。
 </TRAlert.Root>
 
+## エラー
+
+`track` は、まだ存在しないパスを `--kind` なしで渡した場合、`--kind` がディスク上の実際の種別と食い違う場合、確定したローカルパスやリポジトリパスが既存の項目と衝突する場合に失敗します。ターゲットがホームディレクトリの外に出る場合、同期ディレクトリと重なる場合、age identity ファイルを含む場合も失敗します。ターゲットが 1 つでない状態で `--repo` を使うと `REPO_PATH_TARGET_COUNT`、未登録のプロファイル名は `UNKNOWN_PROFILE` で失敗します。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)のトラッキング対象の節を参照してください。
+
+## 関連コマンド
+
+作業手順は[ファイルとディレクトリのトラッキング](/ja/guides/tracking-files/)を読み、登録前に `normal`、`secret`、`ignore` のどれを使うか決めるには[同期モード](/ja/concepts/sync-modes/)を参照してください。

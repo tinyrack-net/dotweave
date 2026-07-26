@@ -1,115 +1,18 @@
 ---
-title: マルチデバイスワークフロー
-description: 初期設定から日常的な同期までの全体フロー。
+title: 複数デバイスの同期を保つ
+description: マシンをまたぐ操作の順序、git による分岐の解決、マシンごとにプロファイルを与える方法を説明します。
 section: guides
-order: 6
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
-このガイドでは、dotweaveのライフサイクル全体を説明します — 最初のマシンのセットアップから、
-複数デバイスの日常的な同期まで。
+## 編集する前に pull する
 
-## マシンAでの初期セットアップ
+dotweave は `git pull` を自分で実行しません。そのため、しばらく触っていないマシンには古い同期ディレクトリが残ったままです。リポジトリを取り込む操作とホームディレクトリへ適用する操作は別のコマンドで、この順に実行します。
 
-<TRSteps.Root>
-<TRSteps.Item>
-
-**dotweaveを初期化する**
-
-```bash
-dotweave init
-```
-
-dotweaveのアプリデータディレクトリ内にGitベースのsyncディレクトリが作成されます。
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**ファイルをトラッキングする**
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.config/starship.toml
-dotweave track ~/.ssh/config --mode secret
-```
-
-各コマンドがsyncディレクトリ内の`manifest.jsonc`にエントリを追加します。
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**ローカルファイルをsyncディレクトリにpush**
-
-```bash
-dotweave push
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**commitしてリモートにpush**
-
-dotweaveはGitのcommitを自動で作成しません — すべて自分でコントロールできます：
-
-```bash
-dotweave cd   # syncディレクトリ内でシェルを開く
-git add -A && git commit -m "initial sync"
-git remote add origin git@github.com:you/dotfiles.git
-git push -u origin main
-exit
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="success">
-pushやpullの前にいつでも`dotweave status`を実行して、変更内容をプレビューできます。
-</TRAlert.Root>
-
-## マシンBのセットアップ
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**リモートURLから初期化する**
-
-```bash
-dotweave init git@github.com:you/dotfiles.git
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**ファイルをローカルパスにpull**
-
-```bash
-dotweave pull
-```
-
-dotweaveが`manifest.jsonc`を読み取り、プラットフォーム別パスを解決し、
-シークレットを復号して、すべてのファイルを正しい場所に配置します。
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-## 日常のワークフロー
-
-両方のマシンのセットアップが完了すると、日々の操作はシンプルで予測可能です。
-
-**変更を行ったマシンで：**
-
-```bash
-dotweave push
-dotweave cd
-git add -A && git commit -m "update shell aliases"
-git push
-exit
-```
-
-**もう一方のマシンで：**
+同期ディレクトリを開いて取り込み、子シェルを抜けてから適用します。
 
 ```bash
 dotweave cd
@@ -118,60 +21,42 @@ exit
 dotweave pull
 ```
 
-<TRAlert.Root variant="neutral">
-パターンは常に、一方で**dotweave push → git push**、
-もう一方で**git pull → dotweave pull**です。
-</TRAlert.Root>
-
-## コンフリクトの解決
-
-syncディレクトリは通常のGitリポジトリなので、コンフリクトはいつも通りの方法で
-解決します：
-
-```bash
-dotweave cd
-git pull            # マージコンフリクトが報告される場合あり
-# 該当ファイルでコンフリクトを解決
-git add -A && git commit -m "resolve merge conflict"
-git push
-exit
-dotweave pull        # 解決後の状態をローカルに適用
-```
+`dotweave cd` は同期ディレクトリをルートとする子シェルを起動し、`exit` で元のシェルに戻ります。`git pull` がワークツリーを更新したあとで初めて、`dotweave pull` が書き込む新しい artifact がそろいます。
 
 <TRAlert.Root variant="warning">
-2台のマシンが、いずれかが`git pull`する前に同じファイルに異なる編集をpushすると、
-通常のGitマージコンフリクトが発生します。syncディレクトリ内で解決してください — 
-dotweave自体は自動マージを行いません。
+`dotweave pull` はリポジトリに存在しないローカルファイルを削除し、計画を適用する前に確認します。先に `dotweave status` または `dotweave pull --dry-run` を実行して計画を読んでください。
 </TRAlert.Root>
 
-## ヘルスチェック
+pull より先に編集すると分岐が生まれます。古い履歴の上にコミットすることになり、同じファイルについて 2 台のマシンの状態が食い違います。
+
+## 分岐は dotweave ではなく git で解決する
+
+dotweave はマージを行いません。3-way マージも、dotweave が書き込むコンフリクトマーカーも、解決用の UI もありません。2 台のマシンがそれぞれ push してコミットした状態は、同期リポジトリにおける git の分岐であり、`dotweave cd` の中で git を使って解決します。
+
+artifact は普通のファイルで、`dotweave init` は `* -text` を含む `.gitattributes` を書き出すため、git が改行を書き換えることはありません。そのため `normal` の artifact は同期リポジトリの `git diff` で読め、ほかのテキストファイルと同じように 1 行ずつマージできます。
+
+secret の artifact は age の暗号文です。その diff は人が読めるものではなく、1 行ずつマージすることもできません。シークレットは片方を選んで決着させ、残したいバージョンを持つマシンから平文をもう一度 push してください。
+
+## マシンごとにプロファイルを与える
+
+マシンごとに異なる設定は、共有の項目ではなくプロファイルに置きます。名前を登録し、マシン固有の項目をそのプロファイルに限定して、対象のマシンでプロファイルを選択します。
 
 ```bash
-dotweave doctor
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+dotweave profile use work
 ```
 
-syncディレクトリの存在、Gitの設定、暗号化キーの状態、トラッキングパスへのアクセスを
-検証します。
+選択内容は dotweave ホームディレクトリの `settings.jsonc` に保存されます。このディレクトリは同期ディレクトリの外にあるためコミットされず、マシンごとに独立して選べます。
 
-## マシンの追加
+プロファイルに割り当てた項目は、別のプロファイルが有効なあいだ見えません。`dotweave status` にも現れず、`push` も `pull` もその項目を扱いません。項目が失われたと判断する前に、有効なプロファイルを確認してください。
 
-3台目（4台目、5台目…）のマシンの追加は、マシンBと同じ手順です — リモートURLで
-`dotweave init`してから`dotweave pull`。以降の日常的なpush/pullサイクルは、
-すべてのデバイスで同じです。
+`push` はほかのプロファイルの artifact を削除しません。そのため 1 つのリポジトリがすべてのマシンの設定を並べて保持します。
 
-<TRAlert.Root variant="success">
-新しいマシンのOSが異なる場合、dotweaveはプラットフォーム別パスを自動的に解決します。
-[プラットフォーム別パス](/ja/guides/platform-specific-paths/)ガイドをご覧ください。
-</TRAlert.Root>
+シークレットにはマシンごとの条件が 1 つ加わります。そのマシンの公開鍵が `manifest.jsonc` の `age.recipients` に含まれ、対応する秘密鍵がそのマシン自身の `keys.txt` にある必要があります。どちらかが欠けていると、ほかのマシンが書いた内容を復号できません。鍵の扱いは[シークレットと暗号化](/ja/concepts/secrets/)で確認してください。
 
-## クイックリファレンス
+## 実装とリファレンス
 
-| タスク                      | コマンド                                                  |
-| --------------------------- | --------------------------------------------------------- |
-| 変更のプレビュー             | `dotweave status`                                          |
-| ローカルの編集を上流に送信    | `dotweave push` → `git add -A && git commit` → `git push` |
-| 上流の編集を受信             | `git pull` → `dotweave pull`                               |
-| コンフリクトの解決           | `dotweave cd` → ファイルを修正 → `git commit` → `git push`  |
-| セットアップのヘルスチェック  | `dotweave doctor`                                          |
+プロファイルの可視性のルールとマシンごとの選択については[プロファイル](/ja/concepts/profiles/)で説明しています。
 
-
+適用前に計画を確認するためのフラグは [`dotweave pull`](/ja/reference/pull/)、同期リポジトリに対して git を実行するシェルは [`dotweave cd`](/ja/reference/cd/)を参照してください。

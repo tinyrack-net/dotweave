@@ -1,0 +1,92 @@
+---
+title: 플랫폼별 경로
+description: 추적 항목 하나에 운영체제별로 다른 로컬 경로, 동기화 모드, 권한을 지정해요.
+section: concepts
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 값 하나와 오버라이드 넷
+
+추적 항목은 경로 하나가 아니라 논리적인 설정 파일 하나를 가리켜요. `localPath`, `repoPath`, `mode`, `permission`은 모두 플랫폼 값 객체로 저장되기 때문에, `manifest.jsonc` 하나가 Windows, macOS, Linux, WSL을 동시에 설명해요.
+
+```jsonc
+{
+  "kind": "file",
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  },
+  "repoPath": { "default": "vscode/settings.json" }
+}
+```
+
+이 객체에는 모두 `default`가 필요해요. `win`, `mac`, `linux`, `wsl` 키는 선택적인 오버라이드이고, 직렬화될 때도 이 순서를 따라요. 필드 타입과 검증 규칙은 [`manifest.jsonc`](/ko/config/manifest/)에 있어요.
+
+`localPath` 값으로는 절대 경로, `~/...` 경로, `$XDG_CONFIG_HOME/...`과 중괄호 형태인 `${XDG_CONFIG_HOME}`, 그리고 `%VARIABLE%` 참조를 쓸 수 있어요. 정의되지 않은 `%VARIABLE%`은 빈 문자열로 확장되지 않고 명령을 실패시켜요.
+
+`repoPath`는 항상 상대 POSIX 경로이고, 대부분의 항목에서는 모든 플랫폼에서 같아요. 두 기기가 정말로 서로 다른 저장소 위치에 저장해야 할 때만 오버라이드하세요. 두 기기가 같은 artifact를 보는 건 `repoPath`를 공유하기 때문이에요.
+
+dotweave는 이런 값을 추론하지 않아요. macOS 경로를 Windows 경로로 변환하지도 않고, `dotweave track`은 명령을 실행한 기기의 경로만 기록해요. 나머지 플랫폼의 값은 직접 선언하는 값이에요.
+
+## WSL이 해석되는 방식
+
+dotweave는 실행마다 플랫폼 키 하나를 골라서 모든 플랫폼 값 객체를 그 키로 해석해요. `win32`는 `win`, `darwin`은 `mac`이 돼요. `linux` 호스트는 `WSL_DISTRO_NAME`이나 `WSL_INTEROP`이 설정되어 있거나 운영체제 릴리스 문자열에 대소문자 구분 없이 `microsoft`가 들어 있으면 `wsl`이 되고, 그렇지 않으면 `linux`로 남아요. 그 밖의 운영체제는 모두 `linux`로 해석돼요.
+
+| 감지된 플랫폼 | 시도하는 키 순서 |
+| --- | --- |
+| `win` | `win`, `default` |
+| `mac` | `mac`, `default` |
+| `linux` | `linux`, `default` |
+| `wsl` | `wsl`, `linux`, `default` |
+
+두 단계로 폴백하는 키는 `wsl` 하나뿐이에요. WSL 기기는 별도 설정 없이 Linux 오버라이드를 물려받으니, `wsl` 키는 WSL이 네이티브 Linux와 달라야 하는 곳에만 추가하세요.
+
+## 명령줄에서 오버라이드 지정하기
+
+`dotweave track`이 이 객체를 대신 써 줘요. 오버라이드하려는 플랫폼마다 `--local`을 한 번씩 넘기세요.
+
+```bash
+dotweave track ~/.config/Code/User/settings.json \
+  --local 'mac=~/Library/Application Support/Code/User/settings.json' \
+  --local 'win=%APPDATA%/Code/User/settings.json'
+```
+
+`--local`은 `platform=value` 형태만 받고 값만 적은 형태는 거부해요. `default` 로컬 경로는 항상 추적한 대상에서 가져와요.
+
+`--mode`, `--permission`, `--repo`는 `default`를 설정하는 값 하나만 적는 형태와 `platform=value` 형태를 모두 받아요.
+
+```bash
+dotweave track ~/.ssh/config --mode secret --mode win=ignore --permission 0600
+```
+
+```bash
+dotweave track ~/.config/nvim --repo default=.config/nvim --repo win=nvim-windows
+```
+
+이 플래그는 모두 여러 번 받을 수 있어요. 값을 하나의 인자로 합치지 말고 플래그를 반복하세요. 한 플래그에 같은 플랫폼 키를 두 번 넘기면 `DUPLICATE_PLATFORM_FLAG`로 실패하고, 알 수 없는 플랫폼 키는 `INVALID_PLATFORM_FLAG`로 실패해요. `--repo`는 한 번에 대상 하나만 받고, 그렇지 않으면 `REPO_PATH_TARGET_COUNT`로 실패해요. `--permission`에는 `default`가 필요해서 `--permission linux=0755`만 넘기면 실패해요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 플래그 절에서 확인하세요.
+
+## Windows에서 표현할 수 없는 것
+
+Windows도 다른 플랫폼 키와 동등하지만, 몇 가지 POSIX 보장은 그대로 옮겨지지 않고 어떤 오버라이드로도 되살릴 수 없어요.
+
+Windows에서는 POSIX 파일 모드를 적용하지 않아요. `permission` 값은 manifest에 그대로 남아 있고 macOS, Linux, WSL에서는 반영돼요. Windows에서 접근을 제한하려고 `permission`에 의존하지 마세요. `0600`은 기록되기만 하고 무시돼요.
+
+Windows에서는 내용을 비교할 때 먼저 바이트를 비교하고, 그다음 UTF-8로 디코딩한 텍스트를 CRLF를 LF로 정규화해서 비교해요. 그래서 줄 끝만 다른 파일은 변경으로 취급하지 않고, `push`도 `pull`도 그 파일을 다시 쓰지 않아요. dotweave가 줄 끝을 변환해 주기를 기대하지 마세요. 그리고 바이트 순서 표시(BOM)는 여전히 실제 차이로 취급돼요.
+
+저장소 형식 1은 심링크를 링크 대상을 담은 `<name>.dotweave.symlink` 메타데이터 파일로 저장하고, `pull`이 로컬에 링크를 다시 만들어요. Windows에서 디렉터리 링크는 상대 대상을 상대 경로로 유지하는 진짜 디렉터리 심링크를 우선 시도해요. Developer Mode도 관리자 권한도 없어서 운영체제가 심링크 생성을 거부하면 Windows 정션으로 대체해요. 정션 대상은 항상 절대 경로라서, 이렇게 만들어진 링크는 원래 심링크보다 이식성이 떨어져요.
+
+환경 변수 이름은 Windows에서는 대소문자를 구분하지 않고, 그 밖의 플랫폼에서는 구분해요. Windows에서는 `%AppData%`와 `%APPDATA%`가 같은 값으로 해석되지만, Linux나 macOS에서는 정확한 이름만 해석돼요. dotweave가 읽는 전체 목록은 [환경 변수와 경로](/ko/config/environment/)에서 확인하세요.
+
+<TRAlert.Root variant="neutral">
+이런 제약은 숨겨져 있지 않아요. push나 pull 전에 해당 기기에서 `dotweave status`를 실행해서, 해석된 플랫폼 키가 만들어 내는 계획을 확인하세요.
+</TRAlert.Root>
+
+## 구현과 참고
+
+플랫폼 해석은 이 기기에서 dotweave가 어떤 값을 쓸지만 정해요. 그 자체로는 아무것도 쓰지 않고, 해석된 `mode`가 그다음에 파일을 어떻게 다룰지 결정해요.
+
+이 객체 뒤에 있는 필드 타입과 검증 규칙은 [`manifest.jsonc`](/ko/config/manifest/), 이 값을 실제로 기록하는 작업 흐름은 [파일과 디렉터리 추적하기](/ko/guides/tracking-files/)에서 확인하세요.

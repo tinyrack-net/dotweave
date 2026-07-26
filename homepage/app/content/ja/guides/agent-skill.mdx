@@ -1,0 +1,67 @@
+---
+title: エージェントスキルをインストールする
+description: dotweave に同梱されたポータブルなエージェントスキルを、コーディングエージェントのスキルディレクトリにインストールします。
+section: guides
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+このガイドを終えると、コーディングエージェントが `dotweave` スキルを持ちます。このスキルには、`push` と `pull` がデータをどちらの方向へ動かすか、どんなときに先に `dotweave status` を確認するか、シークレットをどう扱うかが書かれています。スキルは dotweave のバイナリに同梱された 1 つの Markdown ファイルで、`dotweave skill install` が指定したスキルディレクトリへコピーします。ディスク上のディレクトリからスキルを読み込むコーディングエージェントが必要で、そのディレクトリはコマンドを実行する前に存在していなければなりません。
+
+## 1. スキルディレクトリを確認する
+
+`dotweave skill install` に渡すのは、書き込むファイルではなくスキルのルートディレクトリです。書き込むのは常に `<directory>/dotweave/SKILL.md` の 1 ファイルだけです。
+
+ルートはすでに存在するディレクトリでなければなりません。dotweave はその中に `dotweave` サブディレクトリを作りますが、ルート自体は作らないため、パスが無いと `Skills root must be a directory.` で失敗します。エージェントのドキュメントでスキルの読み込み先を確認し、まだ無ければそのディレクトリを先に作成してください。
+
+```bash
+mkdir -p ~/.claude/skills
+```
+
+## 2. インストールをプレビューする
+
+`--dry-run` は対象パスを解決して報告するだけで、何も書き込みません。
+
+```bash
+dotweave skill install --dry-run ~/.claude/skills
+```
+
+```
+~ Would install dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+すでにスキルがインストールされている場合、`--dry-run` だけでも `Dotweave skill already exists.` で失敗します。存在チェックが dry run より先に走るためです。上書きをプレビューするには `--force` を一緒に渡してください。その場合は `Would overwrite dotweave skill` と報告します。
+
+## 3. スキルをインストールする
+
+`--dry-run` を外すとファイルを書き込みます。
+
+```bash
+dotweave skill install ~/.claude/skills
+```
+
+```
+✔ Installed dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+既存のスキルに対してもう一度実行すると、`--force` を渡さない限り失敗します。`--force` を渡すとファイルを上書きし、`Overwrote dotweave skill` と報告します。dotweave をアップグレードしたあとは `--force` で再インストールし、いま使っているバイナリに同梱されたスキルをエージェントが読むようにしてください。
+
+<TRAlert.Root variant="neutral">
+`dotweave skill install` は、git も初期化済みの同期ディレクトリも必要としない唯一の dotweave コマンドです。`dotweave init` を実行する前でもスキルをインストールできます。
+</TRAlert.Root>
+
+## 結果を確認する
+
+コマンドが報告した場所にファイルができているか確認してください。
+
+```bash
+cat ~/.claude/skills/dotweave/SKILL.md
+```
+
+そのうえで、エージェントに利用できるスキルの一覧を尋ねてください。一覧に `dotweave` が現れるはずです。現れない場合、渡したスキルのルートはそのエージェントが読むディレクトリではありません。
+
+フラグの一覧は [`dotweave skill`](/ja/reference/skill/) を参照してください。このマシンにまだバイナリが無い場合は[インストール手順](/ja/install/)へ進みます。

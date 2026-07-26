@@ -1,0 +1,82 @@
+---
+title: 동기화 문제 해결하기
+description: dotweave 오류를 읽고 doctor를 실행해서 보고된 실패를 고치는 방법을 안내해요.
+section: guides
+order: 6
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 오류 형식 읽기
+
+dotweave의 실패는 언제나 같은 모양으로 출력돼요. 먼저 메시지 한 줄, 그다음 관련된 파일이나 경로를 알려 주는 상세 줄이 없거나 여러 줄, 마지막으로 `→ `가 붙은 힌트예요. 빈 줄은 버려지기 때문에 덧붙일 내용이 없는 실패는 한 줄로 끝나요.
+
+```
+Dotweave skill already exists.
+/home/you/.claude/skills/dotweave/SKILL.md
+→ Use '--force' to overwrite the existing skill.
+```
+
+dotweave는 내부 오류 코드를 출력하지 않아요. 그래서 메시지 줄을 기준으로 찾아야 해요. [오류 메시지](/ko/config/errors/)에 모든 메시지와 그 원인, 해결 방법이 정리되어 있어요.
+
+모든 명령은 성공하면 `0`, 어떤 실패든 있으면 `1`로 종료돼요. `dotweave doctor`는 검사가 실패할 때 `1`로 종료해요. 경고만 있으면 실패로 보지 않으니, 스크립트에서는 경고를 넘어갈 수 있는 상태로 다룰 수 있어요.
+
+## 먼저 doctor 실행하기
+
+`dotweave doctor`는 로컬 설정을 점검하기만 하고 아무것도 바꾸지 않아요. 메시지만으로 원인을 알 수 없는 실패라면 가장 부담 없는 첫 단계예요.
+
+```bash
+dotweave doctor
+```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+검사는 여섯 개를 순서대로 실행하는데, `git`과 `config` 검사는 실패하면 바로 멈춰요. sync 디렉터리가 git 저장소가 아니거나 manifest를 읽을 수 없으면 그 자리에서 실행이 끝나고, 뒤쪽 검사는 보고되지 않아요. 이 두 검사가 알려 준 문제를 먼저 고치고 `doctor`를 다시 실행해서 나머지를 확인하세요.
+
+ok가 아닌 검사가 있으면 `doctor`는 최대 세 개만 출력하고 `... N more issues` 줄을 붙여요. 그래서 한 번의 보고를 전체 목록으로 여기지 말고, 고칠 때마다 다시 실행하세요. 각 검사가 무엇을 살펴보는지는 [`dotweave doctor`](/ko/reference/doctor/)에 정리되어 있어요.
+
+## git이 읽을 수 없는 저장소 고치기
+
+`Sync repository is not initialized.`는 sync 디렉터리가 git 작업 트리가 아니라는 뜻이에요. 이 기기에서 설정한 적이 없거나 `.git` 디렉터리가 사라진 경우예요. [`dotweave init`](/ko/reference/init/)으로 디렉터리를 준비하고, `dotweave pull`로 파일을 다시 가져오세요.
+
+`Git is not installed or not on PATH.`는 `git` 실행 파일을 찾지 못했다는 뜻이에요. git을 설치하고, dotweave를 실행하는 셸에서 `git --version`이 동작하는지 확인하세요. `dotweave skill install`을 뺀 모든 명령은 git이 필요해요.
+
+둘 다 문제없어 보이는데 dotweave가 예상과 다른 디렉터리를 알려 준다면 해석된 경로를 확인하세요. sync 디렉터리 위치는 설정할 수 있고, 무엇으로 바꿀 수 있는지는 [환경 변수와 경로](/ko/config/environment/)에 정리되어 있어요.
+
+## 검증에 실패하는 manifest 고치기
+
+`Sync configuration is invalid.`는 `manifest.jsonc`가 JSON으로는 파싱됐지만 검증에서 걸렸다는 뜻이고, 상세 줄이 실패한 필드를 하나씩 알려 줘요. `dotweave status`는 manifest를 검증하면서 아무것도 쓰지 않아서, 직접 편집한 뒤 확인하기에 가장 부담이 없어요.
+
+검증은 첫 실패에서 멈추지 않고 찾을 수 있는 실패를 모두 모아요. 그래서 한 번 실행해도 여러 문제가 함께 나올 수 있어요. 먼저 확인해 볼 원인은 이런 것들이에요.
+
+- 두 항목이 같은 `repoPath`나 같은 `localPath`로 해석되는 경우.
+- 두 항목의 로컬 경로가 부분적으로 겹치는 경우. 추적 디렉터리 안의 하위 항목을 따로 추적하는 건 괜찮지만, 부분적으로 겹치는 건 안 돼요.
+- 경로의 한 구간이 예약된 artifact 접미사 `.dotweave.secret`이나 `.dotweave.symlink`로 끝나는 경우.
+- `localPath`가 홈 디렉터리 밖으로 해석되는 경우. Windows에서는 드라이브 문자가 달라도 이렇게 돼요.
+- 최상위 `profiles` 레지스트리에 없는 프로필을 항목이 가리키는 경우.
+
+상세 줄이 알려 준 필드를 고치고 `dotweave status`를 다시 실행하세요. 각 필드의 기대 형태는 [manifest.jsonc](/ko/config/manifest/)에 정리되어 있어요.
+
+## 복호화되지 않는 시크릿 고치기
+
+`Failed to decrypt a secret artifact.`는 `keys.txt`의 identity가 그 artifact의 recipient 중 어느 것과도 맞지 않거나, 저장된 데이터가 손상되었다는 뜻이에요.
+
+그 순서대로 확인하세요. 먼저 `keys.txt`가 설정된 경로에 있고 age 개인 키를 담고 있는지 확인하세요. `dotweave doctor`는 이 항목을 identity 검사로 보고해요. 그다음 이 기기의 공개 키가 `manifest.jsonc`의 `age.recipients`에 있는지 확인하세요.
+
+목록에 없다면 이미 복호화할 수 있는 기기에서 추가하세요. `age.recipients`만 고쳐도 기존 artifact는 다시 쓰이지 않아요. `push`는 복호화한 평문을 비교해서 내용이 바뀌지 않은 시크릿은 건너뛰기 때문이에요. 다시 암호화해야 하는 `.dotweave.secret` artifact를 삭제하고 `dotweave push`를 실행한 다음 커밋하고, 여기서 다시 pull하세요. 전체 순서는 [시크릿과 암호화](/ko/concepts/secrets/)에서 설명해요.
+
+<TRAlert.Root variant="warning">
+남아 있는 identity 중 그 artifact의 recipient와 맞는 게 하나도 없으면 artifact는 복구할 수 없어요. dotweave는 예비 키를 따로 보관하지 않아요. 평문이 아직 남아 있는 기기에서 복원하거나 파일을 다시 만드세요.
+</TRAlert.Root>
+
+비슷하지만 키 문제가 아닌 실패도 두 가지 있어요. `Secret sync path is stored as a plain artifact in the repository.`는 항목이 `secret`인데 저장된 artifact가 암호화되어 있지 않다는 뜻이고, `dotweave push`로 다시 암호화하면 돼요. `Plain sync path is stored as a secret artifact in the repository.`는 그 반대로, 더 이상 `secret`이 아닌 항목에 암호화된 artifact가 남아 있는 경우예요.
+
+## 구현과 참고
+
+identity 파일과 recipient 목록, dotweave가 무엇을 암호화하는지는 [시크릿과 암호화](/ko/concepts/secrets/)에서 설명해요. manifest 필드별 세부 내용은 [manifest.jsonc](/ko/config/manifest/)에 있어요.
+
+이 페이지에서 다루지 않은 메시지는 [오류 메시지](/ko/config/errors/)에서 찾고, dotweave를 업그레이드한 직후부터 실패했다면 [설정과 저장소 형식 업그레이드](/ko/guides/upgrading/)를 확인하세요.

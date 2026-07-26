@@ -1,48 +1,64 @@
 ---
-title: Dotweave
-description: dotfileをGitで同期するCLIツール
+title: はじめに
+description: dotweave が何をするか、シンボリックリンクやテンプレート方式のツールとどう違うか、何をあえて git に任せるかを説明します。
 section: overview
 order: 1
 ---
 
-`Dotweave`は、**開発環境の設定ファイル（dotfile）をGitで同期するCLIツール**です。複数のマシン間で一貫した環境を維持できます。
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
----
 
-## なぜDotweave？
+## ホームディレクトリが基準です
 
-`stow`や`chezmoi`のようなツールは、リポジトリを**正規データ**として扱います。`stow`はホームディレクトリからリポジトリへのシンボリックリンクを作成し、`chezmoi`は`chezmoi edit`を通じて編集してから変更を適用する必要があります。これらのアプローチはリポジトリの状態を明確に保ちますが、日々の編集ワークフローに手間が加わります。
+dotweave はホームディレクトリの設定ファイルを git リポジトリへミラーし、別のマシンで元に戻します。基準になるのはローカルのファイルで、リポジトリはそこから派生したコピーです。
 
-Dotweaveは逆のアプローチを取ります。**ローカルファイルが常に正規データです。** syncディレクトリは単なるミラーに過ぎません。`~/.zshrc`をお好みのエディタで直接編集できます — 特別なコマンドは不要です。同期の準備ができたら、`dotweave push`を実行してローカルファイルをsyncディレクトリにコピーし、Gitで共有します。
+これはシンボリックリンク方式やテンプレート方式のツールとは逆の考え方です。`stow` はホームディレクトリのファイルを、リポジトリを指すシンボリックリンクに置き換えます。`chezmoi` は正本を自身のストアに置き、そこを経由して編集するよう求めます。どちらもリポジトリを基準にするため、エディタやツール、身についた手順のほうがツールに合わせることになります。
 
----
+dotweave では、ラッパーコマンドもシンボリックリンクもなく、エディタで `~/.zshrc` をそのまま編集します。変更を公開したくなったら `dotweave push` を実行し、git でコミットします。
 
-## 主な機能
+この選択の代償は、自動で進むものが何もないことです。デーモンもファイル監視もないため、コマンドを実行しない限り変更は共有されません。
 
-- ホームディレクトリ配下の**あらゆるファイルやディレクトリをトラッキング**
-- ローカルファイルとsyncディレクトリ間で**pushとpull**
-- [age](https://age-encryption.org/)で**シークレットを暗号化** — SSHキー、APIトークンなどの機密ファイルはリポジトリ内で暗号化された状態を維持します
-- **プロファイル**で仕事用、個人用、マシンごとの設定を使い分け
-- **プラットフォーム別パス**でOS間の違いを吸収（Linux、macOS、Windows、WSL）
-- **シンボリックリンクも専用エディタも不要** — いつものワークフローのままで使えます
+## dotweave が行わないこと
 
----
+dotweave は git を代わりに実行しません。`push` と `pull` はホームディレクトリと同期ディレクトリの間でファイルを動かすだけです。コミット、リモートからの pull、リモートへの push は自分で実行します。`dotweave cd` はその作業に適した場所でシェルを開きます。
 
-## 使い方の例
+dotweave はマージしません。2 台のマシンが同じファイルを変更した場合、それは同期リポジトリにおける git の分岐であり、git で解決します。
+
+dotweave はファイルをシンボリックリンクに置き換えず、専用エディタも要求せず、外部の `age` バイナリも必要としません。暗号化は CLI に組み込まれています。
+
+ただし `git` は `PATH` にある必要があります。
+
+## 最小の流れ
 
 ```bash
-# 設定ファイルをトラッキング
-dotweave track ~/.config/starship.toml
-
-# ローカルの変更をsyncディレクトリにpush
+dotweave init
+dotweave track ~/.gitconfig
+dotweave track ~/.ssh/config --mode secret
 dotweave push
+```
 
-# 別のマシンでpullして復元
+ここまでで `~/.gitconfig` は平文ファイルとして、`~/.ssh/config` は age の暗号文としてミラーされます。公開するには、同期ディレクトリを開いて git を使います。
+
+```bash
+dotweave cd
+git add -A && git commit -m "Initial sync"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+次のマシンでは、age の鍵とあわせてリポジトリを clone し、復元します。
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
 dotweave pull
 ```
 
----
+<TRAlert.Root variant="info">
+age の秘密鍵はコミットも同期もされません。各マシンへは自分で持ち運んでください。
+</TRAlert.Root>
 
-## 次のステップ
+## 実装とリファレンス
 
-[はじめに](/ja/getting-started/)に進んで、dotweaveのインストールと最初の同期を設定しましょう。
+すべてのコマンドの土台となる 2 つのスナップショットのモデルは[同期のしくみ](/ja/concepts/how-it-works/)、dotweave が作るファイルは[ディレクトリとリポジトリの構造](/ja/concepts/repository-layout/)で説明しています。
+
+CLI を入手するには [dotweave をインストールする](/ja/install/)、実行する前にモデルを理解したい場合は[同期のしくみ](/ja/concepts/how-it-works/)を参照してください。

@@ -1,58 +1,55 @@
 ---
 title: "dotweave autocomplete"
-description: "Set up shell tab completion."
+description: Print the shell completion script for bash, zsh, fish, or PowerShell.
 section: reference
 order: 9
 ---
 
-Print shell autocomplete scripts.
-
-Emit shell-specific autocomplete scripts for use with eval/source-based shell setup.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave autocomplete <shell>
+dotweave autocomplete bash
+dotweave autocomplete fish
+dotweave autocomplete powershell
+dotweave autocomplete zsh
 ```
 
-## Subcommands
+Each subcommand writes a completion script to stdout and accepts no flag other than `--help`. None of them installs anything, so you choose where the script is evaluated or saved.
 
-| Subcommand                  | Description                    |
-| --------------------------- | ------------------------------ |
-| `dotweave autocomplete bash` | Print autocomplete script for Bash. |
-| `dotweave autocomplete zsh`  | Print autocomplete script for Zsh.  |
-| `dotweave autocomplete fish` | Print autocomplete script for Fish. |
-| `dotweave autocomplete powershell` | Print autocomplete script for PowerShell. |
+The scripts do not compute candidates themselves. They call a hidden `dotweave __complete <input>...` route, which prints one `completion<TAB>brief` line per candidate and reads the words from the `COMP_LINE` environment variable when the shell exports it. Command aliases are left out of the completion output, so only the canonical route names are proposed.
 
-## Examples
+## autocomplete bash
 
-Set up autocomplete in **Bash** (add to `~/.bashrc`):
+The bash script registers its completion function with `complete -o default -o nospace`, so bash falls back to filename completion when no candidate matches and does not append a space of its own.
 
 ```bash
 eval "$(dotweave autocomplete bash)"
 ```
 
-Set up autocomplete in **Zsh** (add to `~/.zshrc`):
+## autocomplete zsh
+
+The zsh script loads `compinit` when the session has no `compdef`, then installs a `precmd` hook that re-registers the completion whenever something else has taken over the `dotweave` binding.
 
 ```bash
 eval "$(dotweave autocomplete zsh)"
 ```
 
-Set up autocomplete in **Fish** for the current session:
+## autocomplete fish
+
+The fish script defines its completion function and binds it with `complete -c dotweave -f -a`, which suppresses fish's own file candidates.
 
 ```fish
 dotweave autocomplete fish | source
 ```
 
-Set up autocomplete in **Fish** persistently:
+## autocomplete powershell
 
-```fish
-mkdir -p ~/.config/fish/completions
-dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
-```
-
-Set up autocomplete in **PowerShell** (add to your profile):
+The PowerShell script calls `Register-ArgumentCompleter -Native` for the `dotweave` command and returns each candidate with its brief as the tooltip.
 
 ```powershell
 dotweave autocomplete powershell | Invoke-Expression
 ```
+
+## Related commands
+
+Read [Set up shell completion](/en/guides/shell-autocomplete/) for the per-shell profile edits that make this permanent, or [`dotweave track`](/en/reference/track/) for the command whose path candidates completion helps you type.

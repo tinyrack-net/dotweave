@@ -1,0 +1,82 @@
+---
+title: 同期の問題を解決する
+description: dotweave のエラーを読み、doctor を実行して、報告された失敗を直す手順を説明します。
+section: guides
+order: 6
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## エラーの形式を読む
+
+dotweave の失敗は常に同じ形で表示されます。最初にメッセージの行、次に関係するファイルやパスを示す詳細行が 0 行以上、最後に `→ ` が付いたヒントです。空行は取り除かれるため、補足が無い失敗は 1 行だけになります。
+
+```
+Dotweave skill already exists.
+/home/you/.claude/skills/dotweave/SKILL.md
+→ Use '--force' to overwrite the existing skill.
+```
+
+dotweave は内部のエラーコードを表示しません。そのためメッセージの行を手がかりに探してください。[エラーメッセージ](/ja/config/errors/)に、すべてのメッセージと発生条件、対処法をまとめています。
+
+すべてのコマンドは成功時に `0`、何らかの失敗があれば `1` で終了します。`dotweave doctor` は検査が失敗したときに `1` で終了します。警告だけでは失敗にならないので、スクリプトでは警告を許容できる状態として扱えます。
+
+## まず doctor を実行する
+
+`dotweave doctor` はローカルの設定を点検するだけで、何も変更しません。メッセージだけでは原因が分からない失敗では、最初の一手として最も負担が軽い方法です。
+
+```bash
+dotweave doctor
+```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+検査は 6 つを順番に実行し、`git` と `config` の検査は失敗した時点で打ち切ります。同期ディレクトリが git リポジトリでない場合や manifest を読めない場合は、そこで実行が終わり、後続の検査は一切報告されません。この 2 つが報告した内容を直してから、`doctor` をもう一度実行して残りを確認してください。
+
+ok でない検査があるとき、`doctor` は最大 3 件だけ表示し、続けて `... N more issues` の行を出します。1 回の報告を全件と考えず、直すたびに再実行してください。各検査が何を調べるかは [`dotweave doctor`](/ja/reference/doctor/) にまとめています。
+
+## git が読めないリポジトリを直す
+
+`Sync repository is not initialized.` は、同期ディレクトリが git のワークツリーではないという意味です。このマシンで一度も設定していないか、`.git` ディレクトリが失われています。[`dotweave init`](/ja/reference/init/) でディレクトリを用意し、`dotweave pull` でファイルを取り戻してください。
+
+`Git is not installed or not on PATH.` は、`git` の実行ファイルが見つからないという意味です。git をインストールし、dotweave を実行するのと同じシェルで `git --version` が動くことを確認してください。`dotweave skill install` を除くすべてのコマンドは git を必要とします。
+
+どちらも問題無さそうなのに dotweave が想定と違うディレクトリを報告する場合は、解決されたパスを確認してください。同期ディレクトリの場所は設定できます。何で上書きできるかは[環境変数とパス](/ja/config/environment/)にまとめています。
+
+## 検証に失敗する manifest を直す
+
+`Sync configuration is invalid.` は、`manifest.jsonc` が JSON としては解析できたものの検証に失敗したという意味で、詳細行が失敗したフィールドを 1 つずつ示します。`dotweave status` は manifest を検証しつつ何も書き込まないため、手で編集したあとの確認には最も負担がかかりません。
+
+検証は最初の失敗で止まらず、見つけられる失敗をすべて集めます。そのため 1 回の実行で複数の問題が並ぶことがあります。まず確認したい原因は次のとおりです。
+
+- 2 つの項目が同じ `repoPath`、または同じ `localPath` に解決される。
+- 2 つの項目のローカルパスが部分的に重なっている。トラッキング対象のディレクトリの中の子を別に追跡するのは問題ありませんが、部分的な重複は許されません。
+- パスの一部が予約された artifact サフィックス `.dotweave.secret` または `.dotweave.symlink` で終わっている。
+- `localPath` がホームディレクトリの外に解決される。Windows ではドライブレターが異なる場合にも起こります。
+- トップレベルの `profiles` レジストリに登録されていないプロファイルを項目が指している。
+
+詳細行が示すフィールドを直してから `dotweave status` を再実行してください。各フィールドの期待される形は [manifest.jsonc](/ja/config/manifest/) にまとめています。
+
+## 復号できないシークレットを直す
+
+`Failed to decrypt a secret artifact.` は、`keys.txt` の identity がその artifact のどの recipient とも一致しないか、保存されたデータが壊れているという意味です。
+
+その順に確認してください。まず `keys.txt` が設定されたパスに存在し、age の秘密鍵を保持しているかを確かめます。`dotweave doctor` はこれを identity の検査として報告します。次に、このマシンの公開鍵が `manifest.jsonc` の `age.recipients` に載っているかを確かめます。
+
+載っていなければ、すでに復号できるマシンで追加してください。`age.recipients` を直すだけでは既存の artifact は書き直されません。`push` は復号した平文を比較し、内容が変わっていないシークレットをスキップするからです。再暗号化したい `.dotweave.secret` の artifact を削除し、`dotweave push` を実行してコミットしてから、こちらであらためて pull します。手順全体は[シークレットと暗号化](/ja/concepts/secrets/)で説明しています。
+
+<TRAlert.Root variant="warning">
+残っている identity のどれもその artifact の recipient と一致しない場合、その artifact は復元できません。dotweave は予備の鍵を保管していません。平文がまだ残っているマシンから復元するか、ファイルを作り直してください。
+</TRAlert.Root>
+
+似ていますが鍵の問題ではない失敗も 2 つあります。`Secret sync path is stored as a plain artifact in the repository.` は、項目が `secret` なのに保存された artifact が暗号化されていないという意味で、`dotweave push` で再暗号化できます。`Plain sync path is stored as a secret artifact in the repository.` はその逆で、すでに `secret` ではない項目に暗号化された artifact が残っている状態です。
+
+## 実装とリファレンス
+
+identity ファイルと recipient の一覧、dotweave が何を暗号化するのかは[シークレットと暗号化](/ja/concepts/secrets/)で説明しています。manifest の各フィールドの詳細は [manifest.jsonc](/ja/config/manifest/) にあります。
+
+このページで扱っていないメッセージは[エラーメッセージ](/ja/config/errors/)で探し、dotweave のアップグレード直後から失敗し始めた場合は[設定とリポジトリ形式のアップグレード](/ja/guides/upgrading/)を参照してください。

@@ -1,6 +1,6 @@
 ---
 title: "dotweave init"
-description: "sync 디렉터리를 새로 만들거나 기존 디렉터리에 연결해요."
+description: sync 디렉터리를 만들거나 clone하고 age identity를 준비해요.
 section: reference
 order: 0
 ---
@@ -8,50 +8,57 @@ order: 0
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-git 기반 sync 디렉터리를 초기화해요.
-
-dotweave 앱 데이터 디렉터리 아래에 로컬 dotweave 저장소를 만들거나 연결한 뒤, 이후 `pull`과 `push`에서 사용할 sync 설정을 저장해요. repository 인자를 생략하면 sync 디렉터리에 로컬 git 저장소를 새로 만들어요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave init [repository]
+dotweave init [--force] [--key-file <path>] [<repository>]
 ```
 
-## Arguments
+dotweave 홈 디렉터리 아래에 sync 디렉터리를 만들거나 연결하고, 이후 `push`와 `pull`이 읽는 설정을 기록해요.
 
-| Argument       | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| `[repository]` | clone할 원격 URL 또는 로컬 git 저장소 경로예요. 생략하면 새 로컬 저장소를 만들어요. |
+## 인자
 
-## Flags
+| 인자 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `repository` | `string`, 선택 | clone할 원격 URL이나 로컬 git 저장소 경로예요. 생략하면 빈 로컬 저장소를 새로 초기화해요. |
 
-| Flag                        | Description                                                    |
-| --------------------------- | -------------------------------------------------------------- |
-| `--key-file <path>`         | 파일에서 age 개인 키를 읽어요.             |
-| `--force`                   | 기존 로컬 sync 저장소, identity, settings를 교체하고 초기화해요. |
+## 플래그
 
-## Examples
+| 플래그 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `--force` | boolean, `false` | 초기화 전에 기존 sync 디렉터리, identity 파일, 설정을 삭제해요. |
+| `--key-file` | `string`, 없음 | 프롬프트로 입력받는 대신 파일에서 age 비밀 키를 읽어요. |
 
-새 로컬 sync 디렉터리를 초기화해요:
+## 동작
+
+`repository` 인자가 없으면 sync 디렉터리에서 `git init -b main`을 실행해요. 인자가 있으면 `git clone`을 실행해요. 이미 존재하고 비어 있지 않은 디렉터리는 초기화를 거부해요.
+
+그다음 저장소 기본 구조를 써요. `* -text`가 들어 있는 `.gitattributes`, 암호화된 artifact를 커밋할 수 있게 유지하는 관리 `.gitignore` 블록, 그리고 버전 `8`에 `repositoryFormat` `1`, 항목 없음, recipient 하나를 담은 `manifest.jsonc`예요.
+
+age identity는 `--key-file`이 있으면 그 값을 쓰고, `keys.txt`가 이미 있으면 그걸 재사용하고, 둘 다 없으면 새 identity를 생성해요. 이미 recipient가 있는 저장소를 clone하면서 키를 넘기지 않으면 대화형 터미널에서 비밀 키를 물어보고, 물어볼 수 없으면 그대로 실패해요.
 
 ```bash
 dotweave init
 ```
 
-원격 저장소를 clone해서 sync 디렉터리로 사용해요:
-
-```bash
-dotweave init https://github.com/user/dotfiles.git
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
 ```
 
-기존 age secret key로 초기화해요:
+`init`은 git 리모트를 추가하지도, 커밋하지도, push하지도 않아요. 그건 `dotweave cd`와 git으로 하세요.
 
-```bash
-dotweave init --key-file ~/dotweave.agekey
-```
-
-<TRAlert.Root variant="success">
-다른 머신에서 쓰던 age identity가 있다면 `--key-file`로 전달하거나, 기존 저장소를 가져올 때 나오는 대화형 프롬프트에 입력하세요. secret 파일을 복호화할 수 있어요.
+<TRAlert.Root variant="warning">
+`--force`는 `keys.txt`를 삭제해요. 그 identity만으로 암호화된 시크릿 artifact는 되살릴 수 없어요. 이 플래그를 쓰기 전에 키를 백업하세요.
 </TRAlert.Root>
 
+## 오류
+
+`init`은 디렉터리가 이미 초기화된 경우, 존재하면서 비어 있지 않은 경우, git이 없거나 clone 소스에 접근할 수 없는 경우, clone한 저장소가 필요한 age 키를 넘기지 않은 경우에 실패해요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 초기화 절에서 확인하세요.
+
+## 관련 명령
+
+처음 설정하는 전체 흐름은 [첫 동기화 설정](/ko/getting-started/), 저장소가 이미 있을 때는 [두 번째 기기 설정](/ko/second-device/)을 확인하세요.

@@ -1,58 +1,55 @@
 ---
 title: "dotweave autocomplete"
-description: "シェルのタブ補完を設定します。"
+description: bash、zsh、fish、PowerShell 用のシェル補完スクリプトを出力します。
 section: reference
 order: 9
 ---
 
-シェル用のautocompleteスクリプトを出力します。
-
-eval/sourceベースのシェル設定で使用できる、シェル固有のautocompleteスクリプトを生成します。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave autocomplete <shell>
+dotweave autocomplete bash
+dotweave autocomplete fish
+dotweave autocomplete powershell
+dotweave autocomplete zsh
 ```
 
-## Subcommands
+各サブコマンドは補完スクリプトを stdout に出力し、`--help` 以外のフラグは受け取りません。どれもインストールまでは行わないので、スクリプトをどこで評価または保存するかは自分で決めてください。
 
-| Subcommand | Description |
-| --- | --- |
-| `dotweave autocomplete bash` | Bash用のautocompleteスクリプトを出力します。 |
-| `dotweave autocomplete zsh` | Zsh用のautocompleteスクリプトを出力します。 |
-| `dotweave autocomplete fish` | Fish用のautocompleteスクリプトを出力します。 |
-| `dotweave autocomplete powershell` | PowerShell用のautocompleteスクリプトを出力します。 |
+スクリプト自身が候補を計算するわけではありません。隠しルートの `dotweave __complete <input>...` を呼び出し、候補ごとに `completion<TAB>brief` の行を 1 行ずつ出力します。シェルが `COMP_LINE` 環境変数を渡す場合はその値から入力語を読み取ります。コマンドの alias は補完出力に含まれないため、正式なルート名だけが候補になります。
 
-## Examples
+## autocomplete bash
 
-**Bash** でautocompleteを設定する（`~/.bashrc` に追加）:
+bash スクリプトは補完関数を `complete -o default -o nospace` で登録します。これにより候補が一致しないときは bash のファイル名補完に戻り、補完側が空白を勝手に付け足すこともありません。
 
 ```bash
 eval "$(dotweave autocomplete bash)"
 ```
 
-**Zsh** でautocompleteを設定する（`~/.zshrc` に追加）:
+## autocomplete zsh
+
+zsh スクリプトはセッションに `compdef` がなければ先に `compinit` を読み込み、`dotweave` の割り当てが他の設定に奪われたときに補完を再登録する `precmd` フックを追加します。
 
 ```bash
 eval "$(dotweave autocomplete zsh)"
 ```
 
-現在の **Fish** セッションでautocompleteを設定する:
+## autocomplete fish
+
+fish スクリプトは補完関数を定義したうえで `complete -c dotweave -f -a` により結び付けます。この指定は fish が既定で出すファイル候補を抑えます。
 
 ```fish
 dotweave autocomplete fish | source
 ```
 
-**Fish** で永続的にautocompleteを設定する:
+## autocomplete powershell
 
-```fish
-mkdir -p ~/.config/fish/completions
-dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
-```
-
-**PowerShell** でautocompleteを設定する（PowerShellプロファイルに追加）:
+PowerShell スクリプトは `dotweave` コマンドに対して `Register-ArgumentCompleter -Native` を呼び出し、各候補の brief をツールチップとして返します。
 
 ```powershell
 dotweave autocomplete powershell | Invoke-Expression
 ```
+
+## 関連コマンド
+
+シェルのプロファイルに追加して常用する手順は[シェル補完を設定する](/ja/guides/shell-autocomplete/)、補完がパス入力を助けるコマンドは [`dotweave track`](/ja/reference/track/) を参照してください。

@@ -1,51 +1,81 @@
 ---
 title: "dotweave pull"
-description: "syncディレクトリのファイルをローカルに適用します。"
+description: 同期ディレクトリの artifact をローカルパスへ書き戻し、シークレットは先に復号します。
 section: reference
-order: 3
+order: 4
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-gitベースのsyncディレクトリの内容をローカルの設定パスに適用します。
-
-syncディレクトリからtrackされたアーティファクトを読み込み、ホームディレクトリ配下のローカルパスに展開します。secretアーティファクトは、設定されたage identityで復号されてからローカルに書き込まれます。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave pull [flags]
+dotweave pull [--dry-run] [--profile <profile>] [--yes]
 ```
 
-## Flags
+トラッキング項目として保存されている artifact を読み取り、ホームディレクトリ配下の解決済みローカルパスへ書き戻します。
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--dry-run`        | 実際には書き込まず、変更内容をプレビューします。     |
-| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+## フラグ
 
-## Examples
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--dry-run` | boolean、`false` | ローカルパスに触れず、計画だけを組み立てて表示します。`--no-dry-run` で既定値を明示できます。 |
+| `--profile` | `string`、なし | このコマンドに限り、`settings.jsonc` のアクティブなプロファイルの代わりに指定したプロファイル 1 つを使います。 |
+| `--yes`、`-y` | boolean、`false` | 確認なしで計画を適用します。このフラグに `--no-yes` の形はありません。 |
 
-trackされたすべてのアーティファクトをローカルに適用する:
+## 確認プロンプトと非対話型シェル
+
+`pull` はまず計画を表示し、続いて `Apply these changes? [y/N] ` と尋ねます。`y` と答えたときだけ進み、それ以外の入力ではローカルパスをそのまま残します。
+
+プロンプトなしで適用するには `--yes` または `-y` を指定してください。計画の表示だけで止めるには `--dry-run` を指定してください。
+
+非対話型ターミナルで `-y` を付けずに実行すると、`Pull confirmation requires an interactive terminal.` というメッセージで失敗し、`-y` を付けて再実行するヒントが表示されます。CI で遭遇するのはこの失敗なので、スクリプトから実行する pull にはこのフラグが必要です。
+
+差分がない場合は、すでに最新であることを表示し、プロンプトを出さずに終了します。
+
+## 動作
+
+secret artifact は、ローカルに書き込む前に `keys.txt` の identity で復号します。
+
+ローカルへの書き込みはすべて、対象パスの隣にある一時ディレクトリで用意してから所定の位置へ rename します。そのため pull が中断されても書きかけのファイルは残りません。不要になったローカルパスは深い階層から順に削除し、ディレクトリはその中のすべての項目が削除予定になっているときにだけ削除します。
+
+項目はバッチ単位で適用します。1 つのバッチ内でローカルパスが重なる項目が同居しないようにまとめます。
 
 ```bash
 dotweave pull
 ```
 
-ローカルに何が変更されるかプレビューする:
+```
+· Preparing pull...
+~ Planned pull changes
 
-```bash
-dotweave pull --dry-run
+Update from repository (1)
+  + /home/you/.config/nvim/init.lua
+· Applying pull...
+✔ Pull complete
+  updated: 1 paths updated
+  removed: 0 paths removed
 ```
 
-workプロファイルのレイヤーのみpullする:
+計画は 2 つの節に分かれます。`Update from repository (n)` は書き込むパスを `+` の箇条書きで、`Remove locally (n)` は削除するパスを `-` の箇条書きで並べます。空の節は表示しません。
 
-```bash
-dotweave pull --profile work
+dry run は同じ計画を表示してそこで止まります。末尾の行はプレビューの表現に変わります。
+
+```
+~ Pull preview (dry run)
+  updated: 1 paths would be updated
+  removed: 0 paths would be removed
 ```
 
-<TRAlert.Root variant="success">
-適用前に何が変更されるか確認するには、先に `dotweave status` を実行してください。
+<TRAlert.Root variant="warning">
+`pull` はリポジトリに存在しないローカルファイルを削除します。最初の `push` より前は、トラッキング中のすべてのパスが削除対象として並びます。先に `dotweave status` または `dotweave pull --dry-run` を実行してください。
 </TRAlert.Root>
 
+## エラー
+
+`pull` は、同期ディレクトリが git のワークツリーでない場合、`manifest.jsonc` が存在しない・読み取れない・妥当でない場合に失敗します。手元の identity で secret artifact を復号できない場合、および保存された artifact がトラッキング項目の `kind` と食い違う場合にも失敗します。ファイル項目がリポジトリではディレクトリとして解決されるケースがその一例です。非対話型ターミナルでの確認の失敗は前述のとおりです。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)のシークレットと age の節を参照してください。
+
+## 関連コマンド
+
+適用前に両方向を確認するには [`dotweave status`](/ja/reference/status/)、2 台目の端末で `pull` と git を組み合わせる流れは[複数デバイスの同期を保つ](/ja/guides/multi-device-workflow/)を参照してください。

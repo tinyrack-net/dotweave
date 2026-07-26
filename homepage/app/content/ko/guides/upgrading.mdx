@@ -1,0 +1,47 @@
+---
+title: 설정과 저장소 형식 업그레이드
+description: dotweave가 manifest.jsonc, settings.jsonc, 디스크의 artifact 형식을 마이그레이션할 때 무엇을 다시 쓰는지 정리해요.
+section: guides
+order: 5
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## manifest와 settings 마이그레이션
+
+dotweave는 설정 파일을 읽을 때 마이그레이션해요. 따로 업그레이드 명령이 있는 게 아니라, 예전 버전의 `manifest.jsonc`나 `settings.jsonc`를 처음 여는 명령이 파일을 한 단계씩 올려요.
+
+다시 쓰기 전에 dotweave는 원본 파일 옆에 `<filename>.v<originalVersion>.bak` 이름으로 백업을 만들어요. 버전 7 manifest를 마이그레이션하면 `manifest.jsonc.v7.bak`이, 버전 2 settings 파일이라면 `settings.jsonc.v2.bak`이 남아요. 다시 쓰기 자체는 원자적이고, 마이그레이션 결과가 의미 검증을 통과한 뒤에만 실행돼요. 그래서 잘못된 마이그레이션 결과는 절대 저장되지 않아요.
+
+`manifest.jsonc`의 현재 버전은 `8`이고 버전 `7`까지 받아서 마이그레이션해요. `settings.jsonc`의 현재 버전은 `3`이고 버전 `2`까지 받아서 마이그레이션해요.
+
+manifest의 7에서 8 단계는 프로필 이름을 레지스트리로 끌어올려요. 예전에는 프로필 이름이 개별 항목에만 있었는데, 마이그레이션이 그 이름들을 모아 최상위 `profiles` 배열에 정렬해서 넣어요. `default`는 암묵적인 프로필이라 빠져요. settings의 2에서 3 단계는 오래된 `age` 섹션을 제거해요.
+
+다시 쓰기는 파싱한 데이터로 파일을 새로 만들기 때문에, 직접 적어 둔 주석과 원래 키 순서는 남지 않아요. 남기고 싶은 내용은 나중에 `.bak` 파일에서 옮겨 오세요.
+
+## 저장소 형식 0에서 1로
+
+저장소 형식은 manifest 버전과 별개예요. manifest의 구조가 아니라 디스크에 artifact를 어떻게 배치하는지를 버전으로 관리하고, `manifest.jsonc`의 `repositoryFormat`에 기록돼요. 현재 형식은 `1`이고, 이 필드가 없으면 형식 `0`이에요.
+
+형식 0은 추적한 심링크를 `profiles/` 아래에 실제 심링크로 저장했어요. 형식 1은 POSIX 링크 대상을 담은 일반 `<name>.dotweave.symlink` 메타데이터 파일로 저장해서, git을 통해 플랫폼 사이를 오갈 수 있어요. 마이그레이션은 `profiles/` 아래를 모두 훑으며 발견한 물리적 심링크를 변환해요. 멱등해서, 남은 물리적 심링크가 없으면 다시 실행해도 아무 일도 하지 않아요.
+
+설정 마이그레이션과 달리 이 마이그레이션은 파일시스템을 건드려요. 그래서 dry run이 아닌 `dotweave push`에서만 실행돼요. `dotweave push --dry-run`은 건너뛰어요. `dotweave track`과 `dotweave untrack`은 하지 않은 업그레이드를 주장하지 않도록 기존 형식 표시를 그대로 다시 써요. 즉 저장소를 앞으로 옮기는 방법은 실제 `dotweave push`를 한 번 실행하는 거예요.
+
+<TRAlert.Root variant="warning">
+새 dotweave 버전으로 처음 `push`하기 전에 sync 디렉터리를 커밋해서 깨끗한 상태로 두세요. 형식 마이그레이션은 `profiles/` 아래 파일을 다시 쓰기 때문에, 작업 트리가 깨끗하면 그 변경을 git diff 하나로 검토할 수 있어요.
+</TRAlert.Root>
+
+## 저장소가 너무 새롭거나 너무 오래되었을 때
+
+dotweave는 설정을 읽을 때마다 저장소 형식을 확인해요. 그래서 이해하지 못하는 저장소를 절반만 읽는 대신 명령이 바로 실패해요.
+
+`Repository format <n> is newer than this CLI supports`는 다른 기기가 이미 저장소를 마이그레이션했다는 뜻이에요. 이 기기의 dotweave를 업그레이드하세요. dotweave는 저장소를 예전 형식으로 되돌리지 않아요.
+
+반대 경우는 이 CLI가 지원하는 가장 오래된 형식보다 낮은 저장소예요. 예전 dotweave 릴리스를 실행해서 거기서 `dotweave push`를 한 번 하고 저장소를 앞으로 옮긴 다음, 다시 업그레이드하세요. 지금 릴리스된 형식 중에 이 하한보다 낮은 건 없어서 이 실패는 현재로선 일어나지 않아요. 형식 0 지원을 나중에 제거하는 릴리스를 위해 준비된 검사예요.
+
+## 구현과 참고
+
+`version`, `repositoryFormat`, `profiles` 필드의 타입과 기본값은 [manifest.jsonc](/ko/config/manifest/)에, 전역 설정 필드는 [settings.jsonc](/ko/config/settings/)에 정리되어 있어요. 형식 마이그레이션이 다시 쓰는 artifact 배치는 [디렉터리와 저장소 구조](/ko/concepts/repository-layout/)에서 설명해요.
+
+마이그레이션 실패 메시지의 정확한 문구는 [오류 메시지](/ko/config/errors/)의 저장소 형식 절에서 확인하고, 업그레이드 후에도 명령이 실패한다면 [동기화 문제 해결하기](/ko/guides/troubleshooting/)를 보세요.

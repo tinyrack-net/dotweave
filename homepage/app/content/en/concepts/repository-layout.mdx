@@ -1,0 +1,94 @@
+---
+title: Directory and repository layout
+description: Where Dotweave stores its app-data directory, what lives in the sync repository, and how artifact suffixes encode file kind.
+section: concepts
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+import { TRFileTree } from "@tinyrack/ui/components/file-tree";
+
+
+## Locate the dotweave home directory
+
+Everything Dotweave owns lives under one directory. On macOS, Linux, and WSL it defaults to `$XDG_CONFIG_HOME/dotweave`, falling back to `~/.config/dotweave`. On Windows it defaults to `%APPDATA%\dotweave`. Setting `DOTWEAVE_HOME` overrides the choice on every platform.
+
+Read [Environment variables and paths](/en/config/environment/) for the full fallback chain.
+
+Three things sit inside it, and the tree below shows all of them:
+
+<TRFileTree aria-label="Dotweave configuration directory layout">
+- `<dotweave-home>/`
+  - `settings.jsonc`
+  - `keys.txt`
+  - `repository/`
+    - `.git/`
+    - `.gitattributes`
+    - `.gitignore`
+    - `manifest.jsonc`
+    - `profiles/`
+      - `default/`
+        - `.gitconfig`
+        - `.config/`
+          - `nvim/`
+            - `init.lua`
+        - `.ssh/`
+          - `config.dotweave.secret`
+      - `work/`
+        - `.config/`
+          - `work-tool/`
+            - `config.json`
+</TRFileTree>
+
+`settings.jsonc` records which profile this machine uses. `keys.txt` holds your age private key. `repository/` is the sync directory, and it is the only part that git tracks.
+
+<TRAlert.Root variant="warning">
+`keys.txt` is deliberately outside `repository/`, so it is never committed. It is also the one file Dotweave refuses to track. Back it up somewhere else before you need it.
+</TRAlert.Root>
+
+## Inside the sync directory
+
+`repository/` is an ordinary git repository. Dotweave writes four things at its root and never touches anything else there.
+
+`manifest.jsonc` is the tracked-entry list, described field by field in [manifest.jsonc](/en/config/manifest/). `.gitattributes` contains `* -text`, which stops git from rewriting line endings in your config files. `.gitignore` holds a managed block that keeps encrypted artifacts committable, regenerated on every `init` and `push`:
+
+```
+# BEGIN dotweave managed secret artifact rules
+!profiles/
+!profiles/**/
+!profiles/**/*.dotweave.secret
+!profiles/**/*.dotweave.symlink
+# END dotweave managed secret artifact rules
+```
+
+Everything else you add to the repository root, including your own `.gitignore` rules outside the managed block, is left alone.
+
+## Artifacts under profiles
+
+Tracked content is stored at `profiles/<profile>/<repoPath>`. The `profiles` directory name is reserved, which is why you cannot name a profile `profiles`.
+
+The path mirrors your home directory. A tracked `~/.ssh/config` becomes `.ssh/config` inside the profile directory unless you override `repoPath`.
+
+A suffix on the stored file encodes what the original was:
+
+| Stored name | Original | Content |
+| --- | --- | --- |
+| `<name>` | a regular file in `normal` mode | The bytes verbatim. |
+| `<name>.dotweave.secret` | a regular file in `secret` mode | ASCII-armored age ciphertext, beginning `-----BEGIN AGE ENCRYPTED FILE-----`. |
+| `<name>.dotweave.symlink` | a symlink | A regular file holding the POSIX link target. |
+
+Because those two suffixes carry meaning, no tracked path may contain a segment ending in either one.
+
+Entries assigned to a profile land under that profile's directory. Everything else lands under `default/`. Dotweave never prunes another profile's directory, so one repository holds every machine's configuration side by side.
+
+## Files Dotweave manages for git
+
+Dotweave shapes the repository so git behaves, but it does not use git as a database.
+
+It runs `git rev-parse` to confirm the sync directory is a work tree, `git init` or `git clone` during `dotweave init`, and `git show HEAD:manifest.jsonc` to learn which profiles are committed before it decides an artifact is stale. It never commits, stages, fetches, or pushes.
+
+Storing symlinks as metadata files rather than real symlinks means the repository clones identically on Windows without Developer Mode, and a git diff shows the link target as text.
+
+## Implementation and reference
+
+Read [manifest.jsonc](/en/config/manifest/) for the entry fields that produce these paths, or [Sync modes](/en/concepts/sync-modes/) for what decides a suffix.

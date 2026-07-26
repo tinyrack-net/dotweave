@@ -1,0 +1,91 @@
+---
+title: Profiles
+description: Register profiles in the manifest, assign entries to them, and select the active profile per machine.
+section: concepts
+order: 3
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## The default profile is implicit
+
+Every repository has a profile named `default`, and you never create it. Dotweave puts it at the head of the available profiles on its own, and it is the profile in effect whenever nothing else is selected.
+
+Because it is implicit, it must not appear in the manifest's `profiles` array. A manifest that lists it fails to load with `INVALID_PROFILE_REGISTRY`. For the same reason `dotweave profile add default` and `dotweave profile remove default` both fail with `DEFAULT_PROFILE_IMPLICIT`. Read [Error messages](/en/config/errors/#profiles) for the exact messages.
+
+A single-machine setup needs nothing more than that. Named profiles start to matter once two machines want different subsets of one repository.
+
+## Register a profile before you use it
+
+As of manifest version 8, named profiles live in a top-level `profiles` array in `manifest.jsonc`. Version 7 recorded a name only where an entry referenced it; the v7-to-v8 migration hoists every name it finds on an entry into the registry, and it runs the first time a newer Dotweave reads the older manifest.
+
+Register a name with `profile add`:
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+A profile name starts with a letter or digit and may then contain letters, digits, dots, underscores, and hyphens, matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`. It cannot start with `.`, cannot be `.` or `..`, and cannot be `profiles`, which is the artifact directory name.
+
+`dotweave profile remove <name>` deletes a name from the registry, and it refuses in two cases: while that profile is the active one (`PROFILE_ACTIVE`), and while any entry still lists it (`PROFILE_IN_USE`, whose detail lines name every referencing entry). Clear those assignments first.
+
+`dotweave profile list` prints `default` next to the registered names and marks the active one:
+
+```bash
+dotweave profile list
+```
+
+```
+~ Profiles
+  - default
+  - work (active)
+```
+
+## Which entries a profile sees
+
+One rule decides visibility. The effective profile is the active profile, or `default` when no profile is selected. An entry whose `profiles` is empty or absent applies under every profile. An entry that lists profiles applies only when the effective profile is one of them.
+
+So shared entries stay unassigned, and machine-specific entries name a profile:
+
+```bash
+dotweave track ~/.gitconfig
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+```
+
+`~/.gitconfig` takes part in every push and pull. `~/.config/work-vpn` takes part only while `work` is the effective profile, which means it is invisible under `default`. Assign several names to one entry to have it apply under each of them.
+
+<TRAlert.Root variant="warning">
+An entry restricted to a profile disappears entirely while another profile is effective. It is absent from `dotweave status`, and neither `push` nor `pull` considers it. Select the profile before you conclude that an entry was lost.
+</TRAlert.Root>
+
+## The active profile is machine-local
+
+The selection is stored as `activeProfile` in `settings.jsonc` in the dotweave home directory. That directory is not inside the sync directory, so the selection is never committed and each machine chooses independently.
+
+On the work laptop:
+
+```bash
+dotweave profile use work
+```
+
+```
+✔ Active profile set to work
+```
+
+Run `dotweave profile use` with no argument to clear the selection and fall back to `default`. Choosing a name that is not registered fails with `Unknown profile '<name>'.` before anything is written.
+
+`push`, `pull`, and `status` accept `--profile <name>`, which overrides the stored selection for that one command and takes a single value.
+
+Profiles do not partition the repository. `push` preserves the artifacts of every profile that is not effective and never prunes them, so `profiles/work/` survives a push from the personal machine. One repository holds every machine's configuration side by side under `profiles/<profile>/`.
+
+## Implementation and reference
+
+The `profiles` array and the per-entry `profiles` field are described in [manifest.jsonc](/en/config/manifest/), and the directories they produce in [Directory and repository layout](/en/concepts/repository-layout/).
+
+Read [`dotweave profile`](/en/reference/profile/) for the subcommand surface, or [settings.jsonc](/en/config/settings/) for the machine-local field that records the selection.

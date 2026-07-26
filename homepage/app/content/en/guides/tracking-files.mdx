@@ -1,126 +1,107 @@
 ---
-title: Tracking Files
-description: How to register files and directories for syncing.
+title: Track files and directories
+description: Register targets under your home directory, override their repository path, adjust nested paths, and stop tracking.
 section: guides
-order: 1
+order: 0
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Before dotweave can sync anything, you need to **track** it. Tracking tells dotweave "hey, I care about this file" by adding an entry to `manifest.jsonc`. Nothing gets copied or pushed until you explicitly run `dotweave push` afterward.
+Tracking records a path in `manifest.jsonc` so that `push` and `pull` know about it. The sections below are independent options rather than steps, so read the one that matches what you need.
 
----
+## Track a file or directory
 
-## Tracking a File
-
-Pass any file path to `dotweave track`:
+Pass one or more paths under your home directory to `dotweave track`. The argument is variadic, so several targets in one call are fine.
 
 ```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
+dotweave track ~/.gitconfig ~/.config/nvim
 ```
 
-This adds entries to `manifest.jsonc` — that's it. Your files stay exactly where they are. To actually copy them into the sync directory, run `dotweave push` as a separate step.
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
 
----
+`track` writes `manifest.jsonc` and nothing else. No file is copied into the sync directory until you run `dotweave push`.
 
-## Tracking a Directory
+Tracking a path that is already tracked updates only the fields you pass and preserves the rest. That lets you change one entry's `mode` later without repeating its `--repo` or `--profile` values.
 
-You can track an entire directory. Every file inside it (recursively) will be included when you push and pull.
+A single empty `--profile` value clears a target's profile assignments, which returns the entry to applying under every profile:
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/fish
+dotweave track ~/.config/my-tool --profile ""
 ```
 
-<TRAlert.Root variant="success">
-When you track a directory, new files added inside it later are automatically included in the next push — no need to track them individually.
-</TRAlert.Root>
+The target must resolve inside your home directory, and it cannot be the home directory itself. It also cannot overlap the sync directory or contain `keys.txt`, because Dotweave refuses to mirror its own state or your age key material.
 
----
+## Track a path that does not exist yet
 
-## Setting a Sync Mode
-
-By default, tracked entries use `normal` mode. You can change this with `--mode`:
+You can create an entry before the file exists, so that a later `dotweave pull` puts it in place. Because there is nothing to inspect, `--kind file` or `--kind directory` is required.
 
 ```bash
-dotweave track ~/.ssh/config --mode secret
-dotweave track ~/.local/share/cache-stuff --mode ignore
+dotweave track ~/.config/my-tool/settings.json --kind file
 ```
 
-See [Sync Modes](/en/guides/sync-modes) for a full breakdown of each mode.
+`--kind` is also checked against a path that does exist. The command fails when the value disagrees with what is on disk, so it cannot silently record a directory as a file.
 
----
+## Override the repository path
 
-## Limiting to Specific Profiles
-
-Use `--profile` to assign an entry to one or more profiles. Only machines with a matching active profile will sync that entry.
-
-```bash
-dotweave track ~/.config/work-tool --profile work
-dotweave track ~/.config/shared-tool --profile work --profile personal
-```
-
-Entries without `--profile` land in the `default` profile and sync everywhere. See [Profiles](/en/guides/profiles) for details.
-
----
-
-## Customizing the Repository Path
-
-By default, dotweave mirrors your file's path relative to your home directory inside the sync directory. If you want a different path in the repository, use `--repo`:
+By default an entry's repository path mirrors the target's path relative to your home directory. `--repo` sets that path yourself, which is useful when the local location is long or machine-specific.
 
 ```bash
 dotweave track ~/Projects/scripts/deploy.sh --repo scripts/deploy.sh
 ```
 
----
+`--repo` is valid with exactly one target. Passing it alongside two or more targets fails, since one repository path cannot describe both. Platform-scoped forms such as `--repo win=path` are documented on [`dotweave track`](/en/reference/track/), and the resolution rules on [Platform-specific paths](/en/concepts/platform-paths/).
 
-## Use Cases
+## Adjust a nested path inside a tracked directory
 
-**Whitelist approach** — track only the specific files you want synced:
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
-dotweave push
-```
-
-**Blacklist approach** — track a whole directory, then ignore specific children:
+`track` has a second meaning. When the target is not an existing manifest entry and you did not pass `--repo`, it sets the mode or profiles of a nested path inside an already-tracked directory, creating a child override entry for that path alone.
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/nvim/plugin/packer_compiled.lua --mode ignore
-dotweave push
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
 ```
 
----
+```
+✔ Updated sync mode for .config/my-tool/credentials.json
+  mode  secret
+```
 
-## Untracking
+The second call reports `Updated sync mode for ...`, or `Sync mode unchanged for ...` when the path already resolves to that mode.
 
-Changed your mind? Remove an entry with `dotweave untrack`:
+A child entry wins over its parent, and the parent's directory walk skips every path a child owns. The file is therefore mirrored once, under the child's mode, not twice. Use the same mechanism with `--mode ignore` to leave one file out of an otherwise tracked directory.
+
+## Stop tracking a target
+
+<TRAlert.Root variant="warning">
+`dotweave untrack` removes the manifest entry **and** deletes that entry's mirrored artifacts from the repository. Your local file under the home directory is left untouched.
+</TRAlert.Root>
 
 ```bash
 dotweave untrack ~/.gitconfig
 ```
 
-This removes the entry from `manifest.jsonc`. It does **not** delete the local file or any existing copy in the sync directory.
-
----
-
-## Checking What's Tracked
-
-Use `dotweave status` to see all tracked entries and their current state:
-
-```bash
-dotweave status
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
 ```
 
-Add `--dry-run` to push or pull to preview changes without applying them:
+The two counts report how many plain and secret artifacts were removed. Commit the deletion with git afterward, the same way you commit a push.
+
+To drop only a nested override and keep its parent directory tracked, pass the repository-relative child path:
 
 ```bash
-dotweave push --dry-run
-dotweave pull --dry-run
+dotweave untrack .config/my-tool/credentials.json
 ```
 
+## Implementation and reference
+
+Every flag, its type, and its default are listed on [`dotweave track`](/en/reference/track/) and [`dotweave untrack`](/en/reference/untrack/). The fields these commands write are described on [manifest.jsonc](/en/config/manifest/).
+
+Read [Sync modes](/en/concepts/sync-modes/) to pick the `mode` value for an entry, or [Push, review, and commit day to day](/en/guides/daily-workflow/) once the paths you care about are tracked.

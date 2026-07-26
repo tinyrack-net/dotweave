@@ -1,0 +1,94 @@
+---
+title: ディレクトリとリポジトリの構造
+description: dotweave がアプリデータディレクトリをどこに置くか、同期リポジトリの中に何があるか、artifact のサフィックスがファイル種別をどう表すかをまとめます。
+section: concepts
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+import { TRFileTree } from "@tinyrack/ui/components/file-tree";
+
+
+## dotweave ホームディレクトリを見つける
+
+dotweave が管理するものは、すべて 1 つのディレクトリの下にあります。macOS、Linux、WSL では既定で `$XDG_CONFIG_HOME/dotweave`、未設定なら `~/.config/dotweave` になります。Windows では既定で `%APPDATA%\dotweave` です。`DOTWEAVE_HOME` を設定すると、すべてのプラットフォームでこの選択を上書きします。
+
+フォールバックの全順序は[環境変数とパス](/ja/config/environment/)を参照してください。
+
+この中には 3 つのものがあり、下のツリーにすべて出ています。
+
+<TRFileTree aria-label="dotweaveの設定ディレクトリ構造">
+- `<dotweave-home>/`
+  - `settings.jsonc`
+  - `keys.txt`
+  - `repository/`
+    - `.git/`
+    - `.gitattributes`
+    - `.gitignore`
+    - `manifest.jsonc`
+    - `profiles/`
+      - `default/`
+        - `.gitconfig`
+        - `.config/`
+          - `nvim/`
+            - `init.lua`
+        - `.ssh/`
+          - `config.dotweave.secret`
+      - `work/`
+        - `.config/`
+          - `work-tool/`
+            - `config.json`
+</TRFileTree>
+
+`settings.jsonc` はこのマシンが使うプロファイルを記録します。`keys.txt` は age の秘密鍵を保持します。`repository/` が同期ディレクトリで、git が追跡するのはこの部分だけです。
+
+<TRAlert.Root variant="warning">
+`keys.txt` は意図的に `repository/` の外にあるため、コミットされることはありません。dotweave がトラッキングを拒否する唯一のファイルでもあります。必要になる前に別の場所へバックアップしてください。
+</TRAlert.Root>
+
+## 同期ディレクトリの中
+
+`repository/` は普通の git リポジトリです。dotweave はそのルートに 4 つのものを書き込み、それ以外には手を触れません。
+
+`manifest.jsonc` はトラッキング項目の一覧で、フィールドごとの説明は [manifest.jsonc](/ja/config/manifest/) にあります。`.gitattributes` には `* -text` が入っており、git が設定ファイルの改行を書き換えないようにします。`.gitignore` には暗号化された artifact をコミット可能に保つ管理ブロックがあり、`init` と `push` のたびに再生成されます。
+
+```
+# BEGIN dotweave managed secret artifact rules
+!profiles/
+!profiles/**/
+!profiles/**/*.dotweave.secret
+!profiles/**/*.dotweave.symlink
+# END dotweave managed secret artifact rules
+```
+
+リポジトリのルートに自分で追加したものは、管理ブロックの外に書いた `.gitignore` のルールも含めてそのまま残ります。
+
+## profiles 配下の artifact
+
+トラッキング対象の内容は `profiles/<profile>/<repoPath>` に保存されます。`profiles` というディレクトリ名は予約されているため、プロファイル名を `profiles` にはできません。
+
+パスはホームディレクトリをそのまま反映します。トラッキングした `~/.ssh/config` は、`repoPath` を上書きしない限りプロファイルディレクトリ内で `.ssh/config` になります。
+
+保存されたファイルのサフィックスが、元が何であったかを表します。
+
+| 保存名 | 元のもの | 内容 |
+| --- | --- | --- |
+| `<name>` | `normal` モードの通常ファイル | バイト列そのままです。 |
+| `<name>.dotweave.secret` | `secret` モードの通常ファイル | `-----BEGIN AGE ENCRYPTED FILE-----` で始まる ASCII armor 形式の age 暗号文です。 |
+| `<name>.dotweave.symlink` | シンボリックリンク | POSIX のリンク先を保持する通常ファイルです。 |
+
+この 2 つのサフィックスには意味があるため、トラッキング対象パスのどのセグメントもこれらで終わってはいけません。
+
+プロファイルに割り当てられた項目は、そのプロファイルのディレクトリ配下に入ります。それ以外はすべて `default/` の下に入ります。dotweave はほかのプロファイルのディレクトリを削除しないため、1 つのリポジトリがすべてのマシンの設定を並べて保持します。
+
+## dotweave が git のために管理するファイル
+
+dotweave は git が正しく振る舞うようにリポジトリを整えますが、git をデータベースとしては使いません。
+
+同期ディレクトリがワークツリーかを確認するために `git rev-parse`、`dotweave init` の中で `git init` または `git clone`、artifact が不要かを判断する前にコミット済みのプロファイルを調べるために `git show HEAD:manifest.jsonc` を実行します。コミット、ステージング、fetch、push は行いません。
+
+シンボリックリンクを実体ではなくメタデータファイルとして保存するため、Windows で開発者モードがなくてもリポジトリは同じように clone され、git の差分にはリンク先がテキストとして表示されます。
+
+## 実装とリファレンス
+
+これらのパスを生む項目フィールドは [manifest.jsonc](/ja/config/manifest/)、サフィックスを決めるしくみは[同期モード](/ja/concepts/sync-modes/)を参照してください。

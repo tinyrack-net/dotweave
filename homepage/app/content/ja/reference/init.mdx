@@ -1,6 +1,6 @@
 ---
 title: "dotweave init"
-description: "syncディレクトリを新規作成するか、既存のものに接続します。"
+description: 同期ディレクトリを作成または clone し、age identity を用意します。
 section: reference
 order: 0
 ---
@@ -8,50 +8,57 @@ order: 0
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-gitベースのsyncディレクトリを初期化します。
-
-dotweaveのアプリデータディレクトリ配下にdotweaveリポジトリを新規作成、または既存のリポジトリに接続し、以降の `pull` や `push` で使用するsync設定を保存します。リポジトリ引数を省略した場合、syncディレクトリ内にローカルgitリポジトリが作成されます。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave init [repository]
+dotweave init [--force] [--key-file <path>] [<repository>]
 ```
 
-## Arguments
+dotweave ホームディレクトリの下に同期ディレクトリを作成または接続し、以降の `push` と `pull` が読む設定を記録します。
 
-| Argument       | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| `[repository]` | cloneするリモートURLまたはローカルgitリポジトリのパスです。省略時はローカルリポジトリが新規作成されます。 |
+## 引数
 
-## Flags
+| 引数 | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `repository` | `string`、任意 | clone するリモート URL またはローカル git リポジトリのパスです。省略すると空のローカルリポジトリを初期化します。 |
 
-| Flag                        | Description                                                    |
-| --------------------------- | -------------------------------------------------------------- |
-| `--key-file <path>`         | ファイルからageの秘密鍵を読み込みます。             |
-| `--force`                   | 既存のローカルsyncリポジトリ、identity、settingsを置き換えて初期化します。 |
+## フラグ
 
-## Examples
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--force` | boolean、`false` | 初期化の前に、既存の同期ディレクトリ、identity ファイル、設定を削除します。 |
+| `--key-file` | `string`、なし | プロンプトで入力する代わりに、ファイルから age 秘密鍵を読み取ります。 |
 
-新しいローカルsyncディレクトリを作成する:
+## 動作
+
+`repository` 引数がない場合は、同期ディレクトリで `git init -b main` を実行します。ある場合は `git clone` を実行します。すでに存在して空でないディレクトリの初期化は拒否します。
+
+続いてリポジトリの基本構成を書き込みます。`* -text` を含む `.gitattributes`、暗号化された artifact をコミット可能に保つ管理 `.gitignore` ブロック、そしてバージョン `8`、`repositoryFormat` `1`、項目なし、recipient 1 件の `manifest.jsonc` です。
+
+age identity は、`--key-file` が指定されていればその値を使い、`keys.txt` がすでにあれば再利用し、どちらもなければ新しい identity を生成します。recipient がすでにあるリポジトリを clone して鍵を渡さなかった場合は、対話型ターミナルで秘密鍵を尋ね、尋ねられない場合はそのまま失敗します。
 
 ```bash
 dotweave init
 ```
 
-リモートリポジトリをsyncディレクトリとしてcloneする:
-
-```bash
-dotweave init https://github.com/user/dotfiles.git
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
 ```
 
-既存のageの秘密鍵を指定して初期化する:
+`init` は git のリモート追加、コミット、push のいずれも行いません。それらは `dotweave cd` と git で行ってください。
 
-```bash
-dotweave init --key-file ~/dotweave.agekey
-```
-
-<TRAlert.Root variant="success">
-別のマシンで使用しているage identityがある場合は、`--key-file`で指定するか、既存リポジトリを取り込むときの対話プロンプトに入力すると、secretファイルを復号できます。
+<TRAlert.Root variant="warning">
+`--force` は `keys.txt` を削除します。その identity だけで暗号化されたシークレット artifact は復元できなくなります。このフラグを使う前に鍵をバックアップしてください。
 </TRAlert.Root>
 
+## エラー
+
+`init` は、ディレクトリがすでに初期化されている場合、存在して空でない場合、git がないか clone 元に到達できない場合、clone したリポジトリが必要とする age 鍵を渡していない場合に失敗します。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)の初期化の節を参照してください。
+
+## 関連コマンド
+
+初回セットアップの全体は[最初の同期を設定する](/ja/getting-started/)、リポジトリがすでにある場合は[2 台目のデバイスを設定する](/ja/second-device/)を参照してください。

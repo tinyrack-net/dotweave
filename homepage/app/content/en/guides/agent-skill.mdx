@@ -1,0 +1,67 @@
+---
+title: Install the agent skill
+description: Install Dotweave's bundled portable agent skill into a coding agent's skills directory.
+section: guides
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+At the end of this guide, a coding agent has a `dotweave` skill that tells it how to drive Dotweave: which direction `push` and `pull` move data, when to check `dotweave status` first, and how to treat secrets. The skill is one Markdown file bundled into the Dotweave binary, and `dotweave skill install` copies it into the skills directory you name. You need a coding agent that reads skills from a directory on disk, and that directory has to exist before you run the command.
+
+## 1. Locate your skills directory
+
+`dotweave skill install` takes the skills root, not the file to write. It always writes exactly one file, `<directory>/dotweave/SKILL.md`.
+
+The root must already exist and be a directory. Dotweave creates the `dotweave` subdirectory inside it, but never the root itself, so a missing path fails with `Skills root must be a directory.` Check your agent's documentation for where it reads skills from, then create that directory if it is not there yet.
+
+```bash
+mkdir -p ~/.claude/skills
+```
+
+## 2. Preview the install
+
+`--dry-run` resolves the target path and reports it without writing anything.
+
+```bash
+dotweave skill install --dry-run ~/.claude/skills
+```
+
+```
+~ Would install dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+If a skill is already installed there, `--dry-run` on its own still fails with `Dotweave skill already exists.`, because the existence check runs before the dry run. Pass `--force` alongside it to preview an overwrite, which reports `Would overwrite dotweave skill`.
+
+## 3. Install the skill
+
+Drop `--dry-run` to write the file.
+
+```bash
+dotweave skill install ~/.claude/skills
+```
+
+```
+✔ Installed dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+Running the command again over an existing skill fails unless you pass `--force`, which overwrites the file and reports `Overwrote dotweave skill`. Reinstall with `--force` after you upgrade Dotweave so the agent reads the skill that shipped with the binary you now have.
+
+<TRAlert.Root variant="neutral">
+`dotweave skill install` is the only Dotweave command that needs neither git nor an initialized sync directory. You can install the skill before you ever run `dotweave init`.
+</TRAlert.Root>
+
+## Check the result
+
+Confirm the file landed where the command reported it:
+
+```bash
+cat ~/.claude/skills/dotweave/SKILL.md
+```
+
+Then ask your agent to list its available skills. `dotweave` should appear among them. If it does not, the skills root you passed is not the directory that agent reads.
+
+Read [`dotweave skill`](/en/reference/skill/) for the full flag list, or the [installation guide](/en/install/) if you still need the binary on this machine.

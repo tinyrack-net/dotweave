@@ -1,48 +1,82 @@
 ---
 title: "dotweave profile"
-description: "sync 프로필을 관리해요."
+description: manifest에 등록된 sync 프로필을 추가하고, 조회하고, 삭제하고, 선택해요.
 section: reference
-order: 7
+order: 6
 ---
 
-활성 profile과 할당된 sync profile을 관리해요.
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
-설정된 profile을 확인하거나, dotweave가 기본으로 사용할 profile을 변경할 수 있어요.
 
-## Subcommands
+## 사용법
 
-### `dotweave profile list`
+```bash
+dotweave profile add <profile>
+dotweave profile list
+dotweave profile remove <profile>
+dotweave profile use [<profile>]
+```
 
-설정된 profile과 활성 profile을 보여줘요.
+`profile`은 `manifest.jsonc`의 프로필 레지스트리와 `settings.jsonc`의 활성 프로필을 다루는 네 개의 하위 명령을 묶어요. 어느 하위 명령도 `--help` 외의 플래그를 받지 않아요.
+
+## profile add
+
+추적 항목에 할당할 수 있도록 default가 아닌 프로필을 `manifest.jsonc`에 등록해요. 레지스트리는 정렬된 상태로 유지돼요.
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+`default`는 암묵적으로 존재하는 프로필이라서 `add`가 거부해요. 이미 등록된 이름과 잘못된 이름도 거부해요. 프로필 이름은 `^[A-Za-z0-9][A-Za-z0-9._-]*$`에 맞아야 하고, `.`으로 시작하면 안 되고, `.`이나 `..`이면 안 되고, 예약된 이름 `profiles`도 쓸 수 없어요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 프로필 절에서 확인하세요.
+
+## profile list
+
+암묵적인 `default` 프로필과 등록된 모든 프로필을 출력하고, 활성 프로필에 표시를 붙여요.
 
 ```bash
 dotweave profile list
 ```
 
-### `dotweave profile use [name]`
-
-활성 profile을 설정하거나 해제해요. 이름 없이 실행하면 활성 profile이 해제돼요.
-
-```bash
-dotweave profile use [name]
+```
+~ Profiles
+  - default
+  - work (active)
 ```
 
-## Examples
+활성 프로필이 manifest에 등록되어 있지 않으면 레지스트리를 그대로 출력하고, 그 프로필을 지목하는 경고를 함께 보여줘요.
 
-설정된 모든 profile을 확인해요:
+## profile remove
+
+`manifest.jsonc`에서 프로필 등록을 해제해요.
 
 ```bash
-dotweave profile list
+dotweave profile remove work
 ```
 
-work profile을 활성화해요:
+`remove`는 `default`와 등록되지 않은 이름을 거부해요. 현재 활성 상태인 프로필도 삭제하지 않고, 어떤 추적 항목이든 그 프로필을 아직 참조하고 있으면 삭제를 거부해요. 마지막 경우에는 오류 상세 줄에 참조하는 항목이 모두 나와요. 먼저 [`dotweave track`](/ko/reference/track/)으로 해당 항목의 프로필 할당을 지우거나 다시 지정한 뒤에 프로필을 삭제하세요.
+
+## profile use
+
+dotweave 홈 디렉터리의 `settings.jsonc`에 `activeProfile`을 써요. 이 파일은 sync 디렉터리 밖에 있어서 커밋되지 않고, 그래서 기기마다 프로필을 따로 고를 수 있어요.
 
 ```bash
 dotweave profile use work
 ```
 
-활성 profile을 해제해요:
-
-```bash
-dotweave profile use
 ```
+✔ Active profile set to work
+```
+
+인자를 생략하면 활성 프로필이 해제돼요. 프로필은 미리 등록되어 있어야 하고, sync 디렉터리는 git 저장소여야 해요. `push`, `pull`, `status`의 `--profile`은 그 한 번의 실행에 대해 활성 프로필을 덮어써요.
+
+<TRAlert.Root variant="warning">
+활성 프로필이 아닌 프로필에 할당된 항목은 `status`, `push`, `pull`에 보이지 않아요. 항목이 동기화를 멈췄다고 판단하기 전에 활성 프로필을 먼저 확인하세요.
+</TRAlert.Root>
+
+## 관련 명령
+
+프로필 선택이 항목을 어떻게 걸러내는지는 [프로필](/ko/concepts/profiles/), 기기마다 다른 프로필을 두는 방법은 [여러 기기 동기화 유지하기](/ko/guides/multi-device-workflow/)를 확인하세요.

@@ -1,0 +1,84 @@
+---
+title: 동기화 모드
+description: normal, secret, ignore가 push로 저장되는 내용과 pull로 복원되는 내용을 어떻게 바꾸는지 설명해요.
+section: concepts
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 대상마다 모드 선택하기
+
+추적 항목마다 동기화 모드가 하나씩 붙고, 이 값이 `push`가 sync 디렉터리에 저장하는 내용과 `pull`이 홈 디렉터리에 다시 쓰는 내용을 결정해요. 모드는 `normal`, `secret`, `ignore` 세 가지예요. `mode`를 지정하지 않은 항목은 `normal`이에요.
+
+`mode`는 `default`와 선택적인 `win`, `mac`, `linux`, `wsl` 오버라이드로 이루어진 플랫폼 값이라서, 항목 하나가 운영체제마다 다르게 동작할 수 있어요. WSL 환경에서는 `wsl`, 그다음 `linux`, 마지막으로 `default` 순서로 해석해요.
+
+| 모드 | push가 저장하는 것 | 암호화 | pull이 복원하는지 |
+| --- | --- | --- | --- |
+| `normal` | 파일을 바이트 그대로 | 안 함 | 복원해요 |
+| `secret` | `.dotweave.secret` 접미사가 붙은 age 암호문 | 함 | 복호화한 뒤 복원해요 |
+| `ignore` | 아무것도 저장하지 않아요 | — | 복원하지 않아요 |
+
+나중에 모드를 바꾸려면 같은 대상을 새 `--mode`로 다시 추적하세요. 다시 추적할 때는 넘긴 필드만 갱신하고 나머지는 그대로 두기 때문에, 항목의 `repoPath`, `permission`, `profiles`는 유지돼요. 모드만 따로 편집하는 명령은 없어요.
+
+## normal
+
+`normal` 파일은 `profiles/<profile>/<repoPath>`에 그대로 복사돼요. 어떤 변환도 하지 않으므로 artifact의 git diff가 원본 파일의 diff와 똑같이 읽혀요.
+
+공개해도 괜찮은 파일에 쓰세요. 셸 시작 파일, 편집기 설정, `git` 설정, `starship.toml` 같은 도구 설정이 여기에 해당해요.
+
+```bash
+dotweave track ~/.gitconfig
+```
+
+`normal`이 기본값이라서 위 명령에는 `--mode`가 필요하지 않아요. `--mode normal`을 넘겨도 결과는 같고, 다른 모드였던 항목을 되돌릴 때 유용해요.
+
+## secret
+
+`secret` 파일은 `manifest.jsonc`에 적힌 모든 recipient를 대상으로 암호화되고 `.dotweave.secret` 접미사가 붙어 저장돼요. 저장되는 artifact는 ASCII armor 형식의 age 암호문이라서, git이 바이너리로 다루지 않고 diff와 전송을 처리할 수 있는 텍스트예요.
+
+자격 증명에 쓰세요. SSH 설정과 키, API 토큰, 실제 값이 담긴 `.env` 파일, 클라우드 자격 증명 파일이 여기에 해당해요.
+
+```bash
+dotweave track ~/.ssh/config --mode secret
+```
+
+`pull`은 `keys.txt`의 identity로 artifact를 복호화한 뒤 파일을 써요. identity가 recipient 중 어느 것과도 맞지 않는 기기에서는 파일을 복원할 수 없어요.
+
+`secret` 경로는 일반 파일이어야 해요. 심링크를 `secret`으로 지정하면 암호화할 평문이 없으므로 `Secret sync paths must be regular files, not symlinks` 오류가 나요.
+
+<TRAlert.Root variant="warning">
+암호화되는 대상은 파일 내용뿐이에요. 파일 이름과 경로는 저장소에서 그대로 보이기 때문에, `.ssh/config.dotweave.secret`이라는 이름만으로도 SSH 설정을 추적한다는 사실이 드러나요. 민감한 경로를 감추는 용도로 `secret`에 의존하지 마세요.
+</TRAlert.Root>
+
+## ignore
+
+`ignore` 항목은 `manifest.jsonc`에 남아 있지만 양방향 모두에서 건너뛰어요. 로컬 스냅숏이 경로를 읽지 않고, `pull`도 그 경로에 쓰지 않아요.
+
+```bash
+dotweave track ~/.config/my-tool/cache --mode ignore
+```
+
+기록은 남기고 동기화만 멈추고 싶은 항목에 쓰세요. 추적 중인 디렉터리 안에서 생성되는 캐시, 기기별 파일, 잠시 끄고 싶은 항목이 여기에 해당해요.
+
+`push`와 `status`에서는 무시된 항목이 단독으로 소유하는 저장소 artifact가 정리돼요. 그래서 `ignore`로 바꾸면 다음 push에서 저장된 내용이 사라져요. 다만 `ignore`가 특정 플랫폼 오버라이드일 뿐이고 다른 플랫폼이 같은 저장소 경로를 `normal`이나 `secret`으로 여전히 소유한다면, 그 artifact는 보존돼요.
+
+## 하위 경로가 모드를 상속하는 방식
+
+디렉터리를 추적한 뒤 그 안의 파일을 다시 추적하면, 경로가 겹치는 항목 두 개가 생겨요. dotweave는 항목을 `repoPath` 길이 기준으로 짧은 것부터 정렬하고, 각 항목의 부모로 `kind`가 `directory`인 가장 가까운 상위 항목을 골라서 이 겹침을 정리해요.
+
+`mode`를 명시하지 않은 항목은 부모의 `mode`를 가져와요. `mode`, `permission`, `profiles`는 각각 독립적으로 상속되므로, 모드는 상속하면서 permission만 따로 지정할 수도 있어요. 모드를 명시한 항목은 부모가 무엇이든 그 값을 유지해요.
+
+```bash
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
+```
+
+`~/.config/my-tool` 아래는 그대로 저장되고 `credentials.json`만 암호화돼요. 하위 항목은 상위 디렉터리의 순회 대상에서 스스로 빠지기 때문에, 같은 파일이 `normal` 모드로 한 번 더 저장되지 않아요.
+
+## 구현과 참고
+
+모드는 manifest의 항목마다 선언되고, 설정을 읽는 시점에 플랫폼별로 해석돼요. 모드 목록은 `packages/cli/lib/src/config/constants.dart`, 플랫폼 해석과 상속은 `config/sync_schema.dart`, artifact 소유권과 정리는 `services/repo_artifacts.dart`에 있어요.
+
+recipient와 identity를 준비하는 방법은 [age로 시크릿 암호화하기](/ko/concepts/secrets/), 항목의 다른 필드와 함께 놓인 `mode` 필드는 [manifest.jsonc](/ko/config/manifest/)에서 확인하세요.

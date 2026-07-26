@@ -1,0 +1,85 @@
+---
+title: Install Dotweave
+description: Install the CLI on Windows, macOS, or Linux, and confirm the git binary Dotweave requires.
+section: overview
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
+
+
+Install the `dotweave` CLI and confirm it can find git. Dotweave ships as a compiled native binary, so there is no runtime to install alongside it. You need git available on your `PATH`.
+
+## 1. Install the CLI
+
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Tab value="manual">Manual</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
+
+```powershell
+winget install tinyrack.dotweave
+```
+
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
+
+```bash
+brew install tinyrack-net/tap/dotweave
+```
+
+</TRTabs.Panel>
+<TRTabs.Panel value="manual">
+
+Download the binary for your platform from the [GitHub releases page](https://github.com/tinyrack-net/dotweave/releases), then put it somewhere on your `PATH`. Releases include x64 and arm64 builds for Linux, macOS, and Windows, plus an AppImage for Linux.
+
+</TRTabs.Panel>
+</TRTabs.Root>
+
+Confirm the install:
+
+```bash
+dotweave --version
+```
+
+```
+dotweave/1.0.0
+```
+
+## 2. Confirm the git binary
+
+Dotweave uses git as its transport, but it does not bundle one. Every command except `dotweave skill install` needs `git` on your `PATH`.
+
+```bash
+git --version
+```
+
+If that fails, install git and open a new shell. Dotweave reports a missing git as `Git is not installed or not on PATH.`
+
+You do not need to install `age`. The encryption Dotweave uses for secret files is built into the CLI.
+
+## Check the result
+
+Run the health check. It exits non-zero and reports a `git` failure until you initialize a sync directory, which is expected before first-time setup:
+
+```bash
+dotweave doctor
+```
+
+Once you have run `dotweave init`, the same command reports every check as passing:
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+<TRAlert.Root variant="info">
+Dotweave stores its data under `%APPDATA%\dotweave` on Windows and `$XDG_CONFIG_HOME/dotweave` (usually `~/.config/dotweave`) elsewhere. Nothing is written until you run `dotweave init`.
+</TRAlert.Root>
+
+Continue with [Set up your first sync](/en/getting-started/) to create a sync directory, or read [Enable shell autocomplete](/en/guides/shell-autocomplete/) to get tab completion first.

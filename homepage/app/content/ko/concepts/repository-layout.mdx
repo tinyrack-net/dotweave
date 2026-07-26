@@ -1,0 +1,94 @@
+---
+title: 디렉터리와 저장소 구조
+description: dotweave가 앱 데이터 디렉터리를 어디에 두는지, sync 저장소 안에 무엇이 있는지, artifact 접미사가 파일 종류를 어떻게 나타내는지 정리해요.
+section: concepts
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+import { TRFileTree } from "@tinyrack/ui/components/file-tree";
+
+
+## dotweave 홈 디렉터리 찾기
+
+dotweave가 소유하는 모든 것은 디렉터리 하나 아래에 있어요. macOS, Linux, WSL에서는 기본값이 `$XDG_CONFIG_HOME/dotweave`이고, 없으면 `~/.config/dotweave`로 넘어가요. Windows에서는 기본값이 `%APPDATA%\dotweave`예요. `DOTWEAVE_HOME`을 설정하면 모든 플랫폼에서 이 선택을 덮어써요.
+
+전체 폴백 순서는 [환경 변수와 경로](/ko/config/environment/)에서 확인하세요.
+
+그 안에는 세 가지가 있고, 아래 트리에 전부 나와요.
+
+<TRFileTree aria-label="dotweave 설정 디렉터리 구조">
+- `<dotweave-home>/`
+  - `settings.jsonc`
+  - `keys.txt`
+  - `repository/`
+    - `.git/`
+    - `.gitattributes`
+    - `.gitignore`
+    - `manifest.jsonc`
+    - `profiles/`
+      - `default/`
+        - `.gitconfig`
+        - `.config/`
+          - `nvim/`
+            - `init.lua`
+        - `.ssh/`
+          - `config.dotweave.secret`
+      - `work/`
+        - `.config/`
+          - `work-tool/`
+            - `config.json`
+</TRFileTree>
+
+`settings.jsonc`는 이 기기가 사용하는 프로필을 기록해요. `keys.txt`는 age 비밀 키를 담아요. `repository/`가 sync 디렉터리이고, git이 추적하는 유일한 부분이에요.
+
+<TRAlert.Root variant="warning">
+`keys.txt`는 의도적으로 `repository/` 밖에 있어서 절대 커밋되지 않아요. dotweave가 추적을 거부하는 유일한 파일이기도 해요. 필요해지기 전에 다른 곳에 백업해 두세요.
+</TRAlert.Root>
+
+## sync 디렉터리 안쪽
+
+`repository/`는 평범한 git 저장소예요. dotweave는 루트에 네 가지를 쓰고, 그 밖의 것은 건드리지 않아요.
+
+`manifest.jsonc`는 추적 항목 목록이고, 필드별 설명은 [manifest.jsonc](/ko/config/manifest/)에 있어요. `.gitattributes`에는 `* -text`가 들어 있어서 git이 설정 파일의 줄 끝을 바꾸지 못하게 해요. `.gitignore`에는 암호화된 artifact를 커밋할 수 있게 유지하는 관리 블록이 있고, `init`과 `push`마다 다시 생성돼요.
+
+```
+# BEGIN dotweave managed secret artifact rules
+!profiles/
+!profiles/**/
+!profiles/**/*.dotweave.secret
+!profiles/**/*.dotweave.symlink
+# END dotweave managed secret artifact rules
+```
+
+저장소 루트에 직접 추가한 다른 파일은, 관리 블록 밖에 쓴 `.gitignore` 규칙까지 포함해서 그대로 남아요.
+
+## profiles 아래의 artifact
+
+추적 대상 내용은 `profiles/<profile>/<repoPath>`에 저장돼요. `profiles` 디렉터리 이름은 예약되어 있고, 그래서 프로필 이름을 `profiles`로 지을 수 없어요.
+
+경로는 홈 디렉터리를 그대로 반영해요. 추적한 `~/.ssh/config`는 `repoPath`를 덮어쓰지 않는 한 프로필 디렉터리 안에서 `.ssh/config`가 돼요.
+
+저장된 파일의 접미사가 원본이 무엇이었는지를 나타내요.
+
+| 저장 이름 | 원본 | 내용 |
+| --- | --- | --- |
+| `<name>` | `normal` 모드의 일반 파일 | 바이트 그대로예요. |
+| `<name>.dotweave.secret` | `secret` 모드의 일반 파일 | `-----BEGIN AGE ENCRYPTED FILE-----`로 시작하는 ASCII armor age 암호문이에요. |
+| `<name>.dotweave.symlink` | 심링크 | POSIX 링크 대상을 담은 일반 파일이에요. |
+
+이 두 접미사에 의미가 있기 때문에, 추적 경로의 어떤 세그먼트도 둘 중 하나로 끝나면 안 돼요.
+
+프로필에 할당된 항목은 그 프로필 디렉터리 아래로 들어가요. 나머지는 모두 `default/` 아래로 들어가요. dotweave는 다른 프로필의 디렉터리를 절대 정리하지 않기 때문에, 저장소 하나가 모든 기기의 설정을 나란히 담아요.
+
+## dotweave가 git을 위해 관리하는 파일
+
+dotweave는 git이 제대로 동작하도록 저장소를 다듬지만, git을 데이터베이스로 쓰지는 않아요.
+
+sync 디렉터리가 작업 트리인지 확인할 때 `git rev-parse`를, `dotweave init` 중에 `git init` 또는 `git clone`을, artifact가 오래되었는지 판단하기 전에 커밋된 프로필을 알아보려고 `git show HEAD:manifest.jsonc`를 실행해요. 커밋, 스테이징, fetch, push는 하지 않아요.
+
+심링크를 실제 심링크가 아니라 메타데이터 파일로 저장하기 때문에, Windows에서 개발자 모드 없이도 저장소가 똑같이 clone되고 git diff에 링크 대상이 텍스트로 보여요.
+
+## 구현과 참고
+
+이 경로를 만들어 내는 항목 필드는 [manifest.jsonc](/ko/config/manifest/), 접미사를 결정하는 규칙은 [동기화 모드](/ko/concepts/sync-modes/)에서 확인하세요.

@@ -1,0 +1,85 @@
+---
+title: dotweave をインストールする
+description: Windows、macOS、Linux に CLI をインストールし、dotweave が必要とする git を確認します。
+section: overview
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
+
+
+`dotweave` CLI をインストールし、git を見つけられるか確認します。dotweave はコンパイル済みのネイティブバイナリとして配布されるため、あわせて入れるランタイムはありません。`PATH` に git があることが前提です。
+
+## 1. CLI をインストールする
+
+<TRTabs.Root defaultValue="windows">
+<TRTabs.List aria-label="Installation method">
+<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
+<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
+<TRTabs.Tab value="manual">手動</TRTabs.Tab>
+<TRTabs.Indicator />
+</TRTabs.List>
+<TRTabs.Panel value="windows">
+
+```powershell
+winget install tinyrack.dotweave
+```
+
+</TRTabs.Panel>
+<TRTabs.Panel value="macos-linux">
+
+```bash
+brew install tinyrack-net/tap/dotweave
+```
+
+</TRTabs.Panel>
+<TRTabs.Panel value="manual">
+
+[GitHub のリリースページ](https://github.com/tinyrack-net/dotweave/releases)からプラットフォームに合ったバイナリをダウンロードし、`PATH` の通った場所に置いてください。リリースには Linux、macOS、Windows 向けの x64 と arm64 ビルド、そして Linux 向けの AppImage が含まれます。
+
+</TRTabs.Panel>
+</TRTabs.Root>
+
+インストールを確認します。
+
+```bash
+dotweave --version
+```
+
+```
+dotweave/1.0.0
+```
+
+## 2. git を確認する
+
+dotweave は git を転送層として使いますが、git を同梱してはいません。`dotweave skill install` を除くすべてのコマンドが `PATH` の `git` を必要とします。
+
+```bash
+git --version
+```
+
+失敗する場合は git をインストールし、新しいシェルを開いてください。git が見つからない場合、dotweave は `Git is not installed or not on PATH.` と報告します。
+
+`age` を別途インストールする必要はありません。シークレットファイルに使う暗号化は CLI に組み込まれています。
+
+## 結果を確認する
+
+ヘルスチェックを実行します。同期ディレクトリを初期化する前は終了コードが 0 以外になり `git` の失敗を報告しますが、初回セットアップ前としては正常です。
+
+```bash
+dotweave doctor
+```
+
+`dotweave init` を実行した後は、同じコマンドがすべてのチェックの通過を報告します。
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+<TRAlert.Root variant="info">
+dotweave はデータを、Windows では `%APPDATA%\dotweave`、それ以外では `$XDG_CONFIG_HOME/dotweave`（通常は `~/.config/dotweave`）に保存します。`dotweave init` を実行するまでは何も書き込みません。
+</TRAlert.Root>
+
+同期ディレクトリを作るには[最初の同期を設定する](/ja/getting-started/)へ、先にタブ補完を有効にしたい場合は[シェル補完を有効にする](/ja/guides/shell-autocomplete/)を参照してください。

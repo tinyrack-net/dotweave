@@ -1,0 +1,91 @@
+---
+title: 프로필
+description: manifest에 프로필을 등록하고, 항목에 프로필을 지정하고, 기기마다 활성 프로필을 골라요.
+section: concepts
+order: 3
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## default 프로필은 암묵적이에요
+
+모든 저장소에는 `default`라는 프로필이 있고, 직접 만들지 않아요. dotweave가 사용 가능한 프로필 목록 맨 앞에 알아서 넣고, 다른 프로필을 고르지 않은 동안에는 이 프로필이 유효해요.
+
+암묵적이기 때문에 manifest의 `profiles` 배열에는 들어가면 안 돼요. `default`가 적힌 manifest는 `INVALID_PROFILE_REGISTRY`로 읽기에 실패해요. 같은 이유로 `dotweave profile add default`와 `dotweave profile remove default`도 `DEFAULT_PROFILE_IMPLICIT`으로 실패해요. 정확한 메시지는 [오류 메시지](/ko/config/errors/)의 프로필 절에서 확인하세요.
+
+기기가 하나라면 여기까지로 충분해요. 이름 있는 프로필은 여러 기기가 저장소 하나에서 서로 다른 부분만 가져가야 할 때 필요해요.
+
+## 쓰기 전에 프로필 등록하기
+
+manifest 버전 8부터 이름 있는 프로필은 `manifest.jsonc` 최상위 `profiles` 배열에 저장돼요. 버전 7에서는 항목이 참조하는 자리에만 이름이 남아 있었고, v7에서 v8로 올리는 마이그레이션이 항목에서 찾은 이름을 모두 레지스트리로 끌어올려요. 이 마이그레이션은 새 dotweave가 예전 manifest를 처음 읽을 때 실행돼요.
+
+이름은 `profile add`로 등록하세요.
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+프로필 이름은 영문자나 숫자로 시작하고, 그다음에는 영문자, 숫자, 점, 밑줄, 하이픈을 쓸 수 있어요. 규칙은 `^[A-Za-z0-9][A-Za-z0-9._-]*$`예요. `.`으로 시작할 수 없고, `.`이나 `..`도 안 되고, artifact 디렉터리 이름인 `profiles`도 쓸 수 없어요.
+
+`dotweave profile remove <name>`은 레지스트리에서 이름을 지워요. 다만 두 경우에는 거부해요. 그 프로필이 활성 상태일 때(`PROFILE_ACTIVE`)와, 어떤 항목이 아직 그 이름을 참조할 때(`PROFILE_IN_USE`)예요. `PROFILE_IN_USE`의 상세 줄에는 참조하는 항목이 모두 나와요. 먼저 그 지정을 정리하세요.
+
+`dotweave profile list`는 `default`를 등록된 이름과 함께 출력하고 활성 프로필을 표시해요.
+
+```bash
+dotweave profile list
+```
+
+```
+~ Profiles
+  - default
+  - work (active)
+```
+
+## 프로필이 보는 항목
+
+항목이 보이는지는 규칙 하나로 정해져요. 유효 프로필은 활성 프로필이고, 아무 프로필도 고르지 않았다면 `default`예요. `profiles`가 비어 있거나 없는 항목은 모든 프로필에서 적용돼요. `profiles`에 이름이 적힌 항목은 유효 프로필이 그중 하나일 때만 적용돼요.
+
+그래서 공용 항목은 지정하지 않고 두고, 기기에 한정된 항목에만 프로필을 지정해요.
+
+```bash
+dotweave track ~/.gitconfig
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+```
+
+`~/.gitconfig`는 모든 push와 pull에 들어가요. `~/.config/work-vpn`은 `work`가 유효 프로필일 때만 들어가고, `default`에서는 보이지 않아요. 한 항목에 이름을 여러 개 지정하면 그 프로필마다 적용돼요.
+
+<TRAlert.Root variant="warning">
+프로필에 한정된 항목은 다른 프로필이 유효한 동안 완전히 사라져요. `dotweave status`에도 나오지 않고 `push`와 `pull`도 그 항목을 다루지 않아요. 항목이 없어졌다고 판단하기 전에 프로필을 먼저 선택하세요.
+</TRAlert.Root>
+
+## 활성 프로필은 기기별이에요
+
+고른 프로필은 dotweave 홈 디렉터리의 `settings.jsonc`에 `activeProfile`로 저장돼요. 이 디렉터리는 sync 디렉터리 안에 없어서 선택이 커밋되지 않고, 기기마다 따로 골라요.
+
+업무용 노트북에서는 이렇게 해요.
+
+```bash
+dotweave profile use work
+```
+
+```
+✔ Active profile set to work
+```
+
+인자 없이 `dotweave profile use`를 실행하면 선택이 지워지고 `default`로 돌아가요. 등록되지 않은 이름을 고르면 아무것도 쓰기 전에 `Unknown profile '<name>'.`으로 실패해요.
+
+`push`, `pull`, `status`는 `--profile <name>`을 받아요. 저장된 선택을 그 명령 한 번에만 덮어쓰고, 값은 하나만 받아요.
+
+프로필이 저장소를 쪼개지는 않아요. `push`는 유효하지 않은 프로필의 artifact를 그대로 보존하고 절대 지우지 않아서, 개인 기기에서 push해도 `profiles/work/`는 남아 있어요. 저장소 하나가 `profiles/<profile>/` 아래에 모든 기기의 설정을 나란히 담아요.
+
+## 구현과 참고
+
+`profiles` 배열과 항목별 `profiles` 필드는 [manifest.jsonc](/ko/config/manifest/), 그 결과로 생기는 디렉터리는 [디렉터리와 저장소 구조](/ko/concepts/repository-layout/)에서 설명해요.
+
+서브커맨드는 [`dotweave profile`](/ko/reference/profile/)에서, 선택을 기록하는 기기별 필드는 [settings.jsonc](/ko/config/settings/)에서 확인하세요.

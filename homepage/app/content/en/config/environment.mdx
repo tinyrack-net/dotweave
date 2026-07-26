@@ -1,0 +1,54 @@
+---
+title: Environment variables and paths
+description: How DOTWEAVE_HOME, XDG_CONFIG_HOME, and the Windows AppData fallbacks decide where Dotweave stores its data.
+section: config
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Resolution order
+
+Dotweave keeps everything it owns under one directory, the dotweave home directory. `settings.jsonc`, the age identity file `keys.txt`, and the `repository` sync directory all live inside it.
+
+Resolution stops at the first rule that produces a value:
+
+1. `DOTWEAVE_HOME`, if set, is used directly on every platform.
+2. On Windows, `%APPDATA%\dotweave`, then `%LOCALAPPDATA%\dotweave`, then `%USERPROFILE%\AppData\Roaming\dotweave`, then `<os home>\AppData\Roaming\dotweave`.
+3. On macOS, Linux, and WSL, `$XDG_CONFIG_HOME/dotweave`, falling back to `$HOME/.config/dotweave`.
+
+An environment variable set to an empty or whitespace-only string counts as unset.
+
+## Variables
+
+| Variable | Read on | Purpose |
+| --- | --- | --- |
+| `DOTWEAVE_HOME` | all platforms | Overrides the dotweave home directory outright. |
+| `HOME` | all platforms | Root for resolving `~` in `localPath`, and the boundary every tracked entry must stay inside. |
+| `XDG_CONFIG_HOME` | macOS, Linux, WSL | Replaces `~/.config` as the parent of the dotweave home directory. Also expands in a `localPath` written as `$XDG_CONFIG_HOME/...`. |
+| `APPDATA` | Windows | First choice for the dotweave home directory parent. |
+| `LOCALAPPDATA` | Windows | Used when `APPDATA` is unset. |
+| `USERPROFILE` | Windows | Used when both AppData variables are unset, and as the Windows home directory. |
+| `SHELL` | macOS, Linux, WSL | The shell `dotweave cd` launches. Falls back to `/bin/sh`. |
+| `COMSPEC` | Windows | The shell `dotweave cd` launches. Falls back to `cmd.exe`. |
+| `WSL_DISTRO_NAME` | WSL | Presence selects the `wsl` platform key. |
+| `WSL_INTEROP` | WSL | Secondary signal for the `wsl` platform key. |
+
+Dotweave detects the `wsl` platform key when either WSL variable is set, or when the reported OS release contains `microsoft`. Read [Platform-specific paths](/en/concepts/platform-paths/) for what that key changes.
+
+## Windows fallbacks
+
+Windows environment variable names are matched case-insensitively, so `%AppData%` and `%APPDATA%` resolve the same value. On other platforms the lookup is case-sensitive.
+
+The `USERPROFILE`-based fallbacks append `AppData\Roaming` themselves. They exist so a stripped-down environment, such as a service account or a container, still produces a usable path rather than failing.
+
+A `localPath` may also contain `%VARIABLE%` references, which Dotweave expands using the same environment. An undefined variable inside a `localPath` fails the command rather than expanding to an empty string.
+
+<TRAlert.Root variant="warning">
+Changing `DOTWEAVE_HOME` points Dotweave at a different sync directory and identity file. It does not move the existing ones. Move the directory yourself, or run `dotweave init` again in the new location.
+</TRAlert.Root>
+
+## Related pages
+
+Read [manifest.jsonc](/en/config/manifest/) for the fields that use these paths, or [Directory and repository layout](/en/concepts/repository-layout/) to see what Dotweave writes inside the resolved directory.

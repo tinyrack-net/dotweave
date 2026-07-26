@@ -1,0 +1,160 @@
+---
+title: Error messages
+description: Every Dotweave error grouped by area, with the condition that raises it and the fix.
+section: config
+order: 3
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## How to read an error
+
+Dotweave prints a failure as up to three parts: the message, zero or more detail lines that name the file or path involved, and a hint prefixed with `→`.
+
+```
+Sync target conflicts with an existing tracked entry.
+Requested local path: /home/you/.config/nvim
+Requested repo path: .config/nvim
+Existing entry: /home/you/.vim -> .config/nvim
+→ Change --repo or untrack the conflicting entry first.
+```
+
+Every command exits `0` on success and `1` on any failure. `dotweave doctor` exits `1` when a check fails, and warnings alone do not fail it.
+
+<TRAlert.Root variant="neutral">
+Dotweave does not print the internal error code. The codes below are listed so you can search this page, cite one in an issue, or find the raising code in the CLI source. Match on the message instead.
+</TRAlert.Root>
+
+## Initialization
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Sync directory is already initialized.` | `INIT_ALREADY_INITIALIZED` | The sync directory already has a `manifest.jsonc`. Run `dotweave init --force` only if you intend to discard it. |
+| `Sync directory already exists and is not empty.` | `SYNC_DIR_NOT_EMPTY` | The directory exists but is not a git repository. Empty it, remove it, or point `init` at a repository source. |
+| `Existing repository setup requires an age private key.` | `INIT_AGE_IDENTITY_REQUIRED` | The cloned repository already has recipients. Pass `--key-file <path>`, or run `init` in an interactive terminal and paste the key at the prompt. |
+| `Failed to initialize the sync directory.` | `SYNC_INIT_GIT_FAILED` | `git init -b main` failed. Confirm git is installed and the directory is writable. |
+| `Failed to clone the sync directory.` | `SYNC_CLONE_FAILED` | `git clone` failed. Confirm the repository source is reachable and you have access. |
+| `Git is not installed or not on PATH.` | `GIT_EXECUTABLE_NOT_FOUND` | Install git and make the `git` executable available on `PATH`. |
+| `Sync repository is not initialized.` | `SYNC_REPO_INVALID` | The sync directory is not a git work tree. Run `dotweave init`. |
+
+## Config files
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Sync configuration is invalid.` | `CONFIG_VALIDATION_FAILED` | One or more `manifest.jsonc` fields failed validation. The detail lines name each field. Read [manifest.jsonc](/en/config/manifest/) for the expected shape. |
+| `Sync configuration is not valid JSON.` | `CONFIG_INVALID_JSON` | Fix the JSON syntax in `manifest.jsonc`. `//` and `/* */` comments are allowed; trailing commas are not. |
+| `Failed to read sync configuration.` | `CONFIG_READ_FAILED` | `manifest.jsonc` is missing or unreadable. Run `dotweave init` if the sync directory was never set up. |
+| `Global dotweave configuration is invalid.` | `GLOBAL_CONFIG_VALIDATION_FAILED` | `settings.jsonc` has a wrong `version` or an empty `activeProfile`. Read [settings.jsonc](/en/config/settings/). |
+| `Global dotweave configuration is not valid JSON.` | `GLOBAL_CONFIG_INVALID_JSON` | Fix the JSON syntax in `settings.jsonc`. |
+| `Failed to read global dotweave configuration.` | `GLOBAL_CONFIG_READ_FAILED` | `settings.jsonc` exists but cannot be read. Check file permissions. A missing file is not an error. |
+| `Unsupported dotweave config file.` | `CONFIG_JSON_UNSUPPORTED` | A `.json` file sits next to the expected `.jsonc` file. Remove or rename the `.json` file. |
+| `Config file version <n> is newer than this CLI supports (max: <m>).` | `CONFIG_NEWER_VERSION` | Another machine wrote a newer config. Upgrade Dotweave on this machine. |
+| `No migration path found for config version <n> → <n+1>.` | `CONFIG_MIGRATION_NOT_FOUND` | Upgrade Dotweave to a release that knows this migration step. |
+| `Failed to migrate config from version <n> to <n+1>.` | `CONFIG_MIGRATION_FAILED` | The migration threw. The original file is untouched until migration succeeds; restore from the `.v<n>.bak` backup if one was written. |
+| `Age configuration is missing from manifest.jsonc.` | `AGE_CONFIG_MISSING` | The manifest has no `age.recipients`. Run `dotweave init` to set up encryption. |
+
+## Repository format
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Repository format <n> is newer than this CLI supports (max: <m>).` | `REPO_FORMAT_NEWER` | A newer Dotweave migrated the repository. Upgrade this machine. |
+| `Repository format <n> is older than this CLI supports (min: <m>).` | `REPO_FORMAT_TOO_OLD` | Run an older Dotweave release to migrate the repository forward first, then upgrade again. |
+| `No repository format migration found for <n> → <n+1>.` | `REPO_FORMAT_MIGRATION_NOT_FOUND` | Upgrade Dotweave to a release that knows this migration step. |
+| `Failed to migrate repository format <n> → <n+1>.` | `REPO_FORMAT_MIGRATION_FAILED` | The migration threw partway through. Inspect the repository with `dotweave cd`, then use git to return it to a known state. |
+
+Read [Upgrade config and repository formats](/en/guides/upgrading/) for what each migration rewrites.
+
+## Tracking targets
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Target path is required.` | `TARGET_REQUIRED` | Pass a path, for example `dotweave track ~/.gitconfig`. |
+| `Sync target kind is required.` | `TARGET_KIND_REQUIRED` | The path does not exist yet. Pass `--kind file` or `--kind directory`. |
+| `Sync target kind does not match the path.` | `TARGET_KIND_MISMATCH` | `--kind` disagrees with what the path is. The detail lines report the actual kind. |
+| `Sync target type is not supported.` | `TARGET_UNSUPPORTED_TYPE` | Only regular files, symlinks, and directories can be tracked. |
+| `Sync target overlaps the dotweave sync directory.` | `TARGET_OVERLAPS_SYNC_DIR` | Choose a path outside the sync directory. Dotweave cannot mirror its own repository. |
+| `Sync target contains the configured age identity file.` | `TARGET_OVERLAPS_IDENTITY` | Never track `keys.txt`. Keep the private key outside every tracked path. |
+| `Sync target conflicts with an existing tracked entry.` | `TARGET_CONFLICT` | Either the local path is already tracked with a different `kind`, or the resolved `repoPath` collides. Change `--repo`, or untrack the existing entry. |
+| `Multiple tracked sync entries match: <target>` | `TARGET_CONFLICT` | The shorthand you passed is ambiguous. Use the full local path. |
+| `No tracked sync entry matches: <target>` | none | Nothing in the manifest matches. Check `dotweave status` for the tracked paths. |
+| `Local set target is not inside a tracked directory entry.` | `TARGET_NOT_TRACKED` | Track the parent directory first, then adjust the nested path. |
+| `Repository set target is not inside a tracked directory entry.` | `TARGET_NOT_TRACKED` | Use a repository path that sits under an existing tracked directory. |
+| `Sync set target does not exist.` | `TARGET_NOT_FOUND` | The explicit local path is not on disk. Use an existing path, or a repository path inside a tracked directory. |
+| `Sync set target is not a valid local or repository path.` | `INVALID_SET_TARGET` | Use an absolute path, a path relative to the current directory, or a repository path such as `.config/tool/file.json`. |
+
+## Paths and artifacts
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Sync target must stay inside the configured home root.` | `TARGET_OUTSIDE_ROOT` | Every tracked path must resolve inside your home directory. |
+| `Sync target resolves to the root directory, which cannot be tracked directly.` | `TARGET_ROOT_DISALLOWED` | Track a file or subdirectory inside your home directory, not the home directory itself. |
+| `Sync entry local path must stay inside HOME.` | `ENTRY_OUTSIDE_HOME` | A manifest entry resolves outside your home directory. On Windows this also happens across drive letters. |
+| `Sync entry local path cannot be the home directory itself.` | `ENTRY_ROOT_DISALLOWED` | Replace the entry with a file or subdirectory. |
+| `Repository path must be a relative POSIX path inside the repository root.` | `INVALID_REPO_PATH` | Use a relative path such as `.config/tool/settings.json`, with no `..` segment and no leading `/`. |
+| `Repository path must not use the reserved suffixes .dotweave.secret or .dotweave.symlink.` | `RESERVED_ARTIFACT_SUFFIX` | Rename the path so no segment ends with a reserved artifact suffix. |
+| `Multiple entries target the same repository path in manifest.jsonc.` | `DUPLICATE_PATHS` | Give each entry a unique `repoPath`, or remove one of them. |
+| `Duplicate local paths in manifest.jsonc.` | `DUPLICATE_PATHS` | Two entries resolve to the same local path. Remove the duplicate. |
+| `Local paths must not overlap in manifest.jsonc.` | `OVERLAPPING_PATHS` | Two entries partially overlap. A tracked directory with a tracked child is fine; a partial overlap is not. |
+| `File sync entry resolves to a directory in the repository.` | `FILE_ENTRY_RESOLVES_DIRECTORY` | The stored artifact disagrees with `kind`. Run `dotweave push`, or correct the repository. |
+| `Directory sync entry resolves to a file in the repository.` | `DIRECTORY_ENTRY_RESOLVES_FILE` | The stored artifact disagrees with `kind`. Run `dotweave push`, or correct the repository. |
+| `Directory sync entry is not stored as a directory in the repository.` | `DIRECTORY_ENTRY_NOT_DIRECTORY` | Remove the conflicting artifact from the repository, then push again. |
+| `Repository path is not managed by the current sync configuration.` | `UNMANAGED_SYNC_PATH` | A stray artifact exists under `profiles/`. Track its parent path, or delete the artifact. |
+| `Repository artifact is stored under the wrong profile directory.` | `REPO_PROFILE_MISMATCH` | The artifact's profile directory disagrees with the entry's `profiles`. Move or delete the artifact, then push again. |
+| `Repository contains an unsupported plain artifact type.` | `UNSUPPORTED_REPO_ENTRY` | Something other than a file or symlink is stored under `profiles/`. Delete it. |
+
+## Profiles
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Unknown profile '<name>'.` | `UNKNOWN_PROFILE` | Register it with `dotweave profile add <name>`, or use a name that already exists. |
+| `Cannot add the implicit default profile.` | `DEFAULT_PROFILE_IMPLICIT` | `default` always exists. Do not register it. |
+| `Cannot remove the implicit default profile.` | `DEFAULT_PROFILE_IMPLICIT` | `default` cannot be removed. |
+| `Profile '<name>' already exists.` | `PROFILE_ALREADY_EXISTS` | Choose a different name. |
+| `Cannot remove active profile '<name>'.` | `PROFILE_ACTIVE` | Switch away first with `dotweave profile use default`, or clear the selection with `dotweave profile use`. |
+| `Cannot remove profile '<name>' because it is still referenced by <n> sync entries.` | `PROFILE_IN_USE` | The detail lines list every referencing entry. Reassign or clear those `profiles` values first. |
+| `Profile 'default' is implicit and must not be listed in manifest profiles.` | `INVALID_PROFILE_REGISTRY` | Remove `default` from the `profiles` array. |
+| `Duplicate profile '<name>' in manifest.` | `DUPLICATE_PROFILE` | Remove the repeated name from the `profiles` array. |
+| `Profile name contains unsupported characters.` | `INVALID_PROFILE_NAME` | Use letters, numbers, dots, underscores, or hyphens, starting with a letter or number. |
+| `Profile name conflicts with the reserved profile artifact directory.` | `INVALID_PROFILE_NAME` | `profiles` is reserved. Pick another name. |
+| `Profile name must not be empty.` | `INVALID_PROFILE_NAME` | Pass a name such as `work`. |
+
+## Secrets and age
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Age private key cannot be empty.` | `AGE_IDENTITY_INVALID` | The key file or prompt answer was blank. Supply a key beginning with `AGE-SECRET-KEY-`. |
+| `Invalid age private key.` | `AGE_IDENTITY_INVALID` | The key could not be parsed. Check for truncation or extra whitespace. |
+| `No age identities were found in the configured identity file.` | `AGE_IDENTITY_EMPTY` | `keys.txt` holds only blank lines and `#` comments. Add a key, or run `dotweave init` to generate one. |
+| `Failed to read age recipients from the configured identity file.` | `AGE_RECIPIENT_READ_FAILED` | At least one line in `keys.txt` is not a valid age private key. |
+| `Failed to decrypt a secret artifact.` | `AGE_DECRYPT_FAILED` | Your identity does not match any recipient of that artifact, or the data is corrupt. |
+| `Failed to decrypt a secret repository artifact.` | `SECRET_ARTIFACT_DECRYPT_FAILED` | Same cause, reported for one named artifact. The detail lines give its repository path. |
+| `Secret sync path is stored as a plain artifact in the repository.` | `SECRET_STORED_PLAIN` | The entry is `secret` but the stored artifact is unencrypted. Run `dotweave push` to re-encrypt it. |
+| `Plain sync path is stored as a secret artifact in the repository.` | `PLAIN_STORED_SECRET` | The entry is not `secret` but an encrypted artifact exists. Set the mode back to `secret`, or delete the artifact and push. |
+| `Secret repository artifacts must be regular files, not symlinks.` | `SECRET_ARTIFACT_SYMLINK` | Replace the symlink with the real encrypted file. |
+| `Symlink repository artifacts must be regular metadata files.` | `SYMLINK_ARTIFACT_NOT_FILE` | A `.dotweave.symlink` artifact is not a regular file. Delete it and push again. |
+| `Secret sync paths must be regular files, not symlinks: <path>` | none | A local path in `secret` mode is a symlink. Track the real file, or change the mode. |
+
+## Flags
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Invalid --<flag> platform value.` | `INVALID_PLATFORM_FLAG` | Use `--<flag> value` or `--<flag> platform=value`, where the platform is `default`, `win`, `mac`, `linux`, or `wsl`. `--local` requires an explicit platform. |
+| `Duplicate --<flag> platform value.` | `DUPLICATE_PLATFORM_FLAG` | The same platform key was passed twice for one flag. |
+| `Invalid --<flag> mode '<value>'.` | `INVALID_SYNC_MODE` | Use `normal`, `secret`, or `ignore`. |
+| `Invalid --<flag> permission '<value>'.` | `INVALID_PERMISSION` | Use a four-character octal string such as `0600` or `0755`. |
+| `The --repo flag can only be used with a single sync target.` | `REPO_PATH_TARGET_COUNT` | Track one target at a time when overriding its repository path. |
+| `Pull confirmation requires an interactive terminal.` | none | Re-run as `dotweave pull -y`, or use `--dry-run` to preview only. |
+
+## Skills
+
+| Message | Code | How to fix it |
+| --- | --- | --- |
+| `Skills root must be a directory.` | `SKILL_ROOT_NOT_DIRECTORY` | Create the skills directory first, then pass its path. |
+| `Dotweave skill already exists.` | `SKILL_ALREADY_EXISTS` | Pass `--force` to overwrite `<directory>/dotweave/SKILL.md`. |
+
+## Related pages
+
+A few messages report an internal invariant rather than something you can fix, including `Duplicate repository artifact was generated.`, `Repository artifact path is invalid.`, and `Duplicate sync path generated for <path>`. Those indicate a bug; report them at [the issue tracker](https://github.com/tinyrack-net/dotweave/issues) with the command you ran.
+
+Read [Troubleshoot a broken sync](/en/guides/troubleshooting/) for a diagnosis path, or [`dotweave doctor`](/en/reference/doctor/) for the checks that find most of these before a command does.

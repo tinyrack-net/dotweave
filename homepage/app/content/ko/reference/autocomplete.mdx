@@ -1,58 +1,55 @@
 ---
 title: "dotweave autocomplete"
-description: "셸 탭 자동완성을 설정해요."
+description: bash, zsh, fish, PowerShell용 셸 자동완성 스크립트를 출력해요.
 section: reference
 order: 9
 ---
 
-셸 자동완성 스크립트를 출력해요.
-
-eval/source 기반 셸 설정에서 사용할 수 있는 셸별 자동완성 스크립트를 생성해요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave autocomplete <shell>
+dotweave autocomplete bash
+dotweave autocomplete fish
+dotweave autocomplete powershell
+dotweave autocomplete zsh
 ```
 
-## Subcommands
+각 서브커맨드는 자동완성 스크립트를 stdout으로 출력하고, `--help` 말고 다른 플래그는 받지 않아요. 어느 것도 설치까지 해 주지는 않으니 스크립트를 어디서 평가하거나 저장할지는 직접 정하세요.
 
-| Subcommand                  | Description                    |
-| --------------------------- | ------------------------------ |
-| `dotweave autocomplete bash` | Bash용 자동완성 스크립트를 출력해요. |
-| `dotweave autocomplete zsh`  | Zsh용 자동완성 스크립트를 출력해요.  |
-| `dotweave autocomplete fish` | Fish용 자동완성 스크립트를 출력해요. |
-| `dotweave autocomplete powershell` | PowerShell용 자동완성 스크립트를 출력해요. |
+스크립트가 후보를 직접 계산하지는 않아요. 숨겨진 `dotweave __complete <input>...` 경로를 호출하면 후보마다 `completion<TAB>brief` 형태로 한 줄씩 출력하고, 셸이 `COMP_LINE` 환경 변수를 내보내면 그 값에서 입력 단어를 읽어요. 명령 alias는 자동완성 출력에서 빠지기 때문에 정식 경로 이름만 후보로 나와요.
 
-## Examples
+## autocomplete bash
 
-**Bash**에서 자동완성을 설정해요 (`~/.bashrc`에 추가):
+bash 스크립트는 자동완성 함수를 `complete -o default -o nospace`로 등록해요. 그래서 맞는 후보가 없으면 bash가 파일 이름 자동완성으로 넘어가고, 자동완성이 공백을 임의로 덧붙이지 않아요.
 
 ```bash
 eval "$(dotweave autocomplete bash)"
 ```
 
-**Zsh**에서 자동완성을 설정해요 (`~/.zshrc`에 추가):
+## autocomplete zsh
+
+zsh 스크립트는 세션에 `compdef`가 없으면 `compinit`을 먼저 불러오고, 다른 설정이 `dotweave` 바인딩을 가져갔을 때 자동완성을 다시 등록하는 `precmd` 훅을 설치해요.
 
 ```bash
 eval "$(dotweave autocomplete zsh)"
 ```
 
-현재 **Fish** 세션에서 자동완성을 설정해요:
+## autocomplete fish
+
+fish 스크립트는 자동완성 함수를 정의한 뒤 `complete -c dotweave -f -a`로 연결해요. 이 설정은 fish가 기본으로 제안하는 파일 후보를 막아요.
 
 ```fish
 dotweave autocomplete fish | source
 ```
 
-**Fish** 자동완성을 계속 사용하도록 설정해요:
+## autocomplete powershell
 
-```fish
-mkdir -p ~/.config/fish/completions
-dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
-```
-
-**PowerShell**에서 자동완성을 설정해요 (PowerShell 프로필에 추가):
+PowerShell 스크립트는 `dotweave` 명령에 대해 `Register-ArgumentCompleter -Native`를 호출하고, 각 후보의 brief를 툴팁으로 함께 돌려줘요.
 
 ```powershell
 dotweave autocomplete powershell | Invoke-Expression
 ```
+
+## 관련 명령
+
+셸 프로필에 넣어 계속 쓰는 방법은 [셸 자동완성 설정](/ko/guides/shell-autocomplete/), 자동완성이 경로 입력을 도와주는 명령은 [`dotweave track`](/ko/reference/track/)을 확인하세요.

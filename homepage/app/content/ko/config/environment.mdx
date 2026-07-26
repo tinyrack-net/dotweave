@@ -1,0 +1,54 @@
+---
+title: 환경 변수와 경로
+description: DOTWEAVE_HOME, XDG_CONFIG_HOME, Windows AppData 폴백이 dotweave 데이터 저장 위치를 어떻게 결정하는지 정리해요.
+section: config
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 해석 순서
+
+dotweave는 자기가 소유하는 모든 파일을 dotweave 홈 디렉터리 하나에 모아 둬요. `settings.jsonc`, age identity 파일인 `keys.txt`, sync 디렉터리 `repository`가 모두 그 안에 있어요.
+
+값을 만들어 내는 첫 번째 규칙에서 해석이 멈춰요.
+
+1. `DOTWEAVE_HOME`이 설정되어 있으면 모든 플랫폼에서 그 값을 그대로 써요.
+2. Windows에서는 `%APPDATA%\dotweave`, 다음 `%LOCALAPPDATA%\dotweave`, 다음 `%USERPROFILE%\AppData\Roaming\dotweave`, 마지막으로 `<os home>\AppData\Roaming\dotweave` 순서예요.
+3. macOS, Linux, WSL에서는 `$XDG_CONFIG_HOME/dotweave`를 쓰고, 없으면 `$HOME/.config/dotweave`로 넘어가요.
+
+빈 문자열이나 공백만 들어 있는 환경 변수는 설정되지 않은 것으로 취급해요.
+
+## 변수
+
+| 변수 | 읽는 플랫폼 | 역할 |
+| --- | --- | --- |
+| `DOTWEAVE_HOME` | 전체 | dotweave 홈 디렉터리를 직접 지정해요. |
+| `HOME` | 전체 | `localPath`의 `~`를 해석하는 기준이고, 모든 추적 항목이 벗어날 수 없는 경계예요. |
+| `XDG_CONFIG_HOME` | macOS, Linux, WSL | dotweave 홈 디렉터리의 상위 경로로 `~/.config`를 대체해요. `$XDG_CONFIG_HOME/...` 형태로 쓴 `localPath`에서도 확장돼요. |
+| `APPDATA` | Windows | dotweave 홈 디렉터리 상위 경로의 첫 번째 선택이에요. |
+| `LOCALAPPDATA` | Windows | `APPDATA`가 없을 때 사용해요. |
+| `USERPROFILE` | Windows | AppData 변수가 둘 다 없을 때 사용하고, Windows의 홈 디렉터리 역할도 해요. |
+| `SHELL` | macOS, Linux, WSL | `dotweave cd`가 실행할 셸이에요. 없으면 `/bin/sh`을 써요. |
+| `COMSPEC` | Windows | `dotweave cd`가 실행할 셸이에요. 없으면 `cmd.exe`를 써요. |
+| `WSL_DISTRO_NAME` | WSL | 값이 있으면 `wsl` 플랫폼 키를 선택해요. |
+| `WSL_INTEROP` | WSL | `wsl` 플랫폼 키 판별에 쓰는 보조 신호예요. |
+
+두 WSL 변수 중 하나라도 설정되어 있거나, 보고된 OS 릴리스 문자열에 `microsoft`가 들어 있으면 `wsl` 플랫폼 키로 판별해요. 이 키가 무엇을 바꾸는지는 [플랫폼별 경로](/ko/concepts/platform-paths/)에서 확인하세요.
+
+## Windows 폴백
+
+Windows에서는 환경 변수 이름을 대소문자 구분 없이 찾기 때문에 `%AppData%`와 `%APPDATA%`가 같은 값으로 해석돼요. 다른 플랫폼에서는 대소문자를 구분해요.
+
+`USERPROFILE` 기반 폴백은 `AppData\Roaming`을 직접 덧붙여요. 서비스 계정이나 컨테이너처럼 환경 변수가 최소한만 설정된 곳에서도 명령이 실패하지 않고 쓸 수 있는 경로가 나오도록 하기 위한 장치예요.
+
+`localPath`에는 `%VARIABLE%` 참조도 쓸 수 있고, dotweave가 같은 환경에서 확장해요. `localPath` 안에서 정의되지 않은 변수를 참조하면 빈 문자열로 확장되지 않고 명령이 실패해요.
+
+<TRAlert.Root variant="warning">
+`DOTWEAVE_HOME`을 바꾸면 dotweave가 다른 sync 디렉터리와 identity 파일을 바라봐요. 기존 파일이 옮겨지지는 않아요. 디렉터리를 직접 옮기거나, 새 위치에서 `dotweave init`을 다시 실행하세요.
+</TRAlert.Root>
+
+## 관련 문서
+
+이 경로를 사용하는 필드는 [manifest.jsonc](/ko/config/manifest/)에서 확인하고, 해석된 디렉터리 안에 dotweave가 무엇을 쓰는지는 [디렉터리와 저장소 구조](/ko/concepts/repository-layout/)에서 확인하세요.

@@ -1,79 +1,56 @@
 ---
-title: シェル補完
-description: シェルでdotweaveのタブ補完を設定する方法。
+title: シェル補完を有効にする
+description: Dotweave の bash、zsh、fish、PowerShell 向けの補完スクリプトを導入します。
 section: guides
-order: 8
+order: 3
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
+タブ補完はコマンドとフラグを提案し、`dotweave track` ではファイルシステムのパスも提案します。このガイドでは、生成された補完スクリプトを bash、zsh、fish、PowerShell のいずれかに組み込みます。Tab を押すたびにスクリプトが `dotweave` バイナリを名前で呼び出すため、dotweave がすでに `PATH` にあることが前提です。
 
+## 1. 補完スクリプトを出力する
 
-タブ補完を使えば、ドキュメントを開かなくてもコマンド、フラグ、引数を素早く確認できます。dotweaveは**Bash**、**Zsh**、**Fish**、**PowerShell**に対応しています。
+`dotweave autocomplete <shell>` はスクリプトを stdout に出力し、インストールは何も行いません。読み込む内容を確かめるため、まず一度実行してください。
 
-## Bash
+```bash
+dotweave autocomplete bash
+```
 
-`~/.bashrc`に以下の行を追加します：
+指定できるシェル名は `bash`、`zsh`、`fish`、`powershell` です。bash のスクリプトは最後に `complete -o default -o nospace` で補完を登録します。そのためディレクトリの候補に不要な末尾スペースが付かず、そのまま続けて入力できます。zsh のスクリプトはさらに `precmd` フックを設置し、プロンプトごとに補完を再登録します。あとから走る `compinit` が登録を静かに置き換えてしまうのを防ぎます。
+
+補完が扱うのはコマンドとフラグです。`-y` のような 1 文字のフラグ別名は意図的に出力から除かれ、長い形式だけが提案されます。
+
+## 2. シェルのプロファイルから読み込む
+
+各シェルの起動ファイルでスクリプトを評価すると、新しいセッションごとに補完が使える状態になります。
+
+bash では `~/.bashrc` に次の行を追加します。
 
 ```bash
 eval "$(dotweave autocomplete bash)"
 ```
 
-シェルを再読み込みします：
-
-```bash
-source ~/.bashrc
-```
-
-## Zsh
-
-`~/.zshrc`に以下の行を追加します：
+zsh では `~/.zshrc` に次の行を追加します。
 
 ```bash
 eval "$(dotweave autocomplete zsh)"
 ```
 
-シェルを再読み込みします：
-
-```bash
-source ~/.zshrc
-```
-
-## Fish
-
-現在のセッションで使う場合は以下を実行します：
+fish では `~/.config/fish/config.fish` に次の行を追加します。
 
 ```fish
 dotweave autocomplete fish | source
 ```
 
-永続的に使う場合は補完ファイルを書き込みます：
-
-```fish
-mkdir -p ~/.config/fish/completions
-dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
-```
-
-## PowerShell
-
-PowerShellプロファイル（`$PROFILE`）に以下の行を追加します：
+PowerShell では `$PROFILE` が指すファイルに次の行を追加します。
 
 ```powershell
-dotweave autocomplete powershell | Invoke-Expression
+dotweave autocomplete powershell | Out-String | Invoke-Expression
 ```
 
-プロファイルを再読み込みします：
+PowerShell で `Out-String` が必要なのは、スクリプトが複数行にわたるからです。行をそのまま `Invoke-Expression` に渡すと 1 行ずつ評価され、閉じていないブロックで失敗します。
 
-```powershell
-. $PROFILE
-```
+## 結果を確認する
 
-<TRAlert.Root variant="success">
-eval/sourceの行を追加したら、新しいターミナルを開く（または設定ファイルをsourceする）して、
-`dotweave `の後にTabキーを押してみてください。利用可能なコマンドの一覧が表示されるはずです。
-</TRAlert.Root>
+起動ファイルが読み込まれるように新しいシェルを開き、`dotweave pu` と入力して Tab を押します。シェルが `pull` と `push` を候補として表示します。
 
-<TRAlert.Root variant="neutral">
-`volta`や`fnm`などのバージョンマネージャーでdotweaveをインストールした場合は、
-eval/sourceの行が実行される前に`dotweave`バイナリが`PATH`に含まれていることを確認してください。
-</TRAlert.Root>
-
+サブコマンドの一覧は [`dotweave autocomplete`](/ja/reference/autocomplete/)、パス補完が効くコマンドは [`dotweave track`](/ja/reference/track/)を参照してください。

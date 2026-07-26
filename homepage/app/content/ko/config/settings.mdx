@@ -1,0 +1,50 @@
+---
+title: settings.jsonc
+description: 어떤 sync 프로필이 활성 상태인지 기록하는 기기별 설정 파일이에요.
+section: config
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 위치와 버전
+
+`settings.jsonc`는 dotweave 홈 디렉터리 바로 아래, `keys.txt`와 sync 디렉터리 `repository` 옆에 있어요. sync 디렉터리 안에 있지 않기 때문에 커밋되지 않아요.
+
+현재 버전은 `3`이에요. 버전 `2` 파일은 dotweave가 제자리에서 마이그레이션하고, 그전에 `settings.jsonc.v2.bak` 백업을 먼저 써요. 그 밖의 버전이면 명령이 실패해요.
+
+`settings.jsonc`가 없는 것은 오류가 아니에요. 활성 프로필이 없는 상태로 보고 암묵적인 `default` 프로필을 사용해요.
+
+파일 형식은 JSONC라서 `//`와 `/* */` 주석을 쓸 수 있어요. 옆에 `settings.json` 파일이 있으면 읽지 않고 거부해요.
+
+## 필드
+
+| 필드 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `version` | `3`, 필수 | 스키마 버전이에요. 마이그레이션 후에는 정확히 `3`이어야 해요. |
+| `activeProfile` | `string`, 선택 | 이 기기가 사용하는 프로필 이름이에요. 앞뒤 공백은 잘리고, 값이 있다면 비어 있으면 안 돼요. 필드를 생략하면 `default` 프로필을 써요. |
+
+`activeProfile`은 `manifest.jsonc`에 등록된 프로필이거나 문자열 `default`여야 해요. dotweave는 이 파일을 읽는 시점이 아니라 sync 설정을 불러오는 시점에 참조를 검증해요.
+
+## 예시
+
+```jsonc
+{
+  // 이 노트북은 work 프로필을 동기화해요.
+  "activeProfile": "work",
+  "version": 3
+}
+```
+
+<TRAlert.Root variant="info">
+dotweave가 `activeProfile`을 쓰는 경로는 `dotweave profile use` 하나뿐이에요. 인자 없이 `dotweave profile use`를 실행하면 필드가 제거돼요.
+</TRAlert.Root>
+
+## 오류
+
+파일을 파싱할 수 없거나, `version`이 틀리거나, `activeProfile`이 비어 있으면 어떤 파일도 건드리기 전에 명령이 멈춰요. 정확한 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 설정 파일 절에서 확인하세요.
+
+## 관련 문서
+
+활성 프로필이 무엇을 바꾸는지는 [프로필](/ko/concepts/profiles/), 이 파일을 쓰는 명령은 [`dotweave profile`](/ko/reference/profile/)에서 확인하세요.

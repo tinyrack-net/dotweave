@@ -27,14 +27,31 @@ describe("Dotweave documentation contract", () => {
   it("builds 66 localized routes with stable locale alternates", () => {
     const manifest = loadDocsManifest(config, { root });
 
-    expect(manifest.pages).toHaveLength(66);
-    expect(manifest.redirects).toEqual({ "/": "/en/" });
+    expect(manifest.pages).toHaveLength(99);
+    expect(manifest.redirects).toEqual({
+      "/": "/en/",
+      ...Object.fromEntries(
+        ["en", "ko", "ja"].flatMap((locale) =>
+          Object.entries({
+            "directory-structure": "repository-layout",
+            "how-it-works": "how-it-works",
+            "platform-specific-paths": "platform-paths",
+            profiles: "profiles",
+            "sync-modes": "sync-modes",
+            "syncing-secrets": "secrets",
+          }).map(([from, to]) => [
+            `/${locale}/guides/${from}`,
+            `/${locale}/concepts/${to}`,
+          ]),
+        ),
+      ),
+    });
     expect(manifest.header?.version).toBeUndefined();
     expect(manifest.header?.title).toBe(true);
 
     for (const locale of ["en", "ko", "ja"]) {
       const pages = manifest.pages.filter((page) => page.locale === locale);
-      expect(pages).toHaveLength(22);
+      expect(pages).toHaveLength(33);
       expect(pages.find((page) => page.path === `/${locale}`)?.layout).toBe(
         "splash",
       );
@@ -98,14 +115,20 @@ describe("Dotweave documentation contract", () => {
       )?.sectionLabel;
 
     expect(localized("en", "overview")).toBe("Overview");
-    expect(localized("ko", "overview")).toBe("시작하기");
-    expect(localized("ja", "overview")).toBe("はじめに");
+    expect(localized("ko", "overview")).toBe("개요");
+    expect(localized("ja", "overview")).toBe("概要");
+    expect(localized("en", "concepts")).toBe("Concepts");
+    expect(localized("ko", "concepts")).toBe("개념");
+    expect(localized("ja", "concepts")).toBe("コンセプト");
     expect(localized("en", "guides")).toBe("Guides");
     expect(localized("ko", "guides")).toBe("가이드");
     expect(localized("ja", "guides")).toBe("ガイド");
     expect(localized("en", "reference")).toBe("Command Reference");
     expect(localized("ko", "reference")).toBe("명령어 레퍼런스");
     expect(localized("ja", "reference")).toBe("コマンドリファレンス");
+    expect(localized("en", "config")).toBe("Configuration");
+    expect(localized("ko", "config")).toBe("설정 레퍼런스");
+    expect(localized("ja", "config")).toBe("設定リファレンス");
   });
 
   it("keeps every localized internal content link valid", async () => {

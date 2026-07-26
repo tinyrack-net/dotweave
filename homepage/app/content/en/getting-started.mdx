@@ -1,157 +1,106 @@
 ---
-title: Getting Started
-description: Install dotweave and set up your first sync in a few minutes.
+title: Set up your first sync
+description: Initialize the sync directory, track your first files, push them, and publish the repository with git.
 section: overview
-order: 2
+order: 3
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
-import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
-## Installation
+Go from nothing to a published sync repository. By the end, your tracked config files are mirrored into a git repository you can clone on another machine. You need the `dotweave` CLI installed and `git` on your `PATH`.
 
-<TRTabs.Root defaultValue="windows">
-<TRTabs.List aria-label="Installation method">
-<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
-<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
-<TRTabs.Indicator />
-</TRTabs.List>
-<TRTabs.Panel value="windows">
-
-```powershell
-winget install tinyrack.dotweave
-```
-
-</TRTabs.Panel>
-<TRTabs.Panel value="macos-linux">
-
-```bash
-brew install tinyrack-net/tap/dotweave
-```
-
-</TRTabs.Panel>
-</TRTabs.Root>
-
----
-
-## Starting Fresh
-
-If this is your first time using dotweave, follow these steps to create a new sync directory.
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**Initialize**
-
-Create a new sync directory with a fresh age key for encrypting secrets.
+## 1. Initialize the sync directory
 
 ```bash
 dotweave init
 ```
 
-This sets up the dotweave app-data directory with a Git repository and an age identity.
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
+```
 
-</TRSteps.Item>
-<TRSteps.Item>
+This creates a git repository under the dotweave home directory and generates an age identity at `keys.txt` for encrypting secrets.
 
-**Track your files**
+## 2. Track your first files
 
-Tell dotweave which files to sync. For example:
+Tracking registers a path in `manifest.jsonc`. Nothing is copied yet.
 
 ```bash
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
+dotweave track ~/.gitconfig
 dotweave track ~/.config/nvim
 ```
 
-For sensitive files like SSH keys, use secret mode:
-
-```bash
-dotweave track --mode secret ~/.ssh/config
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Push to the sync directory**
-
-Copy your tracked files into the sync directory:
+For anything with credentials in it, add `--mode secret` so the content is encrypted before it reaches the repository:
 
 ```bash
+dotweave track ~/.ssh/config --mode secret --permission 0600
+```
+
+## 3. Push into the sync directory
+
+Check what would happen first, then apply it:
+
+```bash
+dotweave status
 dotweave push
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
 
-**Commit and push with Git**
+## 4. Publish with git
 
-Open the sync directory and push to a remote:
+`push` only wrote files. Committing and publishing are separate steps you run yourself:
 
 ```bash
 dotweave cd
 git add -A && git commit -m "Initial sync"
 git remote add origin <your-repo-url>
 git push -u origin main
+exit
 ```
 
-</TRSteps.Item>
-</TRSteps.Root>
+`dotweave cd` opens a child shell rooted at the sync directory. `exit` returns you to where you were.
 
-<TRAlert.Root variant="success">
-  After setting up, check out the [Directory Structure](/en/guides/directory-structure/) guide to see where dotweave stores your config and synced files.
+<TRAlert.Root variant="warning">
+Back up `keys.txt` from the dotweave home directory somewhere safe now. It is never committed and never synced, and without it your encrypted files cannot be read on another machine.
 </TRAlert.Root>
 
----
+## Check the result
 
-## Connecting an Existing Sync Directory
+Run `dotweave status` again. Both directions should be clean:
 
-On a new machine, clone your existing sync directory:
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-<TRSteps.Root>
-<TRSteps.Item>
+Push changes (repository)
+  No push changes
 
-**Clone and initialize**
-
-```bash
-dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+Pull changes (local)
+  No pull changes
 ```
 
-This clones the repository into the dotweave app-data directory under `repository/`. When connecting an existing sync repository, you must provide the same age private key used to decrypt its secret files:
+If `status` still lists push changes, run `dotweave push` again and read what it reports. If a tracked path is missing, `dotweave doctor` names it.
 
-```bash
-dotweave init <your-repo-url>
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Pull your files**
-
-Restore all tracked files to their local paths:
-
-```bash
-dotweave pull
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="info">
-  If your sync directory contains encrypted secrets, you need the same age private key on all machines. See [Syncing Secrets](/en/guides/syncing-secrets/) for details.
-</TRAlert.Root>
-
----
-
-## What's Next?
-
-Now that you're set up, explore the guides:
-
-- [Directory Structure](/en/guides/directory-structure/) — understand where dotweave stores files
-- [Tracking Files](/en/guides/tracking-files/) — learn more about tracking options
-- [Sync Modes](/en/guides/sync-modes/) — normal, secret, and ignore modes
-- [Syncing Secrets](/en/guides/syncing-secrets/) — encrypt sensitive files with age
-
-
+Continue with [Set up a second device](/en/second-device/) to restore this configuration elsewhere, or read [Directory and repository layout](/en/concepts/repository-layout/) to see what `push` just wrote.

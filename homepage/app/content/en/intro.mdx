@@ -1,48 +1,64 @@
 ---
-title: Dotweave
-description: A CLI tool that syncs your dotfiles with Git.
+title: Introduction
+description: What Dotweave does, how it differs from symlink and template based dotfile managers, and what it deliberately leaves to git.
 section: overview
 order: 1
 ---
 
-`Dotweave` is a **CLI tool that syncs your development environment config files (dotfiles) with Git**. Keep a consistent setup across multiple machines.
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
----
 
-## Why Dotweave?
+## Home is the source of truth
 
-Tools like `stow` and `chezmoi` treat the repository as the **source of truth** — you edit files through the tool, and it manages the repository for you. `stow` creates symlinks from your home directory into a repository, while `chezmoi` requires you to edit through `chezmoi edit` before applying changes locally. These approaches keep the repository state clear, but they add friction to your daily editing workflow.
+Dotweave mirrors configuration files from your home directory into a git repository, and back again on another machine. Your local files are what matters; the repository is a derived copy.
 
-Dotweave takes the opposite approach. **Your local files are always the source of truth.** The sync directory is just a mirror. Edit `~/.zshrc` directly in your favorite editor — no special commands needed. When you're ready to sync, run `dotweave push` to copy your local files into the sync directory, then use Git to share them.
+That is the opposite of how symlink and template based managers work. `stow` replaces files in your home directory with symlinks into a repository. `chezmoi` keeps the canonical copy in its own store and asks you to edit through it. Both make the repository authoritative, which means your editor, your tools, and your muscle memory have to accommodate the tool.
 
----
+With Dotweave you edit `~/.zshrc` in your editor, with no wrapper command and no symlink. When you want to publish the change, you run `dotweave push` and then commit with git.
 
-## Key Features
+The cost of that choice is that nothing is automatic. There is no daemon and no file watcher, so a change is not shared until you run a command.
 
-- **Track any file or directory** under your home directory
-- **Push and pull** between your local files and the sync directory
-- **Encrypt secrets** with [age](https://age-encryption.org/) — SSH keys, API tokens, and other sensitive files stay encrypted in the repository
-- **Profiles** let you maintain different configs for work, personal, or per-machine setups
-- **Platform-specific paths** handle cross-OS differences (Linux, macOS, Windows, WSL)
-- **No symlinks, no special editors** — your workflow stays exactly the same
+## What Dotweave does not do
 
----
+Dotweave does not run git for you. `push` and `pull` only move files between your home directory and the sync directory. Committing, pulling, and pushing to a remote are yours to run, and `dotweave cd` opens a shell in the right place to do it.
 
-## How It Looks
+Dotweave does not merge. When two machines change the same file, that is a git divergence in the sync repository and you resolve it with git.
+
+Dotweave does not replace your files with symlinks, does not require a special editor, and does not need an external `age` binary — encryption is built into the CLI.
+
+It does need `git` on your `PATH`.
+
+## A minimal session
 
 ```bash
-# Track a config file
-dotweave track ~/.config/starship.toml
-
-# Push local changes to the sync directory
+dotweave init
+dotweave track ~/.gitconfig
+dotweave track ~/.ssh/config --mode secret
 dotweave push
+```
 
-# On another machine, pull to restore
+At that point `~/.gitconfig` is mirrored as a plain file and `~/.ssh/config` is mirrored as age ciphertext. To publish, open the sync directory and use git:
+
+```bash
+dotweave cd
+git add -A && git commit -m "Initial sync"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+On the next machine, clone the repository with your age key and restore:
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
 dotweave pull
 ```
 
----
+<TRAlert.Root variant="info">
+The age private key is never committed and never synced. You carry it to each machine yourself.
+</TRAlert.Root>
 
-## Next Steps
+## Implementation and reference
 
-Head to [Getting Started](/en/getting-started/) to install dotweave and set up your first sync.
+The two-snapshot model behind every command is described in [How syncing works](/en/concepts/how-it-works/), and the files Dotweave creates in [Directory and repository layout](/en/concepts/repository-layout/).
+
+Read [Install Dotweave](/en/install/) to get the CLI, or [How syncing works](/en/concepts/how-it-works/) first if you would rather understand the model before running anything.

@@ -13,14 +13,25 @@ type DotweaveHomeProps = {
   tagline: string;
 };
 
-const terminalSession = `❯ dotweave track ~/.zshrc ~/.gitconfig
-✓ Tracking .zshrc .gitconfig
+/** Transcribed from a real session. Keep it in step with the CLI's output. */
+const terminalSession = `❯ dotweave track ~/.gitconfig
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
 
 ❯ dotweave push
-✓ .zshrc .gitconfig .vimrc synced
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
 
 ❯ dotweave pull
-✓ All configs restored
+✔ Pull complete
+  updated: 1 paths updated
+  removed: 0 paths removed
 
 ❯`;
 
