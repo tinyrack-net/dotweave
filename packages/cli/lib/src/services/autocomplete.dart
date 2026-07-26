@@ -6,7 +6,7 @@
 // escape as `\\t`/`\\n`.
 
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/env.dart';
+import 'package:dotweave/src/util/env.dart';
 
 const String _completionFunctionName = '__dotweave_complete';
 const String _ensureFunctionName = '__dotweave_ensure_completion';

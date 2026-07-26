@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/file_mode.dart';
-import 'package:dotweave/src/lib/posix_chmod.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/file_mode.dart';
+import 'package:dotweave/src/util/posix_chmod.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

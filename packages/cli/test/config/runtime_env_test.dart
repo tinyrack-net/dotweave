@@ -1,6 +1,6 @@
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
-import 'package:dotweave/src/lib/env.dart';
+import 'package:dotweave/src/util/env.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

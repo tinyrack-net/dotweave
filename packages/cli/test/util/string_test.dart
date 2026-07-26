@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/string.dart';
+import 'package:dotweave/src/util/string.dart';
 import 'package:test/test.dart';
 
 void main() {

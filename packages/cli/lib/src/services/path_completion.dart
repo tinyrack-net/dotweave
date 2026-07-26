@@ -7,10 +7,10 @@
 
 import 'dart:io';
 
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/fs_errors.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/env.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/fs_errors.dart';
 import 'package:path/path.dart' as p;
 
 const String _homePrefix = '~';

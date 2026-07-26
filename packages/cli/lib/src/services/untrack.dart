@@ -1,14 +1,14 @@
 import 'dart:io';
 
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/services/config_file.dart';
 import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/services/sync_paths.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/untrack.ts`: removal of a tracked entry from the

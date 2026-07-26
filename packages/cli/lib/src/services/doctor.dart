@@ -1,10 +1,10 @@
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/pull_apply.dart';
 import 'package:dotweave/src/services/repo_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/git.dart';
 
 // Mirror of `services/doctor.ts`: environment diagnostics over the sync
 // repository, configuration, age identity, and tracked local paths.

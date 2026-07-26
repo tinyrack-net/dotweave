@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:dotweave/src/lib/content.dart';
+import 'package:dotweave/src/util/content.dart';
 import 'package:test/test.dart';
 
 Uint8List bytes(Object value) {

@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
-import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/string.dart';
+import 'package:dotweave/src/util/env.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/string.dart';
 
 /// Mirror of the TS `ShellCommand` readonly object.
 class ShellCommand {

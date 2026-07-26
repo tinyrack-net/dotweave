@@ -1,8 +1,8 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/file_mode.dart';
 import 'package:dotweave/src/services/track.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/file_mode.dart';
 
 // Mirror of `cli/platform-flags.ts`: parsing variadic CLI flag values like
 // `--mode secret`, `--mode win=ignore`, `--permission linux=0755`, or

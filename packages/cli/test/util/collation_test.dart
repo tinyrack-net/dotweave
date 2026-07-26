@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/collation.dart';
+import 'package:dotweave/src/util/collation.dart';
 import 'package:test/test.dart';
 
 void main() {

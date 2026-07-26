@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/validation.dart';
+import 'package:dotweave/src/util/validation.dart';
 import 'package:test/test.dart';
 
 void main() {

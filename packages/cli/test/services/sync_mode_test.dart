@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/services/sync_mode.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 import 'package:test/test.dart';
 
 String nativePath(String value) {

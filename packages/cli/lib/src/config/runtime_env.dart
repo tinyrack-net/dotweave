@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/xdg.dart';
-import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/lib/string.dart';
+import 'package:dotweave/src/util/env.dart';
+import 'package:dotweave/src/util/string.dart';
 
 /// Mirrors NodeJS `os.platform()` for the values dotweave distinguishes.
 String _osPlatform() {

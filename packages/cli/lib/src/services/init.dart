@@ -5,15 +5,15 @@ import 'package:dotweave/src/config/global_config.dart';
 import 'package:dotweave/src/config/identity_file.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/crypto.dart';
-import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/git.dart';
-import 'package:dotweave/src/lib/jsonc.dart';
 import 'package:dotweave/src/services/repository_ignore.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/crypto.dart';
+import 'package:dotweave/src/util/env.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/git.dart';
+import 'package:dotweave/src/util/jsonc.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/init.ts`: sync repository creation/cloning, age

@@ -1,7 +1,7 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 
 // Mirror of `services/config-file.ts`: manifest document construction and
 // validated atomic writes.

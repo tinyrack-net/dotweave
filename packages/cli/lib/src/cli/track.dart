@@ -10,11 +10,11 @@ import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/platform_flags.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/path_completion.dart';
 import 'package:dotweave/src/services/profile.dart';
 import 'package:dotweave/src/services/sync_mode.dart';
 import 'package:dotweave/src/services/track.dart';
+import 'package:dotweave/src/util/error.dart';
 
 List<String>? _normalizeFlagValues(Object? values) {
   return (values as List<Object?>?)?.cast<String>();

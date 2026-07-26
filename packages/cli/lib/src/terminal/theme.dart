@@ -10,7 +10,7 @@
 
 import 'dart:io';
 
-import 'package:dotweave/src/lib/env.dart';
+import 'package:dotweave/src/util/env.dart';
 
 /// Mirrors NodeJS `process.platform` for the values picocolors checks.
 String _processPlatform() {

@@ -1,8 +1,8 @@
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/config/xdg.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/sync-paths.ts`: repo-path construction inside the home

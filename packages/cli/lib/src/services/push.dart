@@ -1,15 +1,15 @@
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/concurrency.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/git.dart';
-import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/repo_format.dart';
 import 'package:dotweave/src/services/repository_ignore.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/concurrency.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/git.dart';
+import 'package:dotweave/src/util/perf_trace.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/push.ts`: local snapshot -> repository artifact planning

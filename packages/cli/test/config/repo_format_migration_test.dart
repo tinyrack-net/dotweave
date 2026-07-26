@@ -1,5 +1,5 @@
 import 'package:dotweave/src/config/repo_format_migration.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:test/test.dart';
 
 ResolvedSyncConfig configWithFormat(int? repositoryFormat) {

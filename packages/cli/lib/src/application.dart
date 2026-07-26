@@ -12,9 +12,9 @@ import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:dotweave/src/cli/index.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/version.dart';
 import 'package:dotweave/src/terminal/logger.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/version.dart';
 
 /// Mirror of `stringifyThrownValue`.
 String _stringifyThrownValue(Object? error) {

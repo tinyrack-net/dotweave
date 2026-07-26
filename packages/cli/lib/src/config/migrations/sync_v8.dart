@@ -1,6 +1,6 @@
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/error.dart';
 
 String _normalizeLegacyProfileName(String value) {
   final normalizedValue = value.trim();

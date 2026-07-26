@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/prompt.dart';
+import 'package:dotweave/src/util/prompt.dart';
 import 'package:test/test.dart';
 
 class _MockReadlineInterface implements ReadlineInterface {

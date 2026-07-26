@@ -1,7 +1,7 @@
 import 'package:dotweave/src/cli/platform_flags.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/track.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:test/test.dart';
 
 void expectDotweaveErrorCode(Object? Function() callback, String code) {

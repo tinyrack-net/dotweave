@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dotweave/src/lib/json_format.dart';
+import 'package:dotweave/src/util/json_format.dart';
 import 'package:test/test.dart';
 
 void main() {

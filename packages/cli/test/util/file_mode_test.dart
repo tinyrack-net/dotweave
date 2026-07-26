@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/file_mode.dart';
+import 'package:dotweave/src/util/file_mode.dart';
 import 'package:test/test.dart';
 
 /// Dart has no octal literals; mirrors the TS `0o...` test values.

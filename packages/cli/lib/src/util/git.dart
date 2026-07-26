@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/error.dart';
 
 class GitCommandOptions {
   const GitCommandOptions({this.cwd});

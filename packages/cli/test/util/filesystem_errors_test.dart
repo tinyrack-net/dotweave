@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dotweave/src/lib/fs_errors.dart';
+import 'package:dotweave/src/util/fs_errors.dart';
 import 'package:test/test.dart';
 
 /// Builds the [FileSystemException] shape thrown by `dart:io`, carrying the
