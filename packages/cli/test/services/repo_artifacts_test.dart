@@ -7,6 +7,7 @@ import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/posix_chmod.dart';
+import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:path/path.dart' as p;
@@ -88,7 +89,7 @@ void main() {
         createConfigEntry(profiles: ['profile-a', 'profile-b']),
         createConfigEntry(profiles: ['profile-b', 'profile-c']),
       ];
-      final profiles = collectArtifactProfiles(entries);
+      final profiles = collectArtifactProfiles(entries: entries);
       expect(profiles.contains(AppConstants.sync.defaultProfile), isTrue);
       expect(profiles.contains('profile-a'), isTrue);
       expect(profiles.contains('profile-b'), isTrue);

@@ -5,6 +5,7 @@ import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/services/config_file.dart';
+import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/services/sync_paths.dart';
@@ -127,9 +128,9 @@ _collectEntryArtifactCounts(
 ) async {
   final artifactsRoot = syncDirectory;
   final counts = _ArtifactCounts();
-  final artifactProfiles = collectArtifactProfiles(<ResolvedSyncConfigEntry>[
-    entry,
-  ]);
+  final artifactProfiles = collectArtifactProfiles(
+    entries: <ResolvedSyncConfigEntry>[entry],
+  );
 
   for (final profile in artifactProfiles) {
     final plainRelativePath = resolveArtifactRelativePath(
@@ -214,9 +215,9 @@ Future<void> _removeTrackedEntryArtifacts(
   ResolvedSyncConfigEntry entry,
 ) async {
   final artifactsRoot = syncDirectory;
-  final artifactProfiles = collectArtifactProfiles(<ResolvedSyncConfigEntry>[
-    entry,
-  ]);
+  final artifactProfiles = collectArtifactProfiles(
+    entries: <ResolvedSyncConfigEntry>[entry],
+  );
 
   for (final profile in artifactProfiles) {
     final plainPath = p.joinAll([

@@ -5,6 +5,7 @@ import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
+import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/repo_format.dart';
 import 'package:dotweave/src/services/repository_ignore.dart';
