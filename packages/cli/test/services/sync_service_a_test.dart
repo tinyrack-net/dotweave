@@ -18,11 +18,22 @@ import '../helpers/sync_fixture.dart';
 // Port of `sync.service.test.ts` (part A): the tests from "tracks entries in
 // v7 config format" through "deletes ignored child artifacts while preserving
 // normal directory siblings".
+//
+// The A/B/C split preserves the order of the (now-deleted) TS source rather
+// than grouping by subject, so each part spans several themes. This one
+// covers, in order:
+//
+// - tracking and re-tracking, including explicit repoPath and WSL mode
+//   overrides (:26-:698)
+// - push/pull under an active profile (:699-:859)
+// - pruning and ignore-mode deletion (:860-:1292)
+// - platform-specific child artifacts, the longest run (:1293-:1946)
+// - platform-specific ignore deletion (:1947-end)
 
 void main() {
   tearDown(cleanUpSyncFixture);
 
-  group('sync service', () {
+  group('sync service: tracking, profiles, and platform-specific artifacts', () {
     test('tracks entries in v7 config format', () async {
       final workspace = await createWorkspace();
       final homeDirectory = p.join(workspace, 'home');
