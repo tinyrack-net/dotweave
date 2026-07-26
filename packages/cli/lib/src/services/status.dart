@@ -260,54 +260,72 @@ class StatusResult {
   );
 }
 
-/// Optional overrides for the status orchestration, standing in for the vitest
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultBuildArtifactKey = buildArtifactKey;
+const _defaultBuildPullPlan = buildPullPlan;
+const _defaultBuildPullPlanPreview = buildPullPlanPreview;
+const _defaultBuildPullResultFromPlan = buildPullResultFromPlan;
+const _defaultBuildPushPlan = buildPushPlan;
+const _defaultBuildPushPlanPreview = buildPushPlanPreview;
+const _defaultBuildPushResultFromPlan = buildPushResultFromPlan;
+const _defaultIsRepoArtifactCurrent = isRepoArtifactCurrent;
+const _defaultLoadSyncConfig = loadSyncConfig;
+const _defaultRequireGitRepository = requireGitRepository;
+const _defaultResolveSyncPaths = resolveSyncPaths;
+
+/// Collaborators of the status orchestration, standing in for the vitest
 /// module mocks used by `status.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class StatusDependencies {
   const StatusDependencies({
-    this.buildArtifactKey,
-    this.buildPullPlan,
-    this.buildPullPlanPreview,
-    this.buildPullResultFromPlan,
-    this.buildPushPlan,
-    this.buildPushPlanPreview,
-    this.buildPushResultFromPlan,
-    this.isRepoArtifactCurrent,
-    this.loadSyncConfig,
-    this.requireGitRepository,
-    this.resolveSyncPaths,
+    this.buildArtifactKey = _defaultBuildArtifactKey,
+    this.buildPullPlan = _defaultBuildPullPlan,
+    this.buildPullPlanPreview = _defaultBuildPullPlanPreview,
+    this.buildPullResultFromPlan = _defaultBuildPullResultFromPlan,
+    this.buildPushPlan = _defaultBuildPushPlan,
+    this.buildPushPlanPreview = _defaultBuildPushPlanPreview,
+    this.buildPushResultFromPlan = _defaultBuildPushResultFromPlan,
+    this.isRepoArtifactCurrent = _defaultIsRepoArtifactCurrent,
+    this.loadSyncConfig = _defaultLoadSyncConfig,
+    this.requireGitRepository = _defaultRequireGitRepository,
+    this.resolveSyncPaths = _defaultResolveSyncPaths,
   });
 
-  final String Function(RepoArtifact artifact)? buildArtifactKey;
+  final String Function(RepoArtifact artifact) buildArtifactKey;
   final Future<PullPlan> Function(
     EffectiveSyncConfig config,
     String syncDirectory,
-  )?
+  )
   buildPullPlan;
-  final List<String> Function(PullPlan plan)? buildPullPlanPreview;
-  final PullResult Function(PullPlan plan, bool dryRun)?
-  buildPullResultFromPlan;
+  final List<String> Function(PullPlan plan) buildPullPlanPreview;
+  final PullResult Function(PullPlan plan, bool dryRun) buildPullResultFromPlan;
   final Future<PushPlan> Function(
     EffectiveSyncConfig config,
     String syncDirectory,
     ArtifactOwnershipConfig? ownershipConfig,
-  )?
+  )
   buildPushPlan;
-  final List<String> Function(PushPlan plan)? buildPushPlanPreview;
-  final PushResult Function(PushPlan plan, bool dryRun)?
-  buildPushResultFromPlan;
+  final List<String> Function(PushPlan plan) buildPushPlanPreview;
+  final PushResult Function(PushPlan plan, bool dryRun) buildPushResultFromPlan;
   final Future<bool> Function(
     String syncDirectory,
     RepoArtifact artifact,
     ({String identityFile})? ageConfig,
-  )?
+  )
   isRepoArtifactCurrent;
   final Future<LoadedSyncConfig> Function(
     String syncDirectory, {
     String? profile,
-  })?
+  })
   loadSyncConfig;
-  final Future<void> Function(String syncDirectory)? requireGitRepository;
-  final SyncPaths Function()? resolveSyncPaths;
+  final Future<void> Function(String syncDirectory) requireGitRepository;
+  final SyncPaths Function() resolveSyncPaths;
 }
 
 Future<PushChanges> _buildPushChanges(
@@ -367,45 +385,33 @@ Future<StatusResult> getStatus({
   String? profile,
   StatusDependencies dependencies = const StatusDependencies(),
 }) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
-  final effectiveLoadSyncConfig = dependencies.loadSyncConfig ?? loadSyncConfig;
   final Future<PushPlan> Function(
     EffectiveSyncConfig config,
     String syncDirectory,
     ArtifactOwnershipConfig? ownershipConfig,
   )
-  effectiveBuildPushPlan = dependencies.buildPushPlan ?? buildPushPlan;
+  effectiveBuildPushPlan = dependencies.buildPushPlan;
   final Future<PullPlan> Function(
     EffectiveSyncConfig config,
     String syncDirectory,
   )
-  effectiveBuildPullPlan = dependencies.buildPullPlan ?? buildPullPlan;
-  final effectiveBuildArtifactKey =
-      dependencies.buildArtifactKey ?? buildArtifactKey;
+  effectiveBuildPullPlan = dependencies.buildPullPlan;
+
   final Future<bool> Function(
     String syncDirectory,
     RepoArtifact artifact,
     ({String identityFile})? ageConfig,
   )
-  effectiveIsRepoArtifactCurrent =
-      dependencies.isRepoArtifactCurrent ?? isRepoArtifactCurrent;
-  final effectiveBuildPushResultFromPlan =
-      dependencies.buildPushResultFromPlan ?? buildPushResultFromPlan;
-  final effectiveBuildPullResultFromPlan =
-      dependencies.buildPullResultFromPlan ?? buildPullResultFromPlan;
-  final effectiveBuildPushPlanPreview =
-      dependencies.buildPushPlanPreview ?? buildPushPlanPreview;
-  final effectiveBuildPullPlanPreview =
-      dependencies.buildPullPlanPreview ?? buildPullPlanPreview;
+  effectiveIsRepoArtifactCurrent = dependencies.isRepoArtifactCurrent;
 
-  final syncDirectory = effectiveResolveSyncPaths().syncDirectory;
+  final syncDirectory = dependencies.resolveSyncPaths().syncDirectory;
 
-  await effectiveRequireGitRepository(syncDirectory);
+  await dependencies.requireGitRepository(syncDirectory);
 
-  final loaded = await effectiveLoadSyncConfig(syncDirectory, profile: profile);
+  final loaded = await dependencies.loadSyncConfig(
+    syncDirectory,
+    profile: profile,
+  );
   final effectiveConfig = loaded.effectiveConfig;
   final fullConfig = loaded.fullConfig;
   final pushPlan = await effectiveBuildPushPlan(
@@ -418,7 +424,7 @@ Future<StatusResult> getStatus({
     pushPlan,
     syncDirectory,
     effectiveConfig.age.identityFile,
-    effectiveBuildArtifactKey,
+    dependencies.buildArtifactKey,
     effectiveIsRepoArtifactCurrent,
   );
 
@@ -436,14 +442,14 @@ Future<StatusResult> getStatus({
     ],
     entryCount: fullConfig.entries.length,
     pull: StatusPullSummary(
-      result: effectiveBuildPullResultFromPlan(pullPlan, true),
+      result: dependencies.buildPullResultFromPlan(pullPlan, true),
       changes: _buildPullChanges(pullPlan),
-      preview: effectiveBuildPullPlanPreview(pullPlan),
+      preview: dependencies.buildPullPlanPreview(pullPlan),
     ),
     push: StatusPushSummary(
-      result: effectiveBuildPushResultFromPlan(pushPlan, true),
+      result: dependencies.buildPushResultFromPlan(pushPlan, true),
       changes: pushChanges,
-      preview: effectiveBuildPushPlanPreview(pushPlan),
+      preview: dependencies.buildPushPlanPreview(pushPlan),
     ),
     recipientCount: effectiveConfig.age.recipients.length,
   );

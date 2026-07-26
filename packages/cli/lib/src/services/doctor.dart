@@ -82,27 +82,41 @@ class DoctorResult {
   }
 }
 
-/// Optional overrides for [runDoctorChecks], standing in for the vitest
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultBuildRepositorySnapshot = buildRepositorySnapshot;
+const _defaultLoadSyncConfig = loadSyncConfig;
+const _defaultPathExists = pathExists;
+const _defaultResolveSyncPaths = resolveSyncPaths;
+const _defaultVerifyIsGitRepository = verifyIsGitRepository;
+
+/// Collaborators of [runDoctorChecks], standing in for the vitest
 /// module mocks used by `doctor.test.ts` (git, sync-context, filesystem, and
 /// repo-snapshot seams).
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class DoctorDependencies {
   const DoctorDependencies({
-    this.buildRepositorySnapshot,
-    this.loadSyncConfig,
-    this.pathExists,
-    this.resolveSyncPaths,
-    this.verifyIsGitRepository,
+    this.buildRepositorySnapshot = _defaultBuildRepositorySnapshot,
+    this.loadSyncConfig = _defaultLoadSyncConfig,
+    this.pathExists = _defaultPathExists,
+    this.resolveSyncPaths = _defaultResolveSyncPaths,
+    this.verifyIsGitRepository = _defaultVerifyIsGitRepository,
   });
 
   final Future<Map<String, SnapshotNode>> Function(
     String syncDirectory,
     EffectiveSyncConfig config,
-  )?
+  )
   buildRepositorySnapshot;
-  final Future<LoadedSyncConfig> Function(String syncDirectory)? loadSyncConfig;
-  final Future<bool> Function(String path)? pathExists;
-  final SyncPaths Function()? resolveSyncPaths;
-  final Future<void> Function(String directory)? verifyIsGitRepository;
+  final Future<LoadedSyncConfig> Function(String syncDirectory) loadSyncConfig;
+  final Future<bool> Function(String path) pathExists;
+  final SyncPaths Function() resolveSyncPaths;
+  final Future<void> Function(String directory) verifyIsGitRepository;
 }
 
 DoctorCheck _ok(String checkId, String detail) {
@@ -125,20 +139,13 @@ bool _isErrorLike(Object error) {
 Future<DoctorResult> runDoctorChecks([
   DoctorDependencies dependencies = const DoctorDependencies(),
 ]) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveVerifyIsGitRepository =
-      dependencies.verifyIsGitRepository ?? verifyIsGitRepository;
-  final effectiveLoadSyncConfig = dependencies.loadSyncConfig ?? loadSyncConfig;
-  final effectivePathExists = dependencies.pathExists ?? pathExists;
-  final effectiveBuildRepositorySnapshot =
-      dependencies.buildRepositorySnapshot ?? buildRepositorySnapshot;
+  final effectivePathExists = dependencies.pathExists;
 
-  final syncDirectory = effectiveResolveSyncPaths().syncDirectory;
+  final syncDirectory = dependencies.resolveSyncPaths().syncDirectory;
   final checks = <DoctorCheck>[];
 
   try {
-    await effectiveVerifyIsGitRepository(syncDirectory);
+    await dependencies.verifyIsGitRepository(syncDirectory);
     checks.add(_ok('git', 'Sync directory is a git repository.'));
   } catch (error) {
     checks.add(
@@ -156,7 +163,7 @@ Future<DoctorResult> runDoctorChecks([
   final EffectiveSyncConfig config;
 
   try {
-    final loaded = await effectiveLoadSyncConfig(syncDirectory);
+    final loaded = await dependencies.loadSyncConfig(syncDirectory);
     final effectiveConfig = loaded.effectiveConfig;
     final fullConfig = loaded.fullConfig;
 
@@ -210,7 +217,7 @@ Future<DoctorResult> runDoctorChecks([
 
   final healthyMissingEntries = <String>{};
 
-  final repositorySnapshot = await effectiveBuildRepositorySnapshot(
+  final repositorySnapshot = await dependencies.buildRepositorySnapshot(
     syncDirectory,
     config,
   );

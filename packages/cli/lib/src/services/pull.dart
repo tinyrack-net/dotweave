@@ -104,45 +104,63 @@ class PreparedPull {
   final String syncDirectory;
 }
 
-/// Optional overrides for the pull orchestration, standing in for the vitest
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultApplyEntryMaterialization = applyEntryMaterialization;
+const _defaultBuildEntryMaterialization = buildEntryMaterialization;
+const _defaultBuildPullCounts = buildPullCounts;
+const _defaultBuildRepositorySnapshot = buildRepositorySnapshot;
+const _defaultCollectChangedLocalPaths = collectChangedLocalPaths;
+const _defaultCountDeletedLocalNodes = countDeletedLocalNodes;
+const _defaultLoadSyncConfig = loadSyncConfig;
+const _defaultRequireGitRepository = requireGitRepository;
+const _defaultResolveSyncPaths = resolveSyncPaths;
+
+/// Collaborators of the pull orchestration, standing in for the vitest
 /// module mocks used by `pull.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class PullDependencies {
   const PullDependencies({
-    this.applyEntryMaterialization,
-    this.buildEntryMaterialization,
-    this.buildPullCounts,
-    this.buildRepositorySnapshot,
-    this.collectChangedLocalPaths,
-    this.countDeletedLocalNodes,
-    this.loadSyncConfig,
-    this.requireGitRepository,
-    this.resolveSyncPaths,
+    this.applyEntryMaterialization = _defaultApplyEntryMaterialization,
+    this.buildEntryMaterialization = _defaultBuildEntryMaterialization,
+    this.buildPullCounts = _defaultBuildPullCounts,
+    this.buildRepositorySnapshot = _defaultBuildRepositorySnapshot,
+    this.collectChangedLocalPaths = _defaultCollectChangedLocalPaths,
+    this.countDeletedLocalNodes = _defaultCountDeletedLocalNodes,
+    this.loadSyncConfig = _defaultLoadSyncConfig,
+    this.requireGitRepository = _defaultRequireGitRepository,
+    this.resolveSyncPaths = _defaultResolveSyncPaths,
   });
 
   final Future<void> Function(
     ResolvedSyncConfigEntry entry,
     EntryMaterialization materialization,
     EffectiveSyncConfig config,
-  )?
+  )
   applyEntryMaterialization;
   final EntryMaterialization Function(
     ResolvedSyncConfigEntry entry,
     Map<String, SnapshotNode> snapshot,
     EffectiveSyncConfig config,
-  )?
+  )
   buildEntryMaterialization;
-  final PullCounts Function(List<EntryMaterialization?> materializations)?
+  final PullCounts Function(List<EntryMaterialization?> materializations)
   buildPullCounts;
   final Future<Map<String, SnapshotNode>> Function(
     String syncDirectory,
     EffectiveSyncConfig config,
-  )?
+  )
   buildRepositorySnapshot;
   final Future<List<String>> Function(
     ResolvedSyncConfigEntry entry,
     EntryMaterialization materialization,
     EffectiveSyncConfig? config,
-  )?
+  )
   collectChangedLocalPaths;
   final Future<int> Function(
     ResolvedSyncConfigEntry entry,
@@ -151,15 +169,15 @@ class PullDependencies {
     Set<String>? existingKeys,
     Map<String, String>? keyToLocalPath,
     Set<String>? deletedKeys,
-  )?
+  )
   countDeletedLocalNodes;
   final Future<LoadedSyncConfig> Function(
     String syncDirectory, {
     String? profile,
-  })?
+  })
   loadSyncConfig;
-  final Future<void> Function(String syncDirectory)? requireGitRepository;
-  final SyncPaths Function()? resolveSyncPaths;
+  final Future<void> Function(String syncDirectory) requireGitRepository;
+  final SyncPaths Function() resolveSyncPaths;
 }
 
 List<String> _buildDeletedLocalPaths(
@@ -226,12 +244,6 @@ Future<PullPlan> buildPullPlan(
   String syncDirectory, [
   PullDependencies dependencies = const PullDependencies(),
 ]) async {
-  final effectiveBuildRepositorySnapshot =
-      dependencies.buildRepositorySnapshot ?? buildRepositorySnapshot;
-  final effectiveBuildEntryMaterialization =
-      dependencies.buildEntryMaterialization ?? buildEntryMaterialization;
-  final effectiveBuildPullCounts =
-      dependencies.buildPullCounts ?? buildPullCounts;
   final Future<int> Function(
     ResolvedSyncConfigEntry entry,
     Set<String> desiredKeys,
@@ -240,19 +252,17 @@ Future<PullPlan> buildPullPlan(
     Map<String, String>? keyToLocalPath,
     Set<String>? deletedKeys,
   )
-  effectiveCountDeletedLocalNodes =
-      dependencies.countDeletedLocalNodes ?? countDeletedLocalNodes;
+  effectiveCountDeletedLocalNodes = dependencies.countDeletedLocalNodes;
   final Future<List<String>> Function(
     ResolvedSyncConfigEntry entry,
     EntryMaterialization materialization,
     EffectiveSyncConfig? config,
   )
-  effectiveCollectChangedLocalPaths =
-      dependencies.collectChangedLocalPaths ?? collectChangedLocalPaths;
+  effectiveCollectChangedLocalPaths = dependencies.collectChangedLocalPaths;
 
   final snapshot = await tracePhase(
     'plan.repoSnapshot',
-    () => effectiveBuildRepositorySnapshot(syncDirectory, config),
+    () => dependencies.buildRepositorySnapshot(syncDirectory, config),
   );
   final materializations = await tracePhase(
     'plan.materializations',
@@ -260,7 +270,7 @@ Future<PullPlan> buildPullPlan(
       for (final entry in config.entries)
         entry.mode == 'ignore'
             ? null
-            : effectiveBuildEntryMaterialization(entry, snapshot, config),
+            : dependencies.buildEntryMaterialization(entry, snapshot, config),
     ],
   );
 
@@ -326,7 +336,7 @@ Future<PullPlan> buildPullPlan(
   ];
 
   return PullPlan(
-    counts: effectiveBuildPullCounts(materializations),
+    counts: dependencies.buildPullCounts(materializations),
     deletedLocalCount: deletedLocalCount,
     deletedLocalPaths: deletedLocalPaths,
     desiredKeys: desiredKeys,
@@ -371,17 +381,11 @@ Future<PreparedPull> preparePull(
   PullRequest request, [
   PullDependencies dependencies = const PullDependencies(),
 ]) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
-  final effectiveLoadSyncConfig = dependencies.loadSyncConfig ?? loadSyncConfig;
+  final syncDirectory = dependencies.resolveSyncPaths().syncDirectory;
 
-  final syncDirectory = effectiveResolveSyncPaths().syncDirectory;
+  await dependencies.requireGitRepository(syncDirectory);
 
-  await effectiveRequireGitRepository(syncDirectory);
-
-  final config = (await effectiveLoadSyncConfig(
+  final config = (await dependencies.loadSyncConfig(
     syncDirectory,
     profile: request.profile,
   )).effectiveConfig;
@@ -441,9 +445,6 @@ Future<void> applyPullPlan(
   PullPlan plan, [
   PullDependencies dependencies = const PullDependencies(),
 ]) async {
-  final effectiveApplyEntryMaterialization =
-      dependencies.applyEntryMaterialization ?? applyEntryMaterialization;
-
   for (final batch in _buildApplyPullPlanBatches(config, plan)) {
     await limitConcurrency<int, void>(
       AppConstants.sync.defaultConcurrency,
@@ -458,7 +459,7 @@ Future<void> applyPullPlan(
           return;
         }
 
-        await effectiveApplyEntryMaterialization(
+        await dependencies.applyEntryMaterialization(
           entry,
           materialization,
           config,

@@ -92,9 +92,14 @@ class InitResult {
   }
 }
 
-/// Optional overrides for [initializeSyncDirectory], standing in for the
+/// Collaborators of [initializeSyncDirectory], standing in for the
 /// vitest seams used by `init.test.ts`:
 ///
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultInitializeRepository = initializeRepository;
+const _defaultVerifyIsGitRepository = verifyIsGitRepository;
+
 /// - [env] replaces the `#app/lib/env.ts` `ENV` module mock. All env-derived
 ///   path resolution inside this module threads it through, matching how the
 ///   TS mock propagates into `sync-context.ts` / `runtime-env.ts`.
@@ -105,17 +110,17 @@ class InitResult {
 class InitDependencies {
   const InitDependencies({
     this.env,
-    this.initializeRepository,
-    this.verifyIsGitRepository,
+    this.initializeRepository = _defaultInitializeRepository,
+    this.verifyIsGitRepository = _defaultVerifyIsGitRepository,
   });
 
   final Env? env;
   final Future<InitializeRepositoryResult> Function(
     String directory, [
     String? source,
-  ])?
+  ])
   initializeRepository;
-  final Future<void> Function(String directory)? verifyIsGitRepository;
+  final Future<void> Function(String directory) verifyIsGitRepository;
 }
 
 const String _gitAttributesFileName = '.gitattributes';
@@ -372,10 +377,6 @@ Future<InitResult> initializeSyncDirectory(
   InitDependencies dependencies = const InitDependencies(),
 ]) async {
   final env = dependencies.env;
-  final effectiveVerifyIsGitRepository =
-      dependencies.verifyIsGitRepository ?? verifyIsGitRepository;
-  final effectiveInitializeRepository =
-      dependencies.initializeRepository ?? initializeRepository;
 
   final paths = _resolveSyncPathsWithEnv(env);
   final syncDirectory = paths.syncDirectory;
@@ -413,7 +414,7 @@ Future<InitResult> initializeSyncDirectory(
   String? gitSource;
 
   try {
-    await effectiveVerifyIsGitRepository(syncDirectory);
+    await dependencies.verifyIsGitRepository(syncDirectory);
   } on DotweaveError {
     // Any git-level failure here means "not a usable repository yet", and the
     // recovery below re-runs git so a missing executable still surfaces with
@@ -447,7 +448,7 @@ Future<InitResult> initializeSyncDirectory(
     final InitializeRepositoryResult gitResult;
 
     try {
-      gitResult = await effectiveInitializeRepository(
+      gitResult = await dependencies.initializeRepository(
         syncDirectory,
         gitSourceInput,
       );

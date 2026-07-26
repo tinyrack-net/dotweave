@@ -219,57 +219,81 @@ class AssignProfilesResult {
   }
 }
 
-/// Optional overrides for the profile service functions, standing in for the
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultResolveActiveProfileSelection = resolveActiveProfileSelection;
+const _defaultResolveSyncConfigResolutionContext =
+    resolveSyncConfigResolutionContext;
+const _defaultBuildSyncConfigDocument = buildSyncConfigDocument;
+const _defaultFormatGlobalDotweaveConfig = formatGlobalDotweaveConfig;
+const _defaultIsProfileActive = isProfileActive;
+const _defaultLoadWritableSyncConfig = loadWritableSyncConfig;
+const _defaultNormalizeSyncProfileName = normalizeSyncProfileName;
+const _defaultReadGlobalDotweaveConfig = readGlobalDotweaveConfig;
+const _defaultReadSyncConfig = readSyncConfig;
+const _defaultRequireGitRepository = requireGitRepository;
+const _defaultResolveSyncPaths = resolveSyncPaths;
+const _defaultResolveTrackedEntry = resolveTrackedEntry;
+const _defaultWriteTextFileAtomically = writeTextFileAtomically;
+const _defaultWriteValidatedSyncConfig = writeValidatedSyncConfig;
+
+/// Collaborators of the profile service functions, standing in for the
 /// vitest module mocks used by `profile.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class ProfileDependencies {
   const ProfileDependencies({
-    this.buildSyncConfigDocument,
-    this.formatGlobalDotweaveConfig,
-    this.isProfileActive,
-    this.loadWritableSyncConfig,
-    this.normalizeSyncProfileName,
-    this.readGlobalDotweaveConfig,
-    this.readSyncConfig,
-    this.requireGitRepository,
-    this.resolveActiveProfileSelection,
-    this.resolveSyncConfigResolutionContext,
-    this.resolveSyncPaths,
-    this.resolveTrackedEntry,
-    this.writeTextFileAtomically,
-    this.writeValidatedSyncConfig,
+    this.buildSyncConfigDocument = _defaultBuildSyncConfigDocument,
+    this.formatGlobalDotweaveConfig = _defaultFormatGlobalDotweaveConfig,
+    this.isProfileActive = _defaultIsProfileActive,
+    this.loadWritableSyncConfig = _defaultLoadWritableSyncConfig,
+    this.normalizeSyncProfileName = _defaultNormalizeSyncProfileName,
+    this.readGlobalDotweaveConfig = _defaultReadGlobalDotweaveConfig,
+    this.readSyncConfig = _defaultReadSyncConfig,
+    this.requireGitRepository = _defaultRequireGitRepository,
+    this.resolveActiveProfileSelection = _defaultResolveActiveProfileSelection,
+    this.resolveSyncConfigResolutionContext =
+        _defaultResolveSyncConfigResolutionContext,
+    this.resolveSyncPaths = _defaultResolveSyncPaths,
+    this.resolveTrackedEntry = _defaultResolveTrackedEntry,
+    this.writeTextFileAtomically = _defaultWriteTextFileAtomically,
+    this.writeValidatedSyncConfig = _defaultWriteValidatedSyncConfig,
   });
 
-  final RawSyncConfig Function(ResolvedSyncConfig config)?
+  final RawSyncConfig Function(ResolvedSyncConfig config)
   buildSyncConfigDocument;
-  final String Function(GlobalDotweaveConfig config)?
-  formatGlobalDotweaveConfig;
-  final bool Function(ActiveProfileSelection selection, String? profile)?
+  final String Function(GlobalDotweaveConfig config) formatGlobalDotweaveConfig;
+  final bool Function(ActiveProfileSelection selection, String? profile)
   isProfileActive;
-  final Future<WritableSyncConfig> Function()? loadWritableSyncConfig;
-  final String Function(String value)? normalizeSyncProfileName;
-  final Future<GlobalDotweaveConfig?> Function(String filePath)?
+  final Future<WritableSyncConfig> Function() loadWritableSyncConfig;
+  final String Function(String value) normalizeSyncProfileName;
+  final Future<GlobalDotweaveConfig?> Function(String filePath)
   readGlobalDotweaveConfig;
   final Future<ResolvedSyncConfig> Function(
     String syncDirectory,
     SyncConfigResolutionContext context,
-  )?
+  )
   readSyncConfig;
-  final Future<void> Function(String syncDirectory)? requireGitRepository;
-  final ActiveProfileSelection Function(GlobalDotweaveConfig? config)?
+  final Future<void> Function(String syncDirectory) requireGitRepository;
+  final ActiveProfileSelection Function(GlobalDotweaveConfig? config)
   resolveActiveProfileSelection;
-  final SyncConfigResolutionContext Function()?
+  final SyncConfigResolutionContext Function()
   resolveSyncConfigResolutionContext;
-  final SyncPaths Function()? resolveSyncPaths;
+  final SyncPaths Function() resolveSyncPaths;
   final ResolvedSyncConfigEntry? Function(
     String target,
     List<ResolvedSyncConfigEntry> entries,
     String cwd,
     String homeDirectory,
-  )?
+  )
   resolveTrackedEntry;
-  final Future<void> Function(String targetPath, String contents)?
+  final Future<void> Function(String targetPath, String contents)
   writeTextFileAtomically;
-  final Future<void> Function(String syncDirectory, RawSyncConfig config)?
+  final Future<void> Function(String syncDirectory, RawSyncConfig config)
   writeValidatedSyncConfig;
 }
 
@@ -324,16 +348,13 @@ List<String> _normalizeAndRequireKnownProfiles(
 Future<ProfileListResult> listProfiles([
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
+  final effectiveResolveSyncPaths = dependencies.resolveSyncPaths;
   final effectiveResolveSyncConfigResolutionContext =
-      dependencies.resolveSyncConfigResolutionContext ??
-      resolveSyncConfigResolutionContext;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
+      dependencies.resolveSyncConfigResolutionContext;
+  final effectiveRequireGitRepository = dependencies.requireGitRepository;
   final effectiveReadGlobalDotweaveConfig =
-      dependencies.readGlobalDotweaveConfig ?? readGlobalDotweaveConfig;
-  final effectiveReadSyncConfig = dependencies.readSyncConfig ?? readSyncConfig;
+      dependencies.readGlobalDotweaveConfig;
+  final effectiveReadSyncConfig = dependencies.readSyncConfig;
 
   final paths = effectiveResolveSyncPaths();
   final syncDirectory = paths.syncDirectory;
@@ -388,19 +409,15 @@ Future<ProfileUpdateResult> setActiveProfile(
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
+      dependencies.normalizeSyncProfileName;
+  final effectiveResolveSyncPaths = dependencies.resolveSyncPaths;
   final effectiveResolveSyncConfigResolutionContext =
-      dependencies.resolveSyncConfigResolutionContext ??
-      resolveSyncConfigResolutionContext;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
-  final effectiveReadSyncConfig = dependencies.readSyncConfig ?? readSyncConfig;
+      dependencies.resolveSyncConfigResolutionContext;
+  final effectiveRequireGitRepository = dependencies.requireGitRepository;
+  final effectiveReadSyncConfig = dependencies.readSyncConfig;
   final effectiveFormatGlobalDotweaveConfig =
-      dependencies.formatGlobalDotweaveConfig ?? formatGlobalDotweaveConfig;
-  final effectiveWriteTextFileAtomically =
-      dependencies.writeTextFileAtomically ?? writeTextFileAtomically;
+      dependencies.formatGlobalDotweaveConfig;
+  final effectiveWriteTextFileAtomically = dependencies.writeTextFileAtomically;
 
   final normalizedProfile = effectiveNormalizeSyncProfileName(profile);
   final paths = effectiveResolveSyncPaths();
@@ -439,13 +456,11 @@ Future<ProfileRegistryUpdateResult> addProfile(
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
+      dependencies.normalizeSyncProfileName;
+  final effectiveLoadWritableSyncConfig = dependencies.loadWritableSyncConfig;
+  final effectiveBuildSyncConfigDocument = dependencies.buildSyncConfigDocument;
   final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
+      dependencies.writeValidatedSyncConfig;
 
   final normalizedProfile = effectiveNormalizeSyncProfileName(profile);
   _requireNonDefaultProfile(normalizedProfile, 'add');
@@ -486,22 +501,15 @@ Future<ProfileRegistryUpdateResult> removeProfile(
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
+      dependencies.normalizeSyncProfileName;
+  final effectiveResolveSyncPaths = dependencies.resolveSyncPaths;
+  final effectiveLoadWritableSyncConfig = dependencies.loadWritableSyncConfig;
   final effectiveReadGlobalDotweaveConfig =
-      dependencies.readGlobalDotweaveConfig ?? readGlobalDotweaveConfig;
-  final effectiveResolveActiveProfileSelection =
-      dependencies.resolveActiveProfileSelection ??
-      resolveActiveProfileSelection;
-  final effectiveIsProfileActive =
-      dependencies.isProfileActive ?? isProfileActive;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
+      dependencies.readGlobalDotweaveConfig;
+
+  final effectiveBuildSyncConfigDocument = dependencies.buildSyncConfigDocument;
   final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
+      dependencies.writeValidatedSyncConfig;
 
   final normalizedProfile = effectiveNormalizeSyncProfileName(profile);
   _requireNonDefaultProfile(normalizedProfile, 'remove');
@@ -518,9 +526,11 @@ Future<ProfileRegistryUpdateResult> removeProfile(
   final globalConfig = await effectiveReadGlobalDotweaveConfig(
     globalConfigPath,
   );
-  final activeProfile = effectiveResolveActiveProfileSelection(globalConfig);
+  final activeProfile = dependencies.resolveActiveProfileSelection(
+    globalConfig,
+  );
 
-  if (effectiveIsProfileActive(activeProfile, normalizedProfile)) {
+  if (dependencies.isProfileActive(activeProfile, normalizedProfile)) {
     throw DotweaveError(
       "Cannot remove active profile '$normalizedProfile'.",
       code: 'PROFILE_ACTIVE',
@@ -575,14 +585,11 @@ Future<ProfileRegistryUpdateResult> removeProfile(
 Future<ProfileUpdateResult> clearActiveProfile([
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
+  final effectiveResolveSyncPaths = dependencies.resolveSyncPaths;
+  final effectiveRequireGitRepository = dependencies.requireGitRepository;
   final effectiveFormatGlobalDotweaveConfig =
-      dependencies.formatGlobalDotweaveConfig ?? formatGlobalDotweaveConfig;
-  final effectiveWriteTextFileAtomically =
-      dependencies.writeTextFileAtomically ?? writeTextFileAtomically;
+      dependencies.formatGlobalDotweaveConfig;
+  final effectiveWriteTextFileAtomically = dependencies.writeTextFileAtomically;
 
   final paths = effectiveResolveSyncPaths();
   final syncDirectory = paths.syncDirectory;
@@ -607,10 +614,9 @@ Future<List<String>> validateProfilesExist(
   List<String> profiles, [
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
+  final effectiveLoadWritableSyncConfig = dependencies.loadWritableSyncConfig;
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
+      dependencies.normalizeSyncProfileName;
 
   final writable = await effectiveLoadWritableSyncConfig();
   return _normalizeAndRequireKnownProfiles(
@@ -625,16 +631,13 @@ Future<AssignProfilesResult> assignProfiles(
   String cwd, [
   ProfileDependencies dependencies = const ProfileDependencies(),
 ]) async {
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
-  final effectiveResolveTrackedEntry =
-      dependencies.resolveTrackedEntry ?? resolveTrackedEntry;
+  final effectiveLoadWritableSyncConfig = dependencies.loadWritableSyncConfig;
+
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
+      dependencies.normalizeSyncProfileName;
+  final effectiveBuildSyncConfigDocument = dependencies.buildSyncConfigDocument;
   final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
+      dependencies.writeValidatedSyncConfig;
 
   final target = request.target.trim();
 
@@ -652,7 +655,7 @@ Future<AssignProfilesResult> assignProfiles(
   final config = writable.config;
   final context = writable.context;
   final syncDirectory = writable.syncDirectory;
-  final entry = effectiveResolveTrackedEntry(
+  final entry = dependencies.resolveTrackedEntry(
     target,
     config.entries,
     cwd,
