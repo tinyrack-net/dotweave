@@ -1,6 +1,7 @@
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/git.dart';
 import 'package:test/test.dart';
 
 const SyncPaths mockResolveSyncPaths = SyncPaths(
@@ -20,16 +21,17 @@ final SyncConfigResolutionContext mockContext = SyncConfigResolutionContext(
 /// Stands in for the vitest module mocks: overrides the path/context
 /// resolvers and the git/read seams used by `loadWritableSyncConfig`.
 SyncContextDependencies mockDependencies({
+  // Named `onX` so they do not shadow the real functions used as fallbacks.
   Future<ResolvedSyncConfig> Function(
     String syncDirectory,
     SyncConfigResolutionContext context,
   )?
-  readSyncConfig,
-  Future<void> Function(String syncDirectory)? requireGitRepository,
+  onReadSyncConfig,
+  Future<void> Function(String syncDirectory)? onRequireGitRepository,
 }) {
   return SyncContextDependencies(
-    readSyncConfig: readSyncConfig,
-    requireGitRepository: requireGitRepository,
+    readSyncConfig: onReadSyncConfig ?? readSyncConfig,
+    requireGitRepository: onRequireGitRepository ?? requireGitRepository,
     resolveSyncConfigResolutionContext: () => mockContext,
     resolveSyncPaths: () => mockResolveSyncPaths,
   );
@@ -42,8 +44,8 @@ void main() {
 
       final result = await loadWritableSyncConfig(
         mockDependencies(
-          readSyncConfig: (syncDirectory, context) async => mockConfig,
-          requireGitRepository: (syncDirectory) async {},
+          onReadSyncConfig: (syncDirectory, context) async => mockConfig,
+          onRequireGitRepository: (syncDirectory) async {},
         ),
       );
 
@@ -59,9 +61,9 @@ void main() {
       await expectLater(
         loadWritableSyncConfig(
           mockDependencies(
-            readSyncConfig: (syncDirectory, context) async =>
+            onReadSyncConfig: (syncDirectory, context) async =>
                 const ResolvedSyncConfig(entries: [], version: 7),
-            requireGitRepository: (syncDirectory) async => throw error,
+            onRequireGitRepository: (syncDirectory) async => throw error,
           ),
         ),
         throwsA(predicate((e) => e.toString().contains('not a git repo'))),
@@ -74,8 +76,8 @@ void main() {
       await expectLater(
         loadWritableSyncConfig(
           mockDependencies(
-            readSyncConfig: (syncDirectory, context) async => throw error,
-            requireGitRepository: (syncDirectory) async {},
+            onReadSyncConfig: (syncDirectory, context) async => throw error,
+            onRequireGitRepository: (syncDirectory) async {},
           ),
         ),
         throwsA(predicate((e) => e.toString().contains('invalid config'))),
@@ -87,8 +89,8 @@ void main() {
 
       final result = await loadWritableSyncConfig(
         mockDependencies(
-          readSyncConfig: (syncDirectory, context) async => mockConfig,
-          requireGitRepository: (syncDirectory) async {},
+          onReadSyncConfig: (syncDirectory, context) async => mockConfig,
+          onRequireGitRepository: (syncDirectory) async {},
         ),
       );
 
@@ -104,8 +106,8 @@ void main() {
 
         final result = await loadWritableSyncConfig(
           mockDependencies(
-            readSyncConfig: (syncDirectory, context) async => mockConfig,
-            requireGitRepository: (syncDirectory) async {},
+            onReadSyncConfig: (syncDirectory, context) async => mockConfig,
+            onRequireGitRepository: (syncDirectory) async {},
           ),
         );
 

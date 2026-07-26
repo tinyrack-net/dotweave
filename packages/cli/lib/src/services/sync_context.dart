@@ -190,45 +190,51 @@ class WritableSyncConfig {
   final String syncDirectory;
 }
 
-/// Optional overrides for [loadWritableSyncConfig], standing in for the
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultResolveSyncConfigResolutionContext =
+    resolveSyncConfigResolutionContext;
+const _defaultReadSyncConfig = readSyncConfig;
+const _defaultRequireGitRepository = requireGitRepository;
+const _defaultResolveSyncPaths = resolveSyncPaths;
+
+/// Collaborators of [loadWritableSyncConfig], standing in for the
 /// vitest module mocks used by `sync-context.writable.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class SyncContextDependencies {
   const SyncContextDependencies({
-    this.readSyncConfig,
-    this.requireGitRepository,
-    this.resolveSyncConfigResolutionContext,
-    this.resolveSyncPaths,
+    this.readSyncConfig = _defaultReadSyncConfig,
+    this.requireGitRepository = _defaultRequireGitRepository,
+    this.resolveSyncConfigResolutionContext =
+        _defaultResolveSyncConfigResolutionContext,
+    this.resolveSyncPaths = _defaultResolveSyncPaths,
   });
 
   final Future<ResolvedSyncConfig> Function(
     String syncDirectory,
     SyncConfigResolutionContext context,
-  )?
+  )
   readSyncConfig;
-  final Future<void> Function(String syncDirectory)? requireGitRepository;
-  final SyncConfigResolutionContext Function()?
+  final Future<void> Function(String syncDirectory) requireGitRepository;
+  final SyncConfigResolutionContext Function()
   resolveSyncConfigResolutionContext;
-  final SyncPaths Function()? resolveSyncPaths;
+  final SyncPaths Function() resolveSyncPaths;
 }
 
 Future<WritableSyncConfig> loadWritableSyncConfig([
   SyncContextDependencies dependencies = const SyncContextDependencies(),
 ]) async {
-  final effectiveResolveSyncPaths =
-      dependencies.resolveSyncPaths ?? resolveSyncPaths;
-  final effectiveResolveSyncConfigResolutionContext =
-      dependencies.resolveSyncConfigResolutionContext ??
-      resolveSyncConfigResolutionContext;
-  final effectiveRequireGitRepository =
-      dependencies.requireGitRepository ?? requireGitRepository;
-  final effectiveReadSyncConfig = dependencies.readSyncConfig ?? readSyncConfig;
-
-  final paths = effectiveResolveSyncPaths();
+  final paths = dependencies.resolveSyncPaths();
   final syncDirectory = paths.syncDirectory;
   final configPath = paths.configPath;
-  final context = effectiveResolveSyncConfigResolutionContext();
-  await effectiveRequireGitRepository(syncDirectory);
-  final config = await effectiveReadSyncConfig(syncDirectory, context);
+  final context = dependencies.resolveSyncConfigResolutionContext();
+  await dependencies.requireGitRepository(syncDirectory);
+  final config = await dependencies.readSyncConfig(syncDirectory, context);
   return WritableSyncConfig(
     config: config,
     configPath: configPath,

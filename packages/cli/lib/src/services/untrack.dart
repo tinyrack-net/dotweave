@@ -56,27 +56,38 @@ class UntrackResult {
   }
 }
 
-/// Optional overrides for [untrackTarget], standing in for the vitest module
-/// mocks used by `untrack.test.ts`.
+// A field cannot default to a top-level function of the same name -- the field
+// shadows it in the initializer -- so the defaults go through these aliases.
+const _defaultBuildSyncConfigDocument = buildSyncConfigDocument;
+const _defaultLoadWritableSyncConfig = loadWritableSyncConfig;
+const _defaultResolveTrackedEntry = resolveTrackedEntry;
+const _defaultWriteValidatedSyncConfig = writeValidatedSyncConfig;
+
+/// Collaborators of [untrackTarget], defaulted to the real implementations.
+///
+/// Non-nullable on purpose: production never overrides anything and tests
+/// always supply every field, so an optional-with-fallback field would be
+/// paying for a call pattern nobody uses — and a forgotten override would
+/// silently reach the real filesystem instead of failing to compile.
 class UntrackDependencies {
   const UntrackDependencies({
-    this.buildSyncConfigDocument,
-    this.loadWritableSyncConfig,
-    this.resolveTrackedEntry,
-    this.writeValidatedSyncConfig,
+    this.buildSyncConfigDocument = _defaultBuildSyncConfigDocument,
+    this.loadWritableSyncConfig = _defaultLoadWritableSyncConfig,
+    this.resolveTrackedEntry = _defaultResolveTrackedEntry,
+    this.writeValidatedSyncConfig = _defaultWriteValidatedSyncConfig,
   });
 
-  final RawSyncConfig Function(ResolvedSyncConfig config)?
+  final RawSyncConfig Function(ResolvedSyncConfig config)
   buildSyncConfigDocument;
-  final Future<WritableSyncConfig> Function()? loadWritableSyncConfig;
+  final Future<WritableSyncConfig> Function() loadWritableSyncConfig;
   final ResolvedSyncConfigEntry? Function(
     String target,
     List<ResolvedSyncConfigEntry> entries,
     String cwd,
     String homeDirectory,
-  )?
+  )
   resolveTrackedEntry;
-  final Future<void> Function(String syncDirectory, RawSyncConfig config)?
+  final Future<void> Function(String syncDirectory, RawSyncConfig config)
   writeValidatedSyncConfig;
 }
 
@@ -266,26 +277,17 @@ Future<UntrackResult> untrackTarget(
   String cwd, [
   UntrackDependencies dependencies = const UntrackDependencies(),
 ]) async {
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
-  final effectiveResolveTrackedEntry =
-      dependencies.resolveTrackedEntry ?? resolveTrackedEntry;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
-  final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
-
   final target = request.target.trim();
 
   if (target.isEmpty) {
     throw DotweaveError('Target path is required.');
   }
 
-  final writable = await effectiveLoadWritableSyncConfig();
+  final writable = await dependencies.loadWritableSyncConfig();
   final config = writable.config;
   final context = writable.context;
   final syncDirectory = writable.syncDirectory;
-  final entry = effectiveResolveTrackedEntry(
+  final entry = dependencies.resolveTrackedEntry(
     target,
     config.entries,
     cwd,
@@ -297,7 +299,7 @@ Future<UntrackResult> untrackTarget(
   }
 
   final counts = await _collectEntryArtifactCounts(syncDirectory, entry);
-  final nextConfig = effectiveBuildSyncConfigDocument(
+  final nextConfig = dependencies.buildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
       entries: [
@@ -310,7 +312,7 @@ Future<UntrackResult> untrackTarget(
     ),
   );
 
-  await effectiveWriteValidatedSyncConfig(syncDirectory, nextConfig);
+  await dependencies.writeValidatedSyncConfig(syncDirectory, nextConfig);
   await _removeTrackedEntryArtifacts(syncDirectory, entry);
 
   return UntrackResult(

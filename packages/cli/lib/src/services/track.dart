@@ -121,44 +121,67 @@ class TrackResult {
   final String repoPath;
 }
 
-/// Optional overrides for [trackTarget], standing in for the vitest module
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultBuildConfiguredHomeLocalPath = buildConfiguredHomeLocalPath;
+const _defaultBuildDefaultPlatformMode = buildDefaultPlatformMode;
+const _defaultBuildRepoPathWithinRoot = buildRepoPathWithinRoot;
+const _defaultBuildSyncConfigDocument = buildSyncConfigDocument;
+const _defaultDoPathsOverlap = doPathsOverlap;
+const _defaultGetPathStats = getPathStats;
+const _defaultLoadWritableSyncConfig = loadWritableSyncConfig;
+const _defaultNormalizeSyncProfileName = normalizeSyncProfileName;
+const _defaultNormalizeSyncRepoPath = normalizeSyncRepoPath;
+const _defaultResolveDefaultIdentityFile = resolveDefaultIdentityFile;
+const _defaultResolveDotweaveHomeDirectoryFromEnv =
+    resolveDotweaveHomeDirectoryFromEnv;
+const _defaultWriteValidatedSyncConfig = writeValidatedSyncConfig;
+
+/// Collaborators of [trackTarget], standing in for the vitest module
 /// mocks used by `track.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class TrackDependencies {
   const TrackDependencies({
-    this.buildConfiguredHomeLocalPath,
-    this.buildDefaultPlatformMode,
-    this.buildRepoPathWithinRoot,
-    this.buildSyncConfigDocument,
-    this.doPathsOverlap,
-    this.getPathStats,
-    this.loadWritableSyncConfig,
-    this.normalizeSyncProfileName,
-    this.normalizeSyncRepoPath,
-    this.resolveDefaultIdentityFile,
-    this.resolveDotweaveHomeDirectoryFromEnv,
-    this.writeValidatedSyncConfig,
+    this.buildConfiguredHomeLocalPath = _defaultBuildConfiguredHomeLocalPath,
+    this.buildDefaultPlatformMode = _defaultBuildDefaultPlatformMode,
+    this.buildRepoPathWithinRoot = _defaultBuildRepoPathWithinRoot,
+    this.buildSyncConfigDocument = _defaultBuildSyncConfigDocument,
+    this.doPathsOverlap = _defaultDoPathsOverlap,
+    this.getPathStats = _defaultGetPathStats,
+    this.loadWritableSyncConfig = _defaultLoadWritableSyncConfig,
+    this.normalizeSyncProfileName = _defaultNormalizeSyncProfileName,
+    this.normalizeSyncRepoPath = _defaultNormalizeSyncRepoPath,
+    this.resolveDefaultIdentityFile = _defaultResolveDefaultIdentityFile,
+    this.resolveDotweaveHomeDirectoryFromEnv =
+        _defaultResolveDotweaveHomeDirectoryFromEnv,
+    this.writeValidatedSyncConfig = _defaultWriteValidatedSyncConfig,
   });
 
-  final PlatformStringValue Function(String repoPath)?
+  final PlatformStringValue Function(String repoPath)
   buildConfiguredHomeLocalPath;
-  final PlatformSyncMode Function(SyncMode mode)? buildDefaultPlatformMode;
+  final PlatformSyncMode Function(SyncMode mode) buildDefaultPlatformMode;
   final String Function(
     String absolutePath,
     String rootPath,
     String description,
-  )?
+  )
   buildRepoPathWithinRoot;
-  final RawSyncConfig Function(ResolvedSyncConfig config)?
+  final RawSyncConfig Function(ResolvedSyncConfig config)
   buildSyncConfigDocument;
-  final bool Function(String leftPath, String rightPath)? doPathsOverlap;
-  final Future<PathStats?> Function(String path)? getPathStats;
-  final Future<WritableSyncConfig> Function()? loadWritableSyncConfig;
-  final String Function(String value)? normalizeSyncProfileName;
-  final String Function(String value)? normalizeSyncRepoPath;
-  final String Function(String dotweaveHomeDirectory)?
+  final bool Function(String leftPath, String rightPath) doPathsOverlap;
+  final Future<PathStats?> Function(String path) getPathStats;
+  final Future<WritableSyncConfig> Function() loadWritableSyncConfig;
+  final String Function(String value) normalizeSyncProfileName;
+  final String Function(String value) normalizeSyncRepoPath;
+  final String Function(String dotweaveHomeDirectory)
   resolveDefaultIdentityFile;
-  final String Function()? resolveDotweaveHomeDirectoryFromEnv;
-  final Future<void> Function(String syncDirectory, RawSyncConfig config)?
+  final String Function() resolveDotweaveHomeDirectoryFromEnv;
+  final Future<void> Function(String syncDirectory, RawSyncConfig config)
   writeValidatedSyncConfig;
 }
 
@@ -311,20 +334,15 @@ Future<ResolvedSyncConfigEntry> _buildTrackEntryCandidate(
   PartialPlatformStringValue? repoPath,
   required TrackDependencies dependencies,
 }) async {
-  final effectiveGetPathStats = dependencies.getPathStats ?? getPathStats;
-  final effectiveDoPathsOverlap = dependencies.doPathsOverlap ?? doPathsOverlap;
-  final effectiveBuildRepoPathWithinRoot =
-      dependencies.buildRepoPathWithinRoot ?? buildRepoPathWithinRoot;
-  final effectiveBuildConfiguredHomeLocalPath =
-      dependencies.buildConfiguredHomeLocalPath ?? buildConfiguredHomeLocalPath;
-  final effectiveNormalizeSyncRepoPath =
-      dependencies.normalizeSyncRepoPath ?? normalizeSyncRepoPath;
-  final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveBuildDefaultPlatformMode =
-      dependencies.buildDefaultPlatformMode ?? buildDefaultPlatformMode;
+  final effectiveDoPathsOverlap = dependencies.doPathsOverlap;
 
-  final targetStats = await effectiveGetPathStats(targetPath);
+  final effectiveNormalizeSyncRepoPath = dependencies.normalizeSyncRepoPath;
+  final effectiveNormalizeSyncProfileName =
+      dependencies.normalizeSyncProfileName;
+  final effectiveBuildDefaultPlatformMode =
+      dependencies.buildDefaultPlatformMode;
+
+  final targetStats = await dependencies.getPathStats(targetPath);
   final resolvedKind = _resolveTargetKind(targetPath, targetStats, kind);
 
   if (effectiveDoPathsOverlap(targetPath, syncDirectory)) {
@@ -346,13 +364,13 @@ Future<ResolvedSyncConfigEntry> _buildTrackEntryCandidate(
     );
   }
 
-  final localRepoPath = effectiveBuildRepoPathWithinRoot(
+  final localRepoPath = dependencies.buildRepoPathWithinRoot(
     targetPath,
     homeDirectory,
     'Sync target',
   );
   final configuredLocalPath = _mergePlatformStringValue(
-    effectiveBuildConfiguredHomeLocalPath(localRepoPath),
+    dependencies.buildConfiguredHomeLocalPath(localRepoPath),
     localPathOverrides ?? const PartialPlatformStringValue(),
   );
   final PlatformStringValue? configuredRepoPath;
@@ -445,23 +463,14 @@ Future<TrackResult> trackTarget(
   String cwd, [
   TrackDependencies dependencies = const TrackDependencies(),
 ]) async {
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
-  final effectiveResolveDefaultIdentityFile =
-      dependencies.resolveDefaultIdentityFile ?? resolveDefaultIdentityFile;
-  final effectiveResolveDotweaveHomeDirectoryFromEnv =
-      dependencies.resolveDotweaveHomeDirectoryFromEnv ??
-      resolveDotweaveHomeDirectoryFromEnv;
   final effectiveNormalizeSyncProfileName =
-      dependencies.normalizeSyncProfileName ?? normalizeSyncProfileName;
-  final effectiveNormalizeSyncRepoPath =
-      dependencies.normalizeSyncRepoPath ?? normalizeSyncRepoPath;
+      dependencies.normalizeSyncProfileName;
+  final effectiveNormalizeSyncRepoPath = dependencies.normalizeSyncRepoPath;
   final effectiveBuildDefaultPlatformMode =
-      dependencies.buildDefaultPlatformMode ?? buildDefaultPlatformMode;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
+      dependencies.buildDefaultPlatformMode;
+  final effectiveBuildSyncConfigDocument = dependencies.buildSyncConfigDocument;
   final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
+      dependencies.writeValidatedSyncConfig;
 
   final target = request.target.trim();
 
@@ -475,13 +484,13 @@ Future<TrackResult> trackTarget(
     );
   }
 
-  final writable = await effectiveLoadWritableSyncConfig();
+  final writable = await dependencies.loadWritableSyncConfig();
   final config = writable.config;
   final context = writable.context;
   final syncDirectory = writable.syncDirectory;
   final identityFile = config.age != null
-      ? effectiveResolveDefaultIdentityFile(
-          effectiveResolveDotweaveHomeDirectoryFromEnv(),
+      ? dependencies.resolveDefaultIdentityFile(
+          dependencies.resolveDotweaveHomeDirectoryFromEnv(),
         )
       : null;
   final requestProfiles = request.profiles;

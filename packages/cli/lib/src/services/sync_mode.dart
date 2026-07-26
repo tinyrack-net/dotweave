@@ -91,60 +91,85 @@ typedef SetModeTarget = ({
   PathStats? stats,
 });
 
-/// Optional overrides for [resolveSetTarget] and [setTargetMode], standing in
+// A field cannot default to a top-level function of the same name -- the
+// field shadows it in the initializer -- so the defaults go through aliases.
+const _defaultHasPlatformSpecificModeOverride = hasPlatformSpecificModeOverride;
+const _defaultBuildConfiguredHomeLocalPath = buildConfiguredHomeLocalPath;
+const _defaultBuildDefaultPlatformMode = buildDefaultPlatformMode;
+const _defaultBuildRepoPathWithinRoot = buildRepoPathWithinRoot;
+const _defaultBuildSyncConfigDocument = buildSyncConfigDocument;
+const _defaultExpandHomePath = expandHomePath;
+const _defaultFindOwningSyncEntry = findOwningSyncEntry;
+const _defaultGetPathStats = getPathStats;
+const _defaultIsExplicitLocalPath = isExplicitLocalPath;
+const _defaultLoadWritableSyncConfig = loadWritableSyncConfig;
+const _defaultNormalizeSyncRepoPath = normalizeSyncRepoPath;
+const _defaultResolveEntryRelativeRepoPath = resolveEntryRelativeRepoPath;
+const _defaultTryBuildRepoPathWithinRoot = tryBuildRepoPathWithinRoot;
+const _defaultTryNormalizeRepoPathInput = tryNormalizeRepoPathInput;
+const _defaultWriteValidatedSyncConfig = writeValidatedSyncConfig;
+
+/// Collaborators of [resolveSetTarget] and [setTargetMode], standing in
 /// for the vitest module mocks used by `sync-mode.test.ts`.
+///
+/// Every field defaults to the real implementation and none is nullable:
+/// production overrides nothing and tests supply every field, so an
+/// optional-with-fallback field paid for a call pattern nobody used. Making
+/// them required-with-default means a test that forgets one fails to compile
+/// rather than silently reaching the real filesystem.
 class SyncModeDependencies {
   const SyncModeDependencies({
-    this.buildConfiguredHomeLocalPath,
-    this.buildDefaultPlatformMode,
-    this.buildRepoPathWithinRoot,
-    this.buildSyncConfigDocument,
-    this.expandHomePath,
-    this.findOwningSyncEntry,
-    this.getPathStats,
-    this.hasPlatformSpecificModeOverride,
-    this.isExplicitLocalPath,
-    this.loadWritableSyncConfig,
-    this.normalizeSyncRepoPath,
-    this.resolveEntryRelativeRepoPath,
-    this.tryBuildRepoPathWithinRoot,
-    this.tryNormalizeRepoPathInput,
-    this.writeValidatedSyncConfig,
+    this.buildConfiguredHomeLocalPath = _defaultBuildConfiguredHomeLocalPath,
+    this.buildDefaultPlatformMode = _defaultBuildDefaultPlatformMode,
+    this.buildRepoPathWithinRoot = _defaultBuildRepoPathWithinRoot,
+    this.buildSyncConfigDocument = _defaultBuildSyncConfigDocument,
+    this.expandHomePath = _defaultExpandHomePath,
+    this.findOwningSyncEntry = _defaultFindOwningSyncEntry,
+    this.getPathStats = _defaultGetPathStats,
+    this.hasPlatformSpecificModeOverride =
+        _defaultHasPlatformSpecificModeOverride,
+    this.isExplicitLocalPath = _defaultIsExplicitLocalPath,
+    this.loadWritableSyncConfig = _defaultLoadWritableSyncConfig,
+    this.normalizeSyncRepoPath = _defaultNormalizeSyncRepoPath,
+    this.resolveEntryRelativeRepoPath = _defaultResolveEntryRelativeRepoPath,
+    this.tryBuildRepoPathWithinRoot = _defaultTryBuildRepoPathWithinRoot,
+    this.tryNormalizeRepoPathInput = _defaultTryNormalizeRepoPathInput,
+    this.writeValidatedSyncConfig = _defaultWriteValidatedSyncConfig,
   });
 
-  final PlatformStringValue Function(String repoPath)?
+  final PlatformStringValue Function(String repoPath)
   buildConfiguredHomeLocalPath;
-  final PlatformSyncMode Function(SyncMode mode)? buildDefaultPlatformMode;
+  final PlatformSyncMode Function(SyncMode mode) buildDefaultPlatformMode;
   final String Function(
     String absolutePath,
     String rootPath,
     String description,
-  )?
+  )
   buildRepoPathWithinRoot;
-  final RawSyncConfig Function(ResolvedSyncConfig config)?
+  final RawSyncConfig Function(ResolvedSyncConfig config)
   buildSyncConfigDocument;
-  final String Function(String value, String? home)? expandHomePath;
+  final String Function(String value, String? home) expandHomePath;
   final ResolvedSyncConfigEntry? Function(
     ResolvedSyncConfig config,
     String repoPath,
-  )?
+  )
   findOwningSyncEntry;
-  final Future<PathStats?> Function(String path)? getPathStats;
-  final bool Function(PlatformSyncMode configuredMode)?
+  final Future<PathStats?> Function(String path) getPathStats;
+  final bool Function(PlatformSyncMode configuredMode)
   hasPlatformSpecificModeOverride;
-  final bool Function(String target)? isExplicitLocalPath;
-  final Future<WritableSyncConfig> Function()? loadWritableSyncConfig;
-  final String Function(String value)? normalizeSyncRepoPath;
-  final String? Function(ResolvedSyncConfigEntry entry, String repoPath)?
+  final bool Function(String target) isExplicitLocalPath;
+  final Future<WritableSyncConfig> Function() loadWritableSyncConfig;
+  final String Function(String value) normalizeSyncRepoPath;
+  final String? Function(ResolvedSyncConfigEntry entry, String repoPath)
   resolveEntryRelativeRepoPath;
   final String? Function(
     String absolutePath,
     String rootPath,
     String description,
-  )?
+  )
   tryBuildRepoPathWithinRoot;
-  final String? Function(String value)? tryNormalizeRepoPathInput;
-  final Future<void> Function(String syncDirectory, RawSyncConfig config)?
+  final String? Function(String value) tryNormalizeRepoPathInput;
+  final Future<void> Function(String syncDirectory, RawSyncConfig config)
   writeValidatedSyncConfig;
 }
 
@@ -235,20 +260,10 @@ Future<SetModeTarget> resolveSetTarget(
   String homeDirectory, [
   SyncModeDependencies dependencies = const SyncModeDependencies(),
 ]) async {
-  final effectiveIsExplicitLocalPath =
-      dependencies.isExplicitLocalPath ?? isExplicitLocalPath;
-  final effectiveExpandHomePath = dependencies.expandHomePath ?? expandHomePath;
-  final effectiveBuildRepoPathWithinRoot =
-      dependencies.buildRepoPathWithinRoot ?? buildRepoPathWithinRoot;
-  final effectiveTryBuildRepoPathWithinRoot =
-      dependencies.tryBuildRepoPathWithinRoot ?? tryBuildRepoPathWithinRoot;
-  final effectiveTryNormalizeRepoPathInput =
-      dependencies.tryNormalizeRepoPathInput ?? tryNormalizeRepoPathInput;
-  final effectiveGetPathStats = dependencies.getPathStats ?? getPathStats;
-  final effectiveFindOwningSyncEntry =
-      dependencies.findOwningSyncEntry ?? findOwningSyncEntry;
+  final effectiveGetPathStats = dependencies.getPathStats;
+  final effectiveFindOwningSyncEntry = dependencies.findOwningSyncEntry;
   final effectiveResolveEntryRelativeRepoPath =
-      dependencies.resolveEntryRelativeRepoPath ?? resolveEntryRelativeRepoPath;
+      dependencies.resolveEntryRelativeRepoPath;
 
   final trimmedTarget = target.trim();
 
@@ -262,18 +277,18 @@ Future<SetModeTarget> resolveSetTarget(
     );
   }
 
-  final explicit = effectiveIsExplicitLocalPath(trimmedTarget);
+  final explicit = dependencies.isExplicitLocalPath(trimmedTarget);
   final localTargetPath = _resolvePath([
     cwd,
-    effectiveExpandHomePath(trimmedTarget, homeDirectory),
+    dependencies.expandHomePath(trimmedTarget, homeDirectory),
   ]);
   final localRepoPath = explicit
-      ? effectiveBuildRepoPathWithinRoot(
+      ? dependencies.buildRepoPathWithinRoot(
           localTargetPath,
           homeDirectory,
           'Sync set target',
         )
-      : effectiveTryBuildRepoPathWithinRoot(
+      : dependencies.tryBuildRepoPathWithinRoot(
           localTargetPath,
           homeDirectory,
           'Sync set target',
@@ -397,7 +412,7 @@ Future<SetModeTarget> resolveSetTarget(
   }
 
   // Phase 2: Fallback to repo path resolution
-  final repoPath = effectiveTryNormalizeRepoPathInput(trimmedTarget);
+  final repoPath = dependencies.tryNormalizeRepoPathInput(trimmedTarget);
 
   if (repoPath == null) {
     throw DotweaveError(
@@ -470,23 +485,15 @@ Future<SetModeResult> setTargetMode(
   String cwd, [
   SyncModeDependencies dependencies = const SyncModeDependencies(),
 ]) async {
-  final effectiveLoadWritableSyncConfig =
-      dependencies.loadWritableSyncConfig ?? loadWritableSyncConfig;
   final effectiveBuildDefaultPlatformMode =
-      dependencies.buildDefaultPlatformMode ?? buildDefaultPlatformMode;
+      dependencies.buildDefaultPlatformMode;
   final effectiveHasPlatformSpecificModeOverride =
-      dependencies.hasPlatformSpecificModeOverride ??
-      hasPlatformSpecificModeOverride;
-  final effectiveBuildSyncConfigDocument =
-      dependencies.buildSyncConfigDocument ?? buildSyncConfigDocument;
+      dependencies.hasPlatformSpecificModeOverride;
+  final effectiveBuildSyncConfigDocument = dependencies.buildSyncConfigDocument;
   final effectiveWriteValidatedSyncConfig =
-      dependencies.writeValidatedSyncConfig ?? writeValidatedSyncConfig;
-  final effectiveBuildConfiguredHomeLocalPath =
-      dependencies.buildConfiguredHomeLocalPath ?? buildConfiguredHomeLocalPath;
-  final effectiveNormalizeSyncRepoPath =
-      dependencies.normalizeSyncRepoPath ?? normalizeSyncRepoPath;
+      dependencies.writeValidatedSyncConfig;
 
-  final writable = await effectiveLoadWritableSyncConfig();
+  final writable = await dependencies.loadWritableSyncConfig();
   final config = writable.config;
   final context = writable.context;
   final syncDirectory = writable.syncDirectory;
@@ -575,7 +582,7 @@ Future<SetModeResult> setTargetMode(
     );
   }
 
-  final childConfiguredLocalPath = effectiveBuildConfiguredHomeLocalPath(
+  final childConfiguredLocalPath = dependencies.buildConfiguredHomeLocalPath(
     childLocalRelativePath,
   );
   final childConfiguredRepoPath = childRepoPath == childLocalRelativePath
@@ -648,7 +655,7 @@ Future<SetModeResult> setTargetMode(
         ? null
         : _buildDefaultConfiguredRepoPath(
             childConfiguredRepoPath,
-            effectiveNormalizeSyncRepoPath,
+            dependencies.normalizeSyncRepoPath,
           ),
     profiles: [],
     profilesExplicit: false,
