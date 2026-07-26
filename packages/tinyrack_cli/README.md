@@ -14,10 +14,12 @@ logger, spinner, and colour theme.
 `package:args` is the right choice for most Dart CLIs. Reach for this one only
 if you need what it does not provide:
 
-- **Completion proposals in the core.** The framework computes the candidate
-  list for any partial command line — including per-argument dynamic values
-  (file paths, remote names) supplied by your own callback. `package:args` has
-  no completion API; `cli_completion` adds one for bash and zsh only.
+- **Completion, end to end, for four shells.** `proposeCompletions` computes
+  the candidate list for any partial command line — including per-argument
+  dynamic values (file paths, remote names) from your own callback — and
+  `CompletionScripts` generates the bash, zsh, fish, and PowerShell scripts
+  that call back into it. `package:args` has no completion API;
+  `cli_completion` adds one for bash and zsh only.
 - **Full control of help layout.** Help is rendered by this package rather than
   a private class, so `USAGE` / `FLAGS` / `ARGUMENTS` / `COMMANDS` sections,
   column alignment, and the `--flag/--no-flag` presentation are all part of the
@@ -88,6 +90,31 @@ FLAGS
 COMMANDS
   greet  Greet someone
 ```
+
+## Shell completion
+
+Register a hidden route that answers with one `completion<TAB>description`
+line per candidate, then print the matching script from a user-facing command:
+
+```dart
+final scripts = CompletionScripts(executableName: 'example');
+
+// Inside the hidden `__complete` command:
+final candidates = await proposeCompletions(
+  app,
+  scripts.resolveCompletionInputs(positional.cast<String>()),
+  context,
+);
+
+// Inside `example completion zsh`:
+context.process.stdout.write(scripts.zsh);
+```
+
+`resolveCompletionInputs` normalizes what the shell passed: it prefers
+`COMP_LINE` when set (which preserves a trailing space, meaning "start a new
+word") and drops a leading executable token. Shell function names are derived
+from the executable with illegal characters replaced, so `my-cli` produces
+`__my_cli_complete` rather than an unparseable `__my-cli_complete`.
 
 ## Environment access
 
