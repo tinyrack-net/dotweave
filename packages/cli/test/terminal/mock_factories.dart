@@ -1,7 +1,7 @@
 // Dart port of the terminal-stream subset of
 // `packages/cli/src/test/helpers/mock-factories.ts`.
 
-import 'package:dotweave/src/services/terminal/logger.dart';
+import 'package:dotweave/src/terminal/logger.dart';
 
 /// Mirror of the TS `MockStream`: records writes and counts the
 /// clearLine/cursorTo spy calls.

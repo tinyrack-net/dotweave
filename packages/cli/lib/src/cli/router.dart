@@ -22,7 +22,7 @@
 import 'dart:async';
 
 import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/services/terminal/logger.dart' show WriteStream;
+import 'package:dotweave/src/terminal/logger.dart' show WriteStream;
 
 part 'router_help.dart';
 part 'router_parse.dart';

@@ -2,8 +2,8 @@
 
 import 'dart:io' as io;
 
-import 'package:dotweave/src/services/terminal/spinner.dart';
-import 'package:dotweave/src/services/terminal/theme.dart';
+import 'package:dotweave/src/terminal/spinner.dart';
+import 'package:dotweave/src/terminal/theme.dart';
 
 /// Mirror of the TS `CliLogger` interface.
 abstract class CliLogger {

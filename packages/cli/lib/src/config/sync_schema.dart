@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/migration.dart';
+import 'package:dotweave/src/config/migrations/sync_v8.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
 import 'package:dotweave/src/config/xdg.dart';
@@ -12,7 +13,6 @@ import 'package:dotweave/src/lib/json_format.dart';
 import 'package:dotweave/src/lib/jsonc.dart';
 import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/lib/validation.dart';
-import 'package:dotweave/src/migrations/sync_v8.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `config/sync-schema.ts`: manifest.jsonc schema validation

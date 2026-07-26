@@ -1,7 +1,7 @@
 // Test stream capturing CLI output; the seam replacing the TS tests' spies
 // on `process.stdout.write` / `process.stderr.write`.
 
-import 'package:dotweave/src/services/terminal/logger.dart';
+import 'package:dotweave/src/terminal/logger.dart';
 
 class CaptureStream implements WriteStream {
   final StringBuffer _buffer = StringBuffer();

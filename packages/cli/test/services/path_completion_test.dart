@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dotweave/src/services/terminal/path_completion.dart';
+import 'package:dotweave/src/services/path_completion.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

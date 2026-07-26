@@ -1,4 +1,4 @@
-import 'package:dotweave/src/migrations/global_v3.dart';
+import 'package:dotweave/src/config/migrations/global_v3.dart';
 import 'package:test/test.dart';
 
 void main() {

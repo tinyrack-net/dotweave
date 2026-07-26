@@ -1,4 +1,4 @@
-import 'package:dotweave/src/services/terminal/theme.dart';
+import 'package:dotweave/src/terminal/theme.dart';
 import 'package:test/test.dart';
 
 /// Mirror of the vitest picocolors mock: each style tags its input with the
