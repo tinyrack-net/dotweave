@@ -2,13 +2,13 @@
 
 import 'dart:io' as io;
 
+import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/identity_file.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/prompt.dart';
 import 'package:dotweave/src/services/init.dart';
-import 'package:dotweave/src/services/terminal/logger.dart';
 
 String _formatGitSummary(InitResult result) {
   switch (result.gitAction) {
@@ -34,7 +34,7 @@ final Command initCommand = buildCommand(
         'Create or connect the local dotweave repository under your dotweave app-data directory, then store the sync settings used by later pull and push operations. If local sync repository data already exists, init fails unless --force is provided. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.',
   ),
   func: (context, flags, positional) async {
-    final logger = createCliLogger();
+    final logger = loggerFor(context);
     final keyFile = flags['keyFile'] as String?;
     final keyFileContents = keyFile == null
         ? null

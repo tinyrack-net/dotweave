@@ -154,13 +154,19 @@ Future<_CommandRun> _runCommand(
   final capturedStdout = _RecordingStdout();
   final capturedStderr = _RecordingStdout();
   final stdinStub = _StubStdin(hasTerminal: stdinIsTTY, lines: stdinLines);
+  // Commands now log through `context.process`, so their output is readable
+  // straight off these streams. The `IOOverrides` capture below stays for
+  // anything that still writes to the process streams directly (prompts, and
+  // any service that bypasses the logger).
+  final contextStdout = CaptureStream();
+  final contextStderr = CaptureStream();
   Object? thrown;
 
   await io.IOOverrides.runZoned(
     () async {
       final func = await command.loader();
       final context = RunContext(
-        process: RunProcess(stdout: CaptureStream(), stderr: CaptureStream()),
+        process: RunProcess(stdout: contextStdout, stderr: contextStderr),
       );
 
       try {
@@ -181,8 +187,8 @@ Future<_CommandRun> _runCommand(
   );
 
   return _CommandRun(
-    stdout: stripAnsi(capturedStdout.text),
-    stderr: stripAnsi(capturedStderr.text),
+    stdout: stripAnsi(contextStdout.text + capturedStdout.text),
+    stderr: stripAnsi(contextStderr.text + capturedStderr.text),
     error: thrown,
   );
 }
