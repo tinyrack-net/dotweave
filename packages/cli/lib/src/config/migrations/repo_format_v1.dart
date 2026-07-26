@@ -1,7 +1,7 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:path/path.dart' as p;
 
 const _physicalProfilesRoot = 'profiles';

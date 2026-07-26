@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dotweave/src/lib/crypto.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/crypto.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave_age/dotweave_age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';

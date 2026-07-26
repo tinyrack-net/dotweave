@@ -1,7 +1,7 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `config/sync-queries.ts`.

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotweave/src/config/global_config.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

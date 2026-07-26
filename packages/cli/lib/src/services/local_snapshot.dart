@@ -3,13 +3,13 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/concurrency.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/file_mode.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/concurrency.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/file_mode.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/local-snapshot.ts`: walks the tracked local paths into

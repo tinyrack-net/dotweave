@@ -4,10 +4,10 @@ import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/migration.dart';
 import 'package:dotweave/src/config/migrations/global_v3.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/json_format.dart';
-import 'package:dotweave/src/lib/jsonc.dart';
-import 'package:dotweave/src/lib/validation.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/json_format.dart';
+import 'package:dotweave/src/util/jsonc.dart';
+import 'package:dotweave/src/util/validation.dart';
 
 final ConfigMigrationRegistry _globalConfigMigrationRegistry = {
   2: migrateGlobalConfigV2ToV3,

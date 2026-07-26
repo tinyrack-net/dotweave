@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:dotweave/src/assets/dotweave_skill.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/skill-install.ts`: installation of the bundled dotweave

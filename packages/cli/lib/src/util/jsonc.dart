@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 
 /// Strips single-line (//) and block (/* */) comments from a JSONC string.
 /// Uses a state machine to avoid stripping comment-like sequences inside

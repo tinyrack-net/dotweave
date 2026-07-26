@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

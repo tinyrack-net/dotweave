@@ -10,8 +10,8 @@
 
 import 'package:dotweave/src/application.dart';
 import 'package:dotweave/src/cli/root_commands.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/version.g.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/version.g.dart';
 import 'package:test/test.dart';
 
 import 'helpers/capture_stream.dart';

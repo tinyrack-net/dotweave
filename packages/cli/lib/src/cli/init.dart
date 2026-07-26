@@ -6,9 +6,9 @@ import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/identity_file.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/prompt.dart';
 import 'package:dotweave/src/services/init.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/prompt.dart';
 
 String _formatGitSummary(InitResult result) {
   switch (result.gitAction) {

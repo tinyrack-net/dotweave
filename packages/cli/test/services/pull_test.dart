@@ -2,11 +2,11 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/pull.dart';
 import 'package:dotweave/src/services/pull_apply.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/path_util.dart';
 import 'package:test/test.dart';
 
 PullCounts zeroPullCounts(List<EntryMaterialization?> materializations) {

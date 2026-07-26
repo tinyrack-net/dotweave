@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dotweave/src/lib/filesystem.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `services/repository-ignore.ts`: keeps the managed secret

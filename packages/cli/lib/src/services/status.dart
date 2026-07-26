@@ -1,10 +1,10 @@
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/services/pull.dart';
 import 'package:dotweave/src/services/push.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/git.dart';
 
 // Mirror of `services/status.ts`: computes both push and pull change previews
 // without writing.

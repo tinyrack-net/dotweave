@@ -1,6 +1,6 @@
-import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/terminal/spinner.dart';
 import 'package:dotweave/src/terminal/theme.dart';
+import 'package:dotweave/src/util/env.dart';
 import 'package:test/test.dart';
 
 import 'mock_factories.dart';

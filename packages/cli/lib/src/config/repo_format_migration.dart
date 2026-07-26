@@ -1,5 +1,5 @@
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/error.dart';
 
 export 'package:dotweave/src/config/sync_schema.dart' show ResolvedSyncConfig;
 

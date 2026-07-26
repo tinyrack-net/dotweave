@@ -1,4 +1,4 @@
-import 'package:dotweave/src/lib/concurrency.dart';
+import 'package:dotweave/src/util/concurrency.dart';
 import 'package:test/test.dart';
 
 void main() {

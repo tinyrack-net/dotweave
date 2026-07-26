@@ -28,20 +28,20 @@ String? _layerOf(String posixPath) {
 /// not touch `terminal`: presentation lives above the service layer, and the
 /// service layer currently has zero imports of it.
 const Map<String, Set<String>> _allowedDependencies = {
-  'cli': {'services', 'config', 'terminal', 'lib', 'assets'},
-  'terminal': {'lib'},
-  'services': {'config', 'lib', 'assets', 'crypto'},
-  'config': {'lib'},
-  'lib': {'crypto'},
-  'crypto': <String>{},
+  'cli': {'services', 'config', 'terminal', 'util', 'assets'},
+  'terminal': {'util'},
+  'services': {'config', 'util', 'assets'},
+  'config': {'util'},
+  'util': <String>{},
   'assets': <String>{},
 };
 
 /// Layers that must stay free of direct process/filesystem access.
 ///
-/// `crypto` is pure computation and its freedom from `dart:io` is what keeps
-/// it extractable as a standalone package.
-const Set<String> _layersWithoutDartIo = {'crypto'};
+/// Empty since the age implementation moved to `packages/age`, where the rule
+/// is now enforced by the package boundary itself. Kept because the check is
+/// the natural home for the next such invariant.
+const Set<String> _layersWithoutDartIo = <String>{};
 
 Iterable<File> _sourceFiles(String directory) sync* {
   final root = Directory(directory);

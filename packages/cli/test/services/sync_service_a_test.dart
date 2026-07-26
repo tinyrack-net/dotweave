@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/services/init.dart';
 import 'package:dotweave/src/services/profile.dart';
 import 'package:dotweave/src/services/pull.dart';
@@ -10,6 +9,7 @@ import 'package:dotweave/src/services/push.dart';
 import 'package:dotweave/src/services/status.dart';
 import 'package:dotweave/src/services/sync_mode.dart';
 import 'package:dotweave/src/services/track.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

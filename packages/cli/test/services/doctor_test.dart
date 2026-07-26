@@ -2,10 +2,10 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/doctor.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:test/test.dart';
 
 /// Stands in for the vitest `vi.hoisted` mock registry used by

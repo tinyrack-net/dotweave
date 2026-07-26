@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/services/untrack.dart';
+import 'package:dotweave/src/util/filesystem.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

@@ -3,8 +3,8 @@ import 'package:dotweave/src/config/global_config.dart';
 import 'package:dotweave/src/config/identity_file.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/git.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/git.dart';
 
 // Mirror of `services/sync-context.ts`: effective sync config construction
 // and loading of the sync/global configuration pair.

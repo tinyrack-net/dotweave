@@ -1,8 +1,8 @@
 import 'package:dotweave/src/config/global_config.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:test/test.dart';
 
 const RuntimeAgeConfig testAge = RuntimeAgeConfig(

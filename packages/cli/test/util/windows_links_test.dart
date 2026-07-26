@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/fs_errors.dart';
-import 'package:dotweave/src/lib/windows/reparse.dart';
-import 'package:dotweave/src/lib/windows/win32_links.dart' as win32_links;
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/fs_errors.dart';
+import 'package:dotweave/src/util/windows/reparse.dart';
+import 'package:dotweave/src/util/windows/win32_links.dart' as win32_links;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

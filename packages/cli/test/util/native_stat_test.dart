@@ -7,8 +7,8 @@
 
 import 'dart:io';
 
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/native_stat.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/native_stat.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

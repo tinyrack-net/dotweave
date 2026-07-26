@@ -1,13 +1,13 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/global_config.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/filesystem.dart';
-import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/services/config_file.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/services/sync_paths.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/filesystem.dart';
+import 'package:dotweave/src/util/git.dart';
 
 // Mirror of `services/profile.ts`: profile add/list/remove/use service —
 // per-machine subset syncing, profile registry in the manifest, and the

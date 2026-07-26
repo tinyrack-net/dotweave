@@ -4,8 +4,8 @@
 // passes an explicit `Env` through `resolveCompletionInputs`'s injectable
 // environment seam instead (no `afterEach` unstubbing needed).
 
-import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/services/autocomplete.dart';
+import 'package:dotweave/src/util/env.dart';
 import 'package:test/test.dart';
 
 void main() {

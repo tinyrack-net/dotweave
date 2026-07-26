@@ -6,13 +6,13 @@ import 'package:dotweave/src/config/migrations/sync_v8.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
 import 'package:dotweave/src/config/xdg.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/error.dart';
-import 'package:dotweave/src/lib/file_mode.dart';
-import 'package:dotweave/src/lib/json_format.dart';
-import 'package:dotweave/src/lib/jsonc.dart';
-import 'package:dotweave/src/lib/path_util.dart';
-import 'package:dotweave/src/lib/validation.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/error.dart';
+import 'package:dotweave/src/util/file_mode.dart';
+import 'package:dotweave/src/util/json_format.dart';
+import 'package:dotweave/src/util/jsonc.dart';
+import 'package:dotweave/src/util/path_util.dart';
+import 'package:dotweave/src/util/validation.dart';
 import 'package:path/path.dart' as p;
 
 // Mirror of `config/sync-schema.ts`: manifest.jsonc schema validation

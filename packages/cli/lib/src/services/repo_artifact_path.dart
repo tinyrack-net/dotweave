@@ -1,6 +1,6 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/error.dart';
+import 'package:dotweave/src/util/error.dart';
 
 // The artifact path codec: the pure half of `services/repo-artifacts.ts`.
 //

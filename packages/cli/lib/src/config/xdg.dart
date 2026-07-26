@@ -1,6 +1,6 @@
 import 'package:dotweave/src/config/constants.dart';
-import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/lib/string.dart';
+import 'package:dotweave/src/util/env.dart';
+import 'package:dotweave/src/util/string.dart';
 import 'package:path/path.dart' as p;
 
 /// Mirrors node:path `resolve` using the platform-native path context:

@@ -1,14 +1,14 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/lib/collation.dart';
-import 'package:dotweave/src/lib/concurrency.dart';
-import 'package:dotweave/src/lib/git.dart';
-import 'package:dotweave/src/lib/path_util.dart';
-import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/pull_apply.dart';
 import 'package:dotweave/src/services/repo_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/collation.dart';
+import 'package:dotweave/src/util/concurrency.dart';
+import 'package:dotweave/src/util/git.dart';
+import 'package:dotweave/src/util/path_util.dart';
+import 'package:dotweave/src/util/perf_trace.dart';
 
 // Mirror of `services/pull.ts`: pull orchestration that turns the repository
 // snapshot into per-entry materializations, a PullPlan of updated/deleted

@@ -13,7 +13,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dotweave/src/lib/version.g.dart';
+import 'package:dotweave/src/util/version.g.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
