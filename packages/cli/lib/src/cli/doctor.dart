@@ -1,10 +1,10 @@
 // Dart port of `packages/cli/src/cli/doctor.ts`.
 
 import 'package:dotweave/src/cli/command_logger.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/doctor.dart';
-import 'package:dotweave/src/terminal/theme.dart';
 import 'package:dotweave/src/util/error.dart';
+import 'package:tinyrack_cli/terminal.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 String _remapCheckIdForDisplay(String checkId) {
   switch (checkId) {

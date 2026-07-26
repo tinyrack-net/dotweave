@@ -2,8 +2,8 @@
 
 import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:dotweave/src/cli/root_commands.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 RouteMap buildRootRoute() {
   final (:autocompleteRoute, :completeCommand) = buildAutocompleteRoute();

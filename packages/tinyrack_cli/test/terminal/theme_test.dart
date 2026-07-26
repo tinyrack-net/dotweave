@@ -1,5 +1,5 @@
-import 'package:dotweave/src/terminal/theme.dart';
 import 'package:test/test.dart';
+import 'package:tinyrack_cli/terminal.dart';
 
 /// Mirror of the vitest picocolors mock: each style tags its input with the
 /// style name.

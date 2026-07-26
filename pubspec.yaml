@@ -5,4 +5,5 @@ environment:
 workspace:
   - packages/age
   - packages/cli
+  - packages/tinyrack_cli
   - packages/tools

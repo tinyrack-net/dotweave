@@ -2,8 +2,9 @@
 
 import 'dart:io' as io;
 
-import 'package:dotweave/src/terminal/spinner.dart';
-import 'package:dotweave/src/terminal/theme.dart';
+import 'package:tinyrack_cli/src/terminal/spinner.dart';
+import 'package:tinyrack_cli/src/terminal/theme.dart';
+import 'package:tinyrack_cli/src/write_stream.dart';
 
 /// Mirror of the TS `CliLogger` interface.
 abstract class CliLogger {
@@ -33,50 +34,6 @@ abstract class CliLogger {
 
   /// Start and return a spinner bound to stdout for long-running operations.
   Spinner spinner(String text);
-}
-
-/// Mirror of the TS `Stream` type:
-/// `Pick<NodeJS.WriteStream, "write" | "isTTY" | "clearLine" | "cursorTo">`.
-///
-/// Named `WriteStream` rather than `Stream` so it does not shadow
-/// `dart:async`'s `Stream` in every consumer.
-abstract class WriteStream {
-  bool get isTTY;
-  void write(String chunk);
-  void clearLine(int dir);
-  void cursorTo(int column);
-}
-
-/// Adapts a `dart:io` [io.Stdout] to the Node write-stream surface, emitting
-/// the same ANSI sequences Node's `clearLine`/`cursorTo` write.
-class StdioWriteStream implements WriteStream {
-  StdioWriteStream(this._sink);
-
-  final io.Stdout _sink;
-
-  @override
-  bool get isTTY => _sink.hasTerminal;
-
-  @override
-  void write(String chunk) {
-    _sink.write(chunk);
-  }
-
-  @override
-  void clearLine(int dir) {
-    _sink.write(
-      dir < 0
-          ? '\x1B[1K'
-          : dir > 0
-          ? '\x1B[0K'
-          : '\x1B[2K',
-    );
-  }
-
-  @override
-  void cursorTo(int column) {
-    _sink.write('\x1B[${column + 1}G');
-  }
 }
 
 const String _INDENT = '  '; // ignore: constant_identifier_names

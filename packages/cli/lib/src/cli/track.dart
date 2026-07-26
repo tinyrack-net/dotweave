@@ -8,11 +8,11 @@ import 'dart:io' as io;
 
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/platform_flags.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/services/path_completion.dart';
 import 'package:dotweave/src/services/track.dart';
 import 'package:dotweave/src/util/error.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 List<String>? _normalizeFlagValues(Object? values) {
   return (values as List<Object?>?)?.cast<String>();

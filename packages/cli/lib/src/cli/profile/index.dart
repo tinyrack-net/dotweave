@@ -4,7 +4,7 @@ import 'package:dotweave/src/cli/profile/add.dart';
 import 'package:dotweave/src/cli/profile/list.dart';
 import 'package:dotweave/src/cli/profile/remove.dart';
 import 'package:dotweave/src/cli/profile/use.dart';
-import 'package:dotweave/src/cli/router.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final RouteMap profileRoute = buildRouteMap(
   docs: const RouteMapDocs(

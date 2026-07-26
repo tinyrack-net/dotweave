@@ -10,7 +10,7 @@
 
 import 'dart:io';
 
-import 'package:dotweave/src/util/env.dart';
+import 'package:tinyrack_cli/src/env.dart';
 
 /// Mirrors NodeJS `process.platform` for the values picocolors checks.
 String _processPlatform() {
@@ -35,22 +35,22 @@ bool _isTruthyEnvValue(String? value) {
 /// Node reads `process.argv`; Dart has no global argv, so [argv] defaults to
 /// an empty list (the dotweave CLI never passes `--color`/`--no-color`).
 bool resolveIsColorSupported({
-  Env? env,
+  EnvLookup? readEnv,
   List<String> argv = const [],
   String? platform,
   bool? stdoutIsTTY,
 }) {
-  final environment = env ?? ENV;
+  final environment = readEnv ?? lookupPlatformEnv;
   final platformName = platform ?? _processPlatform();
   final isTTY = stdoutIsTTY ?? stdout.hasTerminal;
 
-  return !(_isTruthyEnvValue(environment['NO_COLOR']) ||
+  return !(_isTruthyEnvValue(environment('NO_COLOR')) ||
           argv.contains('--no-color')) &&
-      (_isTruthyEnvValue(environment['FORCE_COLOR']) ||
+      (_isTruthyEnvValue(environment('FORCE_COLOR')) ||
           argv.contains('--color') ||
           platformName == 'win32' ||
-          (isTTY && environment['TERM'] != 'dumb') ||
-          _isTruthyEnvValue(environment['CI']));
+          (isTTY && environment('TERM') != 'dumb') ||
+          _isTruthyEnvValue(environment('CI')));
 }
 
 /// picocolors' `replaceClose`: rewrites nested close sequences so wrapping a

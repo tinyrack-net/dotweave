@@ -21,8 +21,8 @@
 
 import 'dart:async';
 
-import 'package:dotweave/src/terminal/logger.dart' show WriteStream;
-import 'package:dotweave/src/util/env.dart';
+import 'package:tinyrack_cli/src/env.dart';
+import 'package:tinyrack_cli/src/write_stream.dart';
 
 part 'router_help.dart';
 part 'router_parse.dart';
@@ -45,12 +45,15 @@ class RouterInternalError implements Exception {
 /// Mirror of the `process` slice stricli requires from a run context:
 /// stdout/stderr write streams, the environment, and a mutable exit code.
 class RunProcess {
-  RunProcess({required this.stdout, required this.stderr, Env? env})
-    : env = env ?? ENV;
+  RunProcess({required this.stdout, required this.stderr, EnvLookup? readEnv})
+    : readEnv = readEnv ?? lookupPlatformEnv;
 
   final WriteStream stdout;
   final WriteStream stderr;
-  final Env env;
+
+  /// Environment lookup used for `STRICLI_NO_COLOR`. Supply one to read from
+  /// somewhere other than the process environment.
+  final EnvLookup readEnv;
   int? exitCode;
 }
 
@@ -1116,8 +1119,8 @@ Application buildApplication(
 // ---------------------------------------------------------------------------
 
 /// Mirror of `checkEnvironmentVariable` (loose-boolean environment check).
-bool _checkEnvironmentVariable(Env env, String varName) {
-  final value = env[varName];
+bool _checkEnvironmentVariable(EnvLookup readEnv, String varName) {
+  final value = readEnv(varName);
   return value != null && looseBooleanParser(value);
 }
 
@@ -1129,7 +1132,7 @@ bool _shouldUseAnsiColor(
   DocumentationConfig config,
 ) {
   return !config.disableAnsiColor &&
-      !_checkEnvironmentVariable(process.env, 'STRICLI_NO_COLOR') &&
+      !_checkEnvironmentVariable(process.readEnv, 'STRICLI_NO_COLOR') &&
       stream.isTTY;
 }
 

@@ -11,11 +11,11 @@ import 'package:dotweave/src/cli/init.dart';
 import 'package:dotweave/src/cli/profile/index.dart';
 import 'package:dotweave/src/cli/pull.dart';
 import 'package:dotweave/src/cli/push.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/skill/index.dart';
 import 'package:dotweave/src/cli/status.dart';
 import 'package:dotweave/src/cli/track.dart';
 import 'package:dotweave/src/cli/untrack.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Map<String, RoutingTarget> rootCommandRoutes = {
   'cd': cdCommand,

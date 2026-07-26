@@ -29,7 +29,6 @@ import 'package:dotweave/src/cli/profile/remove.dart';
 import 'package:dotweave/src/cli/profile/use.dart';
 import 'package:dotweave/src/cli/pull.dart';
 import 'package:dotweave/src/cli/push.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/skill/install.dart';
 import 'package:dotweave/src/cli/status.dart';
 import 'package:dotweave/src/cli/track.dart';
@@ -44,6 +43,7 @@ import 'package:dotweave/src/services/track.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 import '../helpers/capture_stream.dart';
 import '../helpers/sync_fixture.dart';
