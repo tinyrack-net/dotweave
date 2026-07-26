@@ -16,6 +16,22 @@ tests pin it.
 
 ## Divergences
 
+- **Path removed mid-scan**: the snapshot walkers asserted a stat result was
+  non-null for a path the directory listing had just reported. When the path
+  disappears in between (an editor rewriting a dotfile during a push), TS and
+  the original Dart port both surfaced a raw runtime `TypeError`. The port now
+  raises `PATH_DISAPPEARED` with the path and a retry hint. Pinned by
+  `test/util/filesystem_test.dart`.
+- **Git failure details**: a git command that exits non-zero now raises a
+  `DotweaveError` with code `GIT_COMMAND_FAILED` instead of a bare `Exception`.
+  The rendered first line is unchanged (stderr, else stdout, else the exec
+  message); the only added output is stdout in the rare case git wrote to both
+  streams, which the old rethrow discarded.
+- **Corrupt committed manifest**: `readCommittedProfileRegistry` reported a
+  manifest that is committed but fails to parse as "no committed registry",
+  identical to a repository with no HEAD. Parse failures now propagate; only
+  git-level failures still mean "absent".
+
 - **Sort order (`localeCompare`)**: TS sorts with ICU collation via
   `String.prototype.localeCompare`. Dart port uses
   `lib/src/lib/collation.dart` `compareLocaleLike` — case-insensitive primary
