@@ -187,6 +187,36 @@ describe("Dotweave built documentation", () => {
     await page.close();
   });
 
+  it("keeps the desktop globe larger than the terminal backdrop", async () => {
+    const page = await browser.newPage({
+      reducedMotion: "reduce",
+      viewport: { height: 900, width: 1440 },
+    });
+
+    await page.goto(`${origin}/en/`);
+    await page.locator('html[data-hydrated="true"]').waitFor();
+
+    const geometry = await page.evaluate(() => {
+      const globe = document.querySelector<HTMLElement>(".dotweave-globe");
+      const terminal =
+        document.querySelector<HTMLElement>(".dotweave-terminal");
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        ".dotweave-globe canvas",
+      );
+      if (globe === null || terminal === null || canvas === null)
+        throw new Error("Hero globe geometry is missing");
+      return {
+        globeWidth: globe.getBoundingClientRect().width,
+        terminalWidth: terminal.getBoundingClientRect().width,
+        canvasWidth: canvas.getBoundingClientRect().width,
+      };
+    });
+
+    expect(geometry.globeWidth).toBeGreaterThan(geometry.terminalWidth * 1.4);
+    expect(geometry.canvasWidth).toBe(geometry.globeWidth);
+    await page.close();
+  });
+
   it("renders localized interactive docs in mobile dark mode", async () => {
     const page = await browser.newPage({
       colorScheme: "dark",
