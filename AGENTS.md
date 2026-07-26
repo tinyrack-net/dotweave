@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/cli` and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`), the age encryption implementation (`packages/age`), and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/age`, `packages/cli`, and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -16,10 +16,14 @@ When writing, rewriting, translating, or reviewing public Dotweave documentation
 ## Mandatory Validation Loop
 You MUST execute a validation loop for every change to ensure system integrity.
 
-For Dart packages (run from `packages/cli` and/or `packages/tools`, whichever you changed):
+For Dart packages (run from `packages/age`, `packages/cli`, and/or `packages/tools`, whichever you changed):
 - **Format**: `dart format .`
 - **Analyze**: `dart analyze --fatal-infos`
 - **Test**: `dart test`
+
+`packages/age` and `packages/cli` tag their Node/PTY-dependent suites, so
+`dart test -x interop` is the offline run; the `interop` tests need
+`pnpm install` in `packages/age/test/interop` first.
 
 For the homepage (run from `homepage/`):
 - **Build**: `pnpm run build`
@@ -33,6 +37,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
+- `packages/age`: Pure-Dart age v1 encryption (X25519 recipients), consumed by the CLI through the `dotweave_age` barrel. Kept free of any dotweave type so it stays independently publishable; its wire-format internals are under `lib/src/`.
 - `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`, pub workspace member).
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `packages/cli/pubspec.yaml` at build time).
 
@@ -69,16 +74,18 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ### CLI Development
 - **Source Structure (under `packages/cli/lib/src/`):**
-  - `cli/`: Command definitions and routing.
+  - `cli/`: Command definitions and routing. Presentation only — commands render, they do not decide policy.
   - `services/`: Core business logic (git operations, file system, sync logic).
-  - `config/`: Configuration schemas and migrations.
-  - `lib/`: Low-level utilities.
-- **Commands:** Follow the existing command-routing style in `lib/src/cli` (root commands are defined in `lib/src/cli/root_commands.dart`).
+  - `config/`: Configuration schemas and migrations (`config/migrations/`).
+  - `terminal/`: Logger, spinner, and colour theme. Presentation; no service may import it.
+  - `util/`: Low-level utilities.
+- **Layering:** Enforced by `test/architecture_test.dart`, which fails the build on an upward or disallowed import. Change the table there deliberately rather than working around it.
+- **Commands:** Follow the existing command-routing style in `lib/src/cli` (root commands are defined in `lib/src/cli/root_commands.dart`). Log via `loggerFor(context)` so output is bound to the run context and stays testable in-process; never call `createCliLogger()` with no arguments from a command.
 - **Testing:**
   - Unit/Integration tests: `test/**/*_test.dart`.
   - E2E tests: `test/e2e/`.
   - E2E tests use isolated temporary environments for `HOME` and `XDG_CONFIG_HOME`.
-- **Error Handling:** Use the custom error types in `lib/src/lib/error.dart`.
+- **Error Handling:** Use the custom error types in `lib/src/util/error.dart`. Set `DOTWEAVE_DEBUG=1` to have `DotweaveError` capture and print the stack trace of its throw site.
 - **Parity:** Intentional behavioral divergences from the pre-cutover TypeScript implementation are recorded in `packages/cli/PARITY.md`.
 
 ### Documentation / Homepage
