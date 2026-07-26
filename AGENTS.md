@@ -80,8 +80,9 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
   - `cli/`: Command definitions and routing. Presentation only — commands render, they do not decide policy.
   - `services/`: Core business logic (git operations, file system, sync logic).
   - `config/`: Configuration schemas and migrations (`config/migrations/`).
-  - `terminal/`: Logger, spinner, and colour theme. Presentation; no service may import it.
   - `util/`: Low-level utilities.
+
+  Command routing and terminal output come from `package:tinyrack_cli`, not from here.
 - **Layering:** Enforced by `test/architecture_test.dart`, which fails the build on an upward or disallowed import. Change the table there deliberately rather than working around it.
 - **Commands:** Follow the existing command-routing style in `lib/src/cli` (root commands are defined in `lib/src/cli/root_commands.dart`). Log via `loggerFor(context)` so output is bound to the run context and stays testable in-process; never call `createCliLogger()` with no arguments from a command.
 - **Testing:**
