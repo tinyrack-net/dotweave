@@ -239,13 +239,13 @@
   }
 
   /* mountDotweaveGlobe sizes the canvas from this container's bounding rect
-     (floored at 700px), so constraining the box here shrinks the sphere and
-     anchors it behind the terminal column without touching the tested module. */
+     (floored at 700px). Keep the sphere larger than the terminal so it reads
+     as a backdrop around the whole terminal column. */
   /* Anchored to the right edge of the centered content column, not the hero
      edge, so the sphere tracks the terminal on any viewport width. */
   .dotweave-globe {
-    block-size: min(44rem, 100%);
-    inline-size: min(44rem, 100%);
+    block-size: 58rem;
+    inline-size: 58rem;
     inset-block-start: 50%;
     inset-inline-start: min(100%, calc(50% + 36rem));
     transform: translate(-100%, -50%);
