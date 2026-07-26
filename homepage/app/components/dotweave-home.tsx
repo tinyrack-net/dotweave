@@ -1,80 +1,105 @@
 import { TRBadge } from "@tinyrack/ui/components/badge";
 import { TRButton } from "@tinyrack/ui/components/button";
 import { TRCodeBlock } from "@tinyrack/ui/components/code-block";
+import { TRCopyButton } from "@tinyrack/ui/components/copy-button";
+import { TRTabs } from "@tinyrack/ui/components/tabs";
 import { TRText } from "@tinyrack/ui/components/text";
 import { TRWindowFrame } from "@tinyrack/ui/components/window-frame";
 
+import { installTargets, terminalSteps } from "./dotweave-hero-content.ts";
 import { GlobeBackground } from "./globe-background.tsx";
 
 type DotweaveHomeProps = {
   body: string;
+  features: readonly string[];
   getStartedLabel: string;
   getStartedPath: string;
+  installLabel: string;
   tagline: string;
+  terminalLabel: string;
 };
-
-/** Transcribed from a real session. Keep it in step with the CLI's output. */
-const terminalSession = `❯ dotweave track ~/.gitconfig
-✔ Started tracking .gitconfig
-  kind  file
-  path  /home/you/.gitconfig
-  repo  .gitconfig
-  mode  normal
-
-❯ dotweave push
-✔ Push complete
-  plain: 2
-  encrypted: 1
-  symlinks: 0
-  dirs: 1
-
-❯ dotweave pull
-✔ Pull complete
-  updated: 1 paths updated
-  removed: 0 paths removed
-
-❯`;
 
 export function DotweaveHome({
   body,
+  features,
   getStartedLabel,
   getStartedPath,
+  installLabel,
   tagline,
+  terminalLabel,
 }: DotweaveHomeProps) {
   return (
     <section className="dotweave-home">
       <GlobeBackground />
       <div className="dotweave-home-content">
-        <TRBadge variant="success">Dotweave v{__CLI_VERSION__}</TRBadge>
-        <TRText as="h1" variant="display">
-          {tagline}
-        </TRText>
-        <TRText
-          as="p"
-          className="dotweave-home-copy"
-          color="muted"
-          variant="body"
-        >
-          {body}
-        </TRText>
-        <div className="dotweave-home-actions">
-          <TRButton
-            render={<a href={getStartedPath} />}
-            intent="primary"
+        <div className="dotweave-home-lede">
+          <TRBadge variant="success">Dotweave v{__CLI_VERSION__}</TRBadge>
+          <TRText as="h1" variant="display">
+            {tagline}
+          </TRText>
+          <TRText
+            as="p"
+            className="dotweave-home-copy"
+            color="muted"
+            variant="body"
+          >
+            {body}
+          </TRText>
+          <ul className="dotweave-features">
+            {features.map((feature) => (
+              <li key={feature}>
+                <TRBadge uiSize="sm" variant="neutral">
+                  {feature}
+                </TRBadge>
+              </li>
+            ))}
+          </ul>
+          <div className="dotweave-home-actions">
+            <TRButton
+              render={<a href={getStartedPath} />}
+              intent="primary"
+              uiSize="md"
+            >
+              {getStartedLabel}
+            </TRButton>
+            <TRButton
+              render={<a href="https://github.com/tinyrack-net/dotweave" />}
+              appearance="outline"
+              uiSize="md"
+            >
+              GitHub →
+            </TRButton>
+          </div>
+          <TRTabs.Root
+            className="dotweave-install"
+            defaultValue={installTargets[0].value}
             uiSize="sm"
           >
-            {getStartedLabel}
-          </TRButton>
-          <TRButton
-            render={<a href="https://github.com/tinyrack-net/dotweave" />}
-            appearance="outline"
-            uiSize="sm"
-          >
-            GitHub →
-          </TRButton>
+            <TRTabs.List aria-label={installLabel}>
+              {installTargets.map((target) => (
+                <TRTabs.Tab key={target.value} value={target.value}>
+                  {target.label}
+                </TRTabs.Tab>
+              ))}
+              <TRTabs.Indicator />
+            </TRTabs.List>
+            {installTargets.map((target) => (
+              <TRTabs.Panel key={target.value} value={target.value}>
+                <div className="dotweave-install-command">
+                  <TRCodeBlock code={target.command} language="bash" />
+                  <TRCopyButton
+                    appearance="ghost"
+                    uiSize="sm"
+                    value={target.command}
+                  />
+                </div>
+              </TRTabs.Panel>
+            ))}
+          </TRTabs.Root>
         </div>
+
         <TRWindowFrame.Root
-          aria-label="Dotweave terminal example"
+          aria-label={terminalLabel}
           className="dotweave-terminal"
           variant="macos"
         >
@@ -87,7 +112,14 @@ export function DotweaveHome({
             <TRWindowFrame.Title>dotweave</TRWindowFrame.Title>
           </TRWindowFrame.TitleBar>
           <TRWindowFrame.Body padding="none">
-            <TRCodeBlock code={terminalSession} language="bash" />
+            <div className="dotweave-terminal-transcript">
+              {terminalSteps.map((step) => (
+                <div className="dotweave-terminal-step" key={step}>
+                  <TRCodeBlock code={step} language="bash" />
+                </div>
+              ))}
+              <span aria-hidden="true" className="dotweave-terminal-caret" />
+            </div>
           </TRWindowFrame.Body>
         </TRWindowFrame.Root>
       </div>

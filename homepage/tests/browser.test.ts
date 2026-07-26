@@ -123,6 +123,15 @@ describe("Dotweave built documentation", () => {
     await expect(
       page.getByText(`Dotweave v${cliVersion}`).first().isVisible(),
     ).resolves.toBe(true);
+    await expect(
+      page.getByText("Cross-OS profiles").first().isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      page.getByRole("tab", { name: "Windows" }).isVisible(),
+    ).resolves.toBe(true);
+    await expect(
+      page.getByText("winget install tinyrack.dotweave").first().isVisible(),
+    ).resolves.toBe(true);
     expect(await page.locator("html").getAttribute("data-theme")).toBe(
       "tinyrack-light",
     );
@@ -149,6 +158,31 @@ describe("Dotweave built documentation", () => {
     await expect(
       page.locator('meta[name="twitter:card"]').getAttribute("content"),
     ).resolves.toBe("summary_large_image");
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  // Playwright's isVisible() ignores opacity, so only a computed-style check
+  // catches a staggered step that never finishes revealing.
+  it("shows the full terminal transcript when motion is reduced", async () => {
+    const page = await browser.newPage({ reducedMotion: "reduce" });
+    const errors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto(`${origin}/en/`);
+    await page.locator('html[data-hydrated="true"]').waitFor();
+
+    const steps = page.locator(".dotweave-terminal-step");
+    const stepCount = await steps.count();
+    expect(stepCount).toBe(3);
+    for (let index = 0; index < stepCount; index += 1) {
+      await expect(
+        steps.nth(index).evaluate((node) => getComputedStyle(node).opacity),
+      ).resolves.toBe("1");
+    }
     expect(errors).toEqual([]);
     await page.close();
   });
