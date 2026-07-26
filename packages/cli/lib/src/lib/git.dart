@@ -163,7 +163,7 @@ Future<GitCommandResult> _runGitCommand(
   List<String> args, [
   GitCommandOptions? options,
 ]) async {
-  return await runGitCommandWithDependencies(
+  return runGitCommandWithDependencies(
     args,
     options,
     const GitCommandDependencies(execFileAsync: _execFileAsync),
@@ -233,24 +233,36 @@ GitStreamingChild _spawnGitProcess(
   unawaited(
     Process.start(command, args, workingDirectory: cwd, runInShell: false).then(
       (process) async {
-        final stdoutDone = stdoutController.addStream(
-          process.stdout.transform(utf8.decoder),
-        );
-        final stderrDone = stderrController.addStream(
-          process.stderr.transform(utf8.decoder),
-        );
-        final code = await process.exitCode;
+        // Every exit path must complete `resultCompleter`; otherwise a
+        // failure while pumping the output streams leaves callers of
+        // `GitStreamingChild.result` awaiting forever.
+        try {
+          final stdoutDone = stdoutController.addStream(
+            process.stdout.transform(utf8.decoder),
+          );
+          final stderrDone = stderrController.addStream(
+            process.stderr.transform(utf8.decoder),
+          );
+          final code = await process.exitCode;
 
-        await stdoutDone;
-        await stderrDone;
-        await stdoutController.close();
-        await stderrController.close();
-        resultCompleter.complete(code);
+          await stdoutDone;
+          await stderrDone;
+          resultCompleter.complete(code);
+        } catch (error, stackTrace) {
+          if (!resultCompleter.isCompleted) {
+            resultCompleter.completeError(error, stackTrace);
+          }
+        } finally {
+          await stdoutController.close();
+          await stderrController.close();
+        }
       },
-      onError: (Object error) async {
+      onError: (Object error, StackTrace stackTrace) async {
         await stdoutController.close();
         await stderrController.close();
-        resultCompleter.completeError(error);
+        if (!resultCompleter.isCompleted) {
+          resultCompleter.completeError(error, stackTrace);
+        }
       },
     ),
   );
@@ -266,7 +278,7 @@ Future<GitCommandResult> _runStreamingGitCommand(
   List<String> args, [
   GitCommandOptions? options,
 ]) async {
-  return await runStreamingGitCommandWithDependencies(
+  return runStreamingGitCommandWithDependencies(
     args,
     options,
     const StreamingGitCommandDependencies(spawnGit: _spawnGitProcess),

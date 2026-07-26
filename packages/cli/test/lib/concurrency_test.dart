@@ -59,6 +59,20 @@ void main() {
       expect(results, [1, 2]);
     });
 
+    test(
+      'rejects a concurrency below 1 instead of spawning no workers',
+      () async {
+        // A non-positive concurrency used to produce zero workers, leaving every
+        // slot unwritten and surfacing as a cast failure on the way out.
+        for (final concurrency in [0, -1]) {
+          await expectLater(
+            limitConcurrency(concurrency, [1, 2, 3], (item, _) async => item),
+            throwsA(isA<ArgumentError>()),
+          );
+        }
+      },
+    );
+
     test('propagates errors', () async {
       final items = [1, 2, 3];
 
