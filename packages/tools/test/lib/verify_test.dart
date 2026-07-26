@@ -28,7 +28,7 @@ void main() {
     final repoRoot = directory.path;
 
     await Directory(
-      p.join(repoRoot, 'packages', 'cli', 'lib', 'src', 'lib'),
+      p.join(repoRoot, 'packages', 'cli', 'lib', 'src', 'util'),
     ).create(recursive: true);
 
     await File(
@@ -41,7 +41,7 @@ void main() {
         'cli',
         'lib',
         'src',
-        'lib',
+        'util',
         'version.g.dart',
       ),
     ).writeAsString(renderVersionConstant(constantVersion));

@@ -1,32 +1,29 @@
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
 import 'error.dart';
-import 'version_files.dart';
-
-const String _pubspecPath = 'packages/cli/pubspec.yaml';
-const String _versionConstantPath = 'packages/cli/lib/src/lib/version.g.dart';
+import 'release.dart';
 
 /// Verifies that GITHUB_REF_NAME matches the release version and that all
 /// release version files agree with each other.
+///
+/// Reads the same [releaseTargets] the release command writes, so the two can
+/// never disagree about where a version lives.
 Future<void> performVerifyReleaseTag({
   required String repoRoot,
   Map<String, String>? environment,
 }) async {
   final env = environment ?? Platform.environment;
-  final pubspecVersion = await readPubspecVersion(
-    p.join(repoRoot, _pubspecPath),
-  );
-  final constantVersion = await readVersionConstant(
-    p.join(repoRoot, _versionConstantPath),
-  );
+  final versions = <String, String>{
+    for (final target in releaseTargets)
+      target.path: await target.readVersion(repoRoot),
+  };
 
-  if (pubspecVersion != constantVersion) {
+  final releaseVersion = versions.values.first;
+
+  if (versions.values.any((version) => version != releaseVersion)) {
     throw ToolException(
       'Release versions do not match: '
-      '$_pubspecPath=$pubspecVersion, '
-      '$_versionConstantPath=$constantVersion',
+      '${versions.entries.map((entry) => '${entry.key}=${entry.value}').join(', ')}',
     );
   }
 
@@ -38,7 +35,7 @@ Future<void> performVerifyReleaseTag({
     );
   }
 
-  final expectedTag = 'v$pubspecVersion';
+  final expectedTag = 'v$releaseVersion';
 
   if (tag != expectedTag) {
     throw ToolException(
@@ -46,5 +43,5 @@ Future<void> performVerifyReleaseTag({
     );
   }
 
-  stdout.writeln('Verified tag $tag matches version $pubspecVersion');
+  stdout.writeln('Verified tag $tag matches version $releaseVersion');
 }

@@ -52,7 +52,7 @@ class VersionConstantReleaseTarget implements ReleaseTarget {
 /// Files whose versions are bumped together by `release`.
 const List<ReleaseTarget> releaseTargets = [
   PubspecReleaseTarget('packages/cli/pubspec.yaml'),
-  VersionConstantReleaseTarget('packages/cli/lib/src/lib/version.g.dart'),
+  VersionConstantReleaseTarget('packages/cli/lib/src/util/version.g.dart'),
 ];
 
 class ReleaseLogger {
