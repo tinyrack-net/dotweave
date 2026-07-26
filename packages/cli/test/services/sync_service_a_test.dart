@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/services/init.dart';
 import 'package:dotweave/src/services/profile.dart';
@@ -829,7 +830,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await pushChanges(const PushRequest(dryRun: false));
 
       final secretArtifact = p.join(
@@ -849,7 +850,7 @@ void main() {
 
       await File(secretsFile).writeAsString('local-change\n');
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final pullResult = await pullChanges(const PullRequest(dryRun: false));
       expect(pullResult.decryptedFileCount, 0);
 
@@ -1243,7 +1244,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await pushChanges(const PushRequest(dryRun: false));
 
       final secretArtifact = p.join(
@@ -1275,7 +1276,7 @@ void main() {
         contains('BEGIN AGE ENCRYPTED FILE'),
       );
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final result = await pushChanges(const PushRequest(dryRun: false));
 
       expect(result.deletedArtifactCount, 0);
@@ -1361,7 +1362,7 @@ void main() {
       await Directory(repositoryZshDirectory).create(recursive: true);
       await File(defaultArtifact).writeAsString('stale default artifact\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(const PushRequest(dryRun: false));
 
       expect(result.plainFileCount, 2);
@@ -1421,7 +1422,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(const PushRequest(dryRun: false));
 
       final repositoryZshDirectory = p.join(
@@ -1524,7 +1525,7 @@ void main() {
       await File(defaultPlainArtifact).writeAsString('stale plain\n');
       await File(defaultSecretArtifact).writeAsString('stale secret\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(const PushRequest(dryRun: false));
 
       expect(result.plainFileCount, 1);
@@ -1611,7 +1612,7 @@ void main() {
       await Directory(repositoryZshDirectory).create(recursive: true);
       await File(defaultArtifact).writeAsString('stale default artifact\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(const PushRequest(dryRun: false));
 
       expect(result.plainFileCount, 1);
@@ -1685,7 +1686,7 @@ void main() {
         p.join(repositoryZshDirectory, 'platform.zsh'),
       ).writeAsString('stale\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final status = await getStatus();
 
       expect(
@@ -1771,7 +1772,7 @@ void main() {
         p.join(repositoryZshDirectory, 'other.zsh'),
       ).writeAsString('other\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pullChanges(const PullRequest(dryRun: false));
 
       expect(result.plainFileCount, 2);
@@ -1852,7 +1853,7 @@ void main() {
         defaultArtifact,
       ).writeAsString('stale work default artifact\n');
 
-      mockCurrentPlatformKey('wsl');
+      mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(
         const PushRequest(dryRun: false, profile: 'work'),
       );
@@ -1920,7 +1921,7 @@ void main() {
           }),
         );
 
-        mockCurrentPlatformKey('linux');
+        mockCurrentPlatformKey(PlatformKey.linux);
         await pushChanges(const PushRequest(dryRun: false));
 
         final linuxArtifact = p.join(
@@ -1935,7 +1936,7 @@ void main() {
         );
         expect(await File(linuxArtifact).readAsString(), '{"theme":"dark"}\n');
 
-        mockCurrentPlatformKey('win');
+        mockCurrentPlatformKey(PlatformKey.win);
         final result = await pushChanges(const PushRequest(dryRun: false));
 
         expect(result.deletedArtifactCount, 0);
@@ -2008,9 +2009,9 @@ void main() {
 
       await writeManifest({'default': 'normal'});
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await pushChanges(const PushRequest(dryRun: false));
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       await pushChanges(const PushRequest(dryRun: false));
 
       final linuxArtifact = p.join(

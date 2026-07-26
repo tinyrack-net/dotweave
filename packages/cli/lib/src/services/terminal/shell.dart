@@ -74,7 +74,7 @@ Future<ShellCommand> resolveShellCommandForPlatform(
 }) async {
   final environment = env ?? ENV;
 
-  if (platformKey == 'win') {
+  if (platformKey == PlatformKey.win) {
     return ShellCommand(
       args: const [],
       command: normalizeConfiguredValue(environment.COMSPEC) ?? 'cmd.exe',
@@ -100,7 +100,7 @@ Future<ShellCommand> resolveShellCommand({
 }
 
 String _createShellFailureHint(PlatformKey Function() resolvePlatformKey) {
-  return resolvePlatformKey() == 'win'
+  return resolvePlatformKey() == PlatformKey.win
       ? 'Set COMSPEC to a valid shell executable.'
       : 'Set SHELL to a valid shell executable.';
 }

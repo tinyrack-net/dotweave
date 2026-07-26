@@ -14,7 +14,7 @@ String nativePath(String value) {
 SyncConfigResolutionContext mockResolutionContext() {
   return SyncConfigResolutionContext(
     homeDirectory: Platform.isWindows ? r'C:\tmp\home' : '/tmp/home',
-    platformKey: 'linux',
+    platformKey: PlatformKey.linux,
     readEnv: (name) => null,
     xdgConfigHome: Platform.isWindows
         ? r'C:\tmp\home\.config'

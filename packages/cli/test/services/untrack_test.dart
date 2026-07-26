@@ -41,7 +41,7 @@ class MockedUntrackSeams {
   SyncConfigResolutionContext resolveSyncConfigResolutionContext() {
     return SyncConfigResolutionContext(
       homeDirectory: '/tmp/home',
-      platformKey: 'linux',
+      platformKey: PlatformKey.linux,
       readEnv: (name) => null,
       xdgConfigHome: '/tmp/home/.config',
     );

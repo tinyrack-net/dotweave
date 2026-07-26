@@ -1,6 +1,34 @@
-/// Platform key discriminating dotweave behavior: `win`, `mac`, `linux`, or
-/// `wsl`. Mirrors the TS `PlatformKey` string union.
-typedef PlatformKey = String;
+/// Platform key discriminating dotweave behavior. Mirrors the TS `PlatformKey`
+/// string union, as an enum so that every dispatch over it is checked for
+/// exhaustiveness instead of falling through a `default:` branch.
+///
+/// [wire] is the on-disk/config spelling and is the single source of truth for
+/// serialization, so the JSON shape is unchanged.
+enum PlatformKey {
+  win('win'),
+  mac('mac'),
+  linux('linux'),
+  wsl('wsl');
+
+  const PlatformKey(this.wire);
+
+  /// Spelling used in `manifest.jsonc` and on the command line.
+  final String wire;
+
+  /// Returns the key for [value], or `null` when it is not a known platform.
+  static PlatformKey? tryParse(String value) {
+    for (final key in values) {
+      if (key.wire == value) {
+        return key;
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  String toString() => wire;
+}
 
 /// Mirror of the TS `PlatformStringValue` readonly object: a default string
 /// plus optional per-platform overrides. The TS `default` field is named
@@ -63,34 +91,51 @@ PlatformKey detectCurrentPlatformKey(
 ) {
   switch (platformName) {
     case 'win32':
-      return 'win';
+      return PlatformKey.win;
     case 'darwin':
-      return 'mac';
+      return PlatformKey.mac;
     case 'linux':
       return isWslEnvironment(osRelease, wslDistroName, wslInterop)
-          ? 'wsl'
-          : 'linux';
+          ? PlatformKey.wsl
+          : PlatformKey.linux;
     default:
-      return 'linux';
+      return PlatformKey.linux;
   }
+}
+
+/// Picks the override for [platformKey], falling back to [defaultValue]. WSL
+/// falls back to the linux override first, since a WSL user gets linux
+/// semantics unless they say otherwise.
+///
+/// Every per-platform record in the schema (sync mode, permission, repo path,
+/// local path) resolves this way, so they all route through here rather than
+/// repeating the fallback chain.
+T resolveForPlatform<T extends Object>(
+  PlatformKey platformKey, {
+  required T defaultValue,
+  T? win,
+  T? mac,
+  T? linux,
+  T? wsl,
+}) {
+  return switch (platformKey) {
+    PlatformKey.win => win ?? defaultValue,
+    PlatformKey.mac => mac ?? defaultValue,
+    PlatformKey.linux => linux ?? defaultValue,
+    PlatformKey.wsl => wsl ?? linux ?? defaultValue,
+  };
 }
 
 String resolvePlatformValue(
   PlatformStringValue value,
   PlatformKey platformKey,
 ) {
-  if (platformKey == 'wsl') {
-    return value.wsl ?? value.linux ?? value.defaultValue;
-  }
-
-  switch (platformKey) {
-    case 'win':
-      return value.win ?? value.defaultValue;
-    case 'mac':
-      return value.mac ?? value.defaultValue;
-    case 'linux':
-      return value.linux ?? value.defaultValue;
-    default:
-      return value.defaultValue;
-  }
+  return resolveForPlatform(
+    platformKey,
+    defaultValue: value.defaultValue,
+    win: value.win,
+    mac: value.mac,
+    linux: value.linux,
+    wsl: value.wsl,
+  );
 }
