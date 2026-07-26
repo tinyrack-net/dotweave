@@ -1,13 +1,8 @@
 // Dart port of `packages/cli/src/cli/init.ts`.
 
-import 'dart:io' as io;
-
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/router.dart';
-import 'package:dotweave/src/config/identity_file.dart';
-import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/services/init.dart';
-import 'package:dotweave/src/util/filesystem.dart';
 import 'package:dotweave/src/util/prompt.dart';
 
 String _formatGitSummary(InitResult result) {
@@ -35,43 +30,23 @@ final Command initCommand = buildCommand(
   ),
   func: (context, flags, positional) async {
     final logger = loggerFor(context);
-    final keyFile = flags['keyFile'] as String?;
-    final keyFileContents = keyFile == null
-        ? null
-        : await io.File(keyFile).readAsString();
-    final trimmedKeyFileContents = keyFileContents?.trim();
-    final requestedKey =
-        trimmedKeyFileContents == null || trimmedKeyFileContents.isEmpty
-        ? null
-        : trimmedKeyFileContents;
-    final keyFileProvided = keyFile != null;
-    final identityFile = resolveDefaultIdentityFile(
-      resolveDotweaveHomeDirectoryFromEnv(),
-    );
-    final identityFileExists = await pathExists(identityFile);
     final force = flags['force'] as bool? ?? false;
-    final effectiveIdentityFileExists = force ? false : identityFileExists;
     final repository = positional[0] as String?;
-    final importingRepository =
-        repository != null && repository.trim().isNotEmpty;
-    final shouldPrompt =
-        requestedKey == null &&
-        !keyFileProvided &&
-        !effectiveIdentityFileExists &&
-        importingRepository;
-    final promptedKey = shouldPrompt
+
+    final plan = await planAgeIdentity(
+      keyFile: flags['keyFile'] as String?,
+      repository: repository,
+      force: force,
+    );
+    final promptAnswer = plan.shouldPrompt
         ? await ask(
-            importingRepository
+            plan.importingRepository
                 ? 'Enter the age private key for the existing repository: '
                 : 'Enter an age private key (leave empty to generate a new one): ',
           )
         : null;
-    final trimmedPromptedKey = promptedKey?.trim();
-    if (importingRepository &&
-        requestedKey == null &&
-        trimmedPromptedKey == '') {
-      throw createMissingRepositoryAgeKeyError();
-    }
+    final identity = resolveAgeIdentity(plan, promptAnswer);
+    final importingRepository = plan.importingRepository;
 
     final spin = logger.spinner(
       importingRepository
@@ -84,17 +59,9 @@ final Command initCommand = buildCommand(
     try {
       result = await initializeSyncDirectory(
         InitRequest(
-          ageIdentity:
-              requestedKey ??
-              (trimmedPromptedKey != null && trimmedPromptedKey != ''
-                  ? trimmedPromptedKey
-                  : null),
+          ageIdentity: identity.ageIdentity,
           force: force,
-          generateAgeIdentity:
-              !importingRepository &&
-              requestedKey == null &&
-              (trimmedPromptedKey == '' ||
-                  (trimmedPromptedKey == null && !effectiveIdentityFileExists)),
+          generateAgeIdentity: identity.generateAgeIdentity,
           recipients: const [],
           repository: repository,
         ),

@@ -60,9 +60,9 @@ final Command pullCommand = buildCommand(
     logger.info('Planned pull changes');
     _logPullPlanChanges(logger, plan.updatedLocalPaths, plan.deletedLocalPaths);
 
-    if (dryRun) {
-      logger.info('Pull preview (dry run)');
-    } else if (flags['yes'] as bool? ?? false) {
+    // Applying under a spinner that must stop before an error propagates;
+    // shared by the --yes path and the confirmed-prompt path below.
+    Future<void> applyUnderSpinner() async {
       final applySpin = logger.spinner('Applying pull...');
       try {
         await applyPullPlan(config, plan);
@@ -71,6 +71,12 @@ final Command pullCommand = buildCommand(
         rethrow;
       }
       applySpin.succeed('Pull complete');
+    }
+
+    if (dryRun) {
+      logger.info('Pull preview (dry run)');
+    } else if (flags['yes'] as bool? ?? false) {
+      await applyUnderSpinner();
     } else {
       // Mirror of the TS `process.stdin.isTTY ?? false` check.
       if (!io.stdin.hasTerminal) {
@@ -87,14 +93,7 @@ final Command pullCommand = buildCommand(
         return null;
       }
 
-      final applySpin = logger.spinner('Applying pull...');
-      try {
-        await applyPullPlan(config, plan);
-      } catch (error) {
-        applySpin.stop();
-        rethrow;
-      }
-      applySpin.succeed('Pull complete');
+      await applyUnderSpinner();
     }
 
     final updateAction = dryRun ? 'would be updated' : 'updated';

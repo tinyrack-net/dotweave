@@ -11,8 +11,6 @@ import 'package:dotweave/src/cli/platform_flags.dart';
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/services/path_completion.dart';
-import 'package:dotweave/src/services/profile.dart';
-import 'package:dotweave/src/services/sync_mode.dart';
 import 'package:dotweave/src/services/track.dart';
 import 'package:dotweave/src/util/error.dart';
 
@@ -59,84 +57,60 @@ final Command trackCommand = buildCommand(
     );
 
     for (final target in targets) {
-      try {
-        final result = await trackTarget(
-          TrackRequest(
-            kind: flags['kind'] as String?,
-            localPathOverrides: localPathOverrides,
-            mode: mode,
-            permission: permission,
-            profiles: profiles.isNotEmpty ? profiles : null,
-            repoPath: repoPath,
-            target: target,
-          ),
-          cwd,
-        );
+      final outcome = await trackOrSetMode(
+        TrackRequest(
+          kind: flags['kind'] as String?,
+          localPathOverrides: localPathOverrides,
+          mode: mode,
+          permission: permission,
+          profiles: profiles.isNotEmpty ? profiles : null,
+          repoPath: repoPath,
+          target: target,
+        ),
+        cwd,
+        fallbackMode: fallbackMode,
+      );
 
-        if (!result.alreadyTracked) {
-          logger.success('Started tracking ${result.repoPath}');
-        } else if (result.changed) {
-          logger.success('Updated tracking for ${result.repoPath}');
-        } else {
-          logger.info('${result.repoPath} already tracked');
-        }
-
-        final details = <({String key, String? value})>[
-          (key: 'kind', value: result.kind),
-          (key: 'path', value: result.localPath),
-          (key: 'repo', value: result.repoPath),
-          (key: 'mode', value: result.mode),
-        ];
-        final configuredPermission = result.configuredPermission;
-        if (configuredPermission != null) {
-          details.add((
-            key: 'permission',
-            value: configuredPermission.defaultValue,
-          ));
-        }
-        if (result.profiles.isNotEmpty) {
-          details.add((key: 'profiles', value: result.profiles.join(', ')));
-        }
-        logger.listKeyValue(details);
-      } catch (error) {
-        if (repoPath == null && isSyncTargetNotFoundError(error)) {
-          final isProfileClear = profiles.length == 1 && profiles[0] == '';
-
-          if (profiles.isNotEmpty && !isProfileClear) {
-            await validateProfilesExist(profiles);
-          }
-
-          final setResult = await setTargetMode(
-            SetModeRequest(mode: fallbackMode, target: target),
-            cwd,
-          );
-
-          if (profiles.isNotEmpty) {
-            await assignProfiles(
-              AssignProfilesRequest(
-                profiles: isProfileClear ? [] : profiles,
-                target: target,
-              ),
-              cwd,
-            );
-          }
-
-          if (setResult.action == 'unchanged') {
-            logger.info('Sync mode unchanged for ${setResult.repoPath}');
+      switch (outcome) {
+        case TrackedOutcome(:final result):
+          if (!result.alreadyTracked) {
+            logger.success('Started tracking ${result.repoPath}');
+          } else if (result.changed) {
+            logger.success('Updated tracking for ${result.repoPath}');
           } else {
-            logger.success('Updated sync mode for ${setResult.repoPath}');
+            logger.info('${result.repoPath} already tracked');
           }
 
-          logger.listKeyValue([(key: 'mode', value: setResult.mode)]);
+          final details = <({String key, String? value})>[
+            (key: 'kind', value: result.kind),
+            (key: 'path', value: result.localPath),
+            (key: 'repo', value: result.repoPath),
+            (key: 'mode', value: result.mode),
+          ];
+          final configuredPermission = result.configuredPermission;
+          if (configuredPermission != null) {
+            details.add((
+              key: 'permission',
+              value: configuredPermission.defaultValue,
+            ));
+          }
+          if (result.profiles.isNotEmpty) {
+            details.add((key: 'profiles', value: result.profiles.join(', ')));
+          }
+          logger.listKeyValue(details);
 
-          if (setResult.reason == 'already-set') {
-            logger.log('  already ${setResult.mode}');
+        case ModeSetOutcome(:final result):
+          if (result.action == 'unchanged') {
+            logger.info('Sync mode unchanged for ${result.repoPath}');
+          } else {
+            logger.success('Updated sync mode for ${result.repoPath}');
           }
 
-          continue;
-        }
+          logger.listKeyValue([(key: 'mode', value: result.mode)]);
 
-        rethrow;
+          if (result.reason == 'already-set') {
+            logger.log('  already ${result.mode}');
+          }
       }
     }
     return null;
