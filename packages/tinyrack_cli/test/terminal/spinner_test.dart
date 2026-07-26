@@ -1,7 +1,5 @@
-import 'package:dotweave/src/terminal/spinner.dart';
-import 'package:dotweave/src/terminal/theme.dart';
-import 'package:dotweave/src/util/env.dart';
 import 'package:test/test.dart';
+import 'package:tinyrack_cli/terminal.dart';
 
 import 'mock_factories.dart';
 
@@ -155,11 +153,8 @@ void main() {
 
     group('TTY path', () {
       // Mirrors the vitest beforeEach stubbing CI/NO_COLOR/FORCE_COLOR to ''.
-      final stubbedEnv = Env({
-        'CI': '',
-        'NO_COLOR': '',
-        'FORCE_COLOR': '',
-      }, caseInsensitiveKeys: false);
+      const stubbedEnvValues = {'CI': '', 'NO_COLOR': '', 'FORCE_COLOR': ''};
+      String? stubbedEnv(String name) => stubbedEnvValues[name];
 
       ({Spinner spinner, _ManualSpinnerTimer timer}) createTtySpinner(
         MockStream stream,
@@ -170,7 +165,7 @@ void main() {
           stream,
           text,
           color: _TagColorTheme(),
-          env: stubbedEnv,
+          readEnv: stubbedEnv,
           startInterval: (Duration interval, void Function() onTick) {
             timer = _ManualSpinnerTimer(onTick);
             return timer!;

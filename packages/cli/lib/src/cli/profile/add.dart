@@ -1,8 +1,8 @@
 // Dart port of `packages/cli/src/cli/profile/add.ts`.
 
 import 'package:dotweave/src/cli/command_logger.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/profile.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Command profileAddCommand = buildCommand(
   docs: const CommandDocs(

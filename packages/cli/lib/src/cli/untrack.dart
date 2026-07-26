@@ -3,8 +3,8 @@
 import 'dart:io' as io;
 
 import 'package:dotweave/src/cli/command_logger.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/untrack.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Command untrackCommand = buildCommand(
   docs: const CommandDocs(

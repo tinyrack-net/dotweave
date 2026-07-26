@@ -2,9 +2,9 @@
 
 import 'dart:async' show Timer;
 
-import 'package:dotweave/src/terminal/logger.dart' show WriteStream;
-import 'package:dotweave/src/terminal/theme.dart';
-import 'package:dotweave/src/util/env.dart';
+import 'package:tinyrack_cli/src/env.dart';
+import 'package:tinyrack_cli/src/terminal/theme.dart';
+import 'package:tinyrack_cli/src/write_stream.dart';
 
 /// Mirror of the TS `Spinner` interface.
 abstract class Spinner {
@@ -42,12 +42,12 @@ SpinnerTimer _startPeriodicTimer(Duration interval, void Function() onTick) {
 /// Mirrors the TS module-level `isCI` expression:
 /// `Boolean(envValue("CI") ?? envValue("NO_COLOR") ??
 ///  envValue("FORCE_COLOR") === "0")`.
-bool _resolveIsCI(Env env) {
-  final marker = env['CI'] ?? env['NO_COLOR'];
+bool _resolveIsCI(EnvLookup readEnv) {
+  final marker = readEnv('CI') ?? readEnv('NO_COLOR');
   if (marker != null) {
     return marker.isNotEmpty;
   }
-  return env['FORCE_COLOR'] == '0';
+  return readEnv('FORCE_COLOR') == '0';
 }
 
 ColorTheme _defaultColorTheme() => color;
@@ -73,19 +73,19 @@ class _SpinnerHandle implements Spinner {
   void stop() => _onStop();
 }
 
-/// The optional [color]/[symbols]/[env]/[startInterval] overrides are the DI
+/// The optional [color]/[symbols]/[readEnv]/[startInterval] overrides are the DI
 /// seams replacing the vitest theme mock, `vi.stubEnv`, and fake timers.
 Spinner createSpinner(
   WriteStream stream,
   String text, {
   ColorTheme? color,
   Symbols? symbols,
-  Env? env,
+  EnvLookup? readEnv,
   SpinnerTimerFactory? startInterval,
 }) {
   final theme = color ?? _defaultColorTheme();
   final syms = symbols ?? SYMBOLS;
-  final isCI = _resolveIsCI(env ?? ENV);
+  final isCI = _resolveIsCI(readEnv ?? lookupPlatformEnv);
   final frames = syms.spinner;
   var frameIndex = 0;
   SpinnerTimer? intervalId;

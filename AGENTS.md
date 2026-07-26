@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`), the age encryption implementation (`packages/age`), and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/age`, `packages/cli`, and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`), its CLI framework (`packages/tinyrack_cli`), the age encryption implementation (`packages/age`), and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/age`, `packages/cli`, `packages/tinyrack_cli`, and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -16,7 +16,7 @@ When writing, rewriting, translating, or reviewing public Dotweave documentation
 ## Mandatory Validation Loop
 You MUST execute a validation loop for every change to ensure system integrity.
 
-For Dart packages (run from `packages/age`, `packages/cli`, and/or `packages/tools`, whichever you changed):
+For Dart packages (run from `packages/age`, `packages/cli`, `packages/tinyrack_cli`, and/or `packages/tools`, whichever you changed):
 - **Format**: `dart format .`
 - **Analyze**: `dart analyze --fatal-infos`
 - **Test**: `dart test`
@@ -37,7 +37,10 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
-- `packages/age`: Pure-Dart age v1 encryption (X25519 recipients), consumed by the CLI through the `dotweave_age` barrel. Kept free of any dotweave type so it stays independently publishable; its wire-format internals are under `lib/src/`.
+- `packages/tinyrack_cli`: The CLI framework — command routing, argument scanning, help rendering, exit codes, and completion proposals (`tinyrack_cli.dart`), plus the logger, spinner, and colour theme (`terminal.dart`). A Dart implementation of the `@stricli/core` model.
+- `packages/age`: Pure-Dart age v1 encryption (X25519 recipients), consumed by the CLI through the `dotweave_age` barrel.
+
+`tinyrack_cli` and `age` are **reusable packages that happen to live here**. Keep every dotweave type out of them; anything they need from the environment is taken as a parameter (see `EnvLookup`). Both are publish-ready apart from a deliberate `publish_to: none` — releasing means deleting that line, so treat their READMEs, CHANGELOGs, and public API as user-facing.
 - `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`, pub workspace member).
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `packages/cli/pubspec.yaml` at build time).
 

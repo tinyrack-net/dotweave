@@ -1,12 +1,11 @@
 // Dart port of `packages/cli/src/cli/status.ts`.
 
 import 'package:dotweave/src/cli/command_logger.dart';
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/services/status.dart';
-import 'package:dotweave/src/terminal/logger.dart';
-import 'package:dotweave/src/terminal/theme.dart';
+import 'package:tinyrack_cli/terminal.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 const int _maxDisplayItems = 10;
 

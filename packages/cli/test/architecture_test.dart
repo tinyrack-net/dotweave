@@ -28,8 +28,7 @@ String? _layerOf(String posixPath) {
 /// not touch `terminal`: presentation lives above the service layer, and the
 /// service layer currently has zero imports of it.
 const Map<String, Set<String>> _allowedDependencies = {
-  'cli': {'services', 'config', 'terminal', 'util', 'assets'},
-  'terminal': {'util'},
+  'cli': {'services', 'config', 'util', 'assets'},
   'services': {'config', 'util', 'assets'},
   'config': {'util'},
   'util': <String>{},

@@ -1,7 +1,5 @@
-import 'package:dotweave/src/terminal/logger.dart';
-import 'package:dotweave/src/terminal/spinner.dart';
-import 'package:dotweave/src/terminal/theme.dart';
 import 'package:test/test.dart';
+import 'package:tinyrack_cli/terminal.dart';
 
 import 'mock_factories.dart';
 
@@ -222,12 +220,12 @@ void main() {
         final logger = _createLogger(stdout: stdout);
 
         logger.listKeyValue([
-          (key: 'Name', value: 'dotweave'),
+          (key: 'Name', value: 'example-cli'),
           (key: 'Version', value: '1.0'),
         ]);
         expect(stdout.writes, hasLength(2));
         expect(stdout.writes[0], contains('Name'));
-        expect(stdout.writes[0], contains('dotweave'));
+        expect(stdout.writes[0], contains('example-cli'));
         expect(stdout.writes[1], contains('Version'));
         expect(stdout.writes[1], contains('1.0'));
       });

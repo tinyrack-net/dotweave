@@ -1,5 +1,5 @@
-import 'package:dotweave/src/cli/router.dart';
-import 'package:dotweave/src/terminal/logger.dart';
+import 'package:tinyrack_cli/terminal.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 /// Builds a logger bound to the streams of the command's own [context].
 ///

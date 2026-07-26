@@ -1,0 +1,16 @@
+include: ../../analysis_options.yaml
+
+# TODO(publish): enable `public_member_api_docs` before the first pub.dev
+# release. It currently reports 275 members -- mostly fields and enum values on
+# the ported stricli types -- and pub.dev scores documentation coverage, so
+# filling those in is a release prerequisite rather than optional polish. It is
+# off for now because `dart analyze --fatal-infos` is the repo's gate and 275
+# infos would block every run.
+linter:
+  rules:
+    - only_throw_errors
+    - prefer_final_locals
+    - require_trailing_commas
+    - unnecessary_await_in_return
+    - unnecessary_lambdas
+    - use_super_parameters

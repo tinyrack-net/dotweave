@@ -1,7 +1,7 @@
 // Dart port of `packages/cli/src/cli/autocomplete.ts`.
 
-import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/services/autocomplete.dart';
+import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 Application? _application;
 
