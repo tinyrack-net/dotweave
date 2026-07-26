@@ -115,7 +115,11 @@ void main() {
       final mocked = MockedDoctorSeams();
       mocked.verifyIsGitRepository = (directory) async {
         // Mirrors the TS `mockRejectedValueOnce("not-a-repo")` string
-        // rejection.
+        // rejection. The raw String is the point: it is deliberately not
+        // "error-like", which is the branch of `_isErrorLike` under test here
+        // (an Exception would surface its own message instead of the generic
+        // fallback). Production code cannot throw this, hence the ignore.
+        // ignore: only_throw_errors
         throw 'not-a-repo';
       };
 

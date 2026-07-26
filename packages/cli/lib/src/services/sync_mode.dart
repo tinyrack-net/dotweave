@@ -13,6 +13,19 @@ import 'package:path/path.dart' as p;
 // Mirror of `services/sync-mode.ts`: sync-mode target resolution and the
 // `dotweave mode` set operation on the manifest.
 
+/// Error code for "the sync set target does not exist on disk".
+///
+/// Shared rather than inlined because the `track` command catches this
+/// specific failure to fall back to `setTargetMode`. A magic string compared
+/// across module boundaries would let the two sides drift apart silently.
+const String syncTargetNotFoundCode = 'TARGET_NOT_FOUND';
+
+/// Whether [error] is the "sync set target does not exist" failure raised by
+/// [resolveSetTarget].
+bool isSyncTargetNotFoundError(Object? error) {
+  return error is DotweaveError && error.code == syncTargetNotFoundCode;
+}
+
 /// Mirror of the TS `SetModeRequest` readonly object.
 class SetModeRequest {
   const SetModeRequest({required this.mode, required this.target});
@@ -273,7 +286,7 @@ Future<SetModeTarget> resolveSetTarget(
     if (explicit && localStats == null) {
       throw DotweaveError(
         'Sync set target does not exist.',
-        code: 'TARGET_NOT_FOUND',
+        code: syncTargetNotFoundCode,
         details: ['Target: $localTargetPath'],
         hint:
             'Use an existing local path, or pass a repository path inside a '

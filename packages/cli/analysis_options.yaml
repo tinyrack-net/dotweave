@@ -12,10 +12,9 @@ include: ../../analysis_options.yaml
 #   `flags['x'] as String` at command boundaries, forced by the untyped
 #   `Map<String, Object?>` flag map. Adding `!` would satisfy the lint without
 #   fixing anything; typed flags remove the casts at the source.
-# - only_throw_errors (4 violations, all in lib/git.dart): enable once git
-#   stops throwing bare `Exception`.
 linter:
   rules:
+    - only_throw_errors
     - prefer_final_locals
     - require_trailing_commas
     - unnecessary_await_in_return

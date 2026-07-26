@@ -99,9 +99,7 @@ final Command trackCommand = buildCommand(
         }
         logger.listKeyValue(details);
       } catch (error) {
-        if (repoPath == null &&
-            error is DotweaveError &&
-            error.code == 'TARGET_NOT_FOUND') {
+        if (repoPath == null && isSyncTargetNotFoundError(error)) {
           final isProfileClear = profiles.length == 1 && profiles[0] == '';
 
           if (profiles.isNotEmpty && !isProfileClear) {
