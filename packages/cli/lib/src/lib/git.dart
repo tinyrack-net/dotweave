@@ -75,6 +75,33 @@ class InitializeRepositoryResult {
 
 const _missingGitExecutableCode = 'GIT_EXECUTABLE_NOT_FOUND';
 
+/// Error code for "git ran but exited non-zero".
+const String gitCommandFailedCode = 'GIT_COMMAND_FAILED';
+
+/// Whether [error] is a non-zero git exit surfaced by this module.
+bool isGitCommandFailedError(Object? error) {
+  return error is DotweaveError && error.code == gitCommandFailedCode;
+}
+
+/// Builds the user-facing failure for a git command that exited non-zero.
+///
+/// [primary] keeps the historical first line (stderr, else stdout, else the
+/// exec failure message). [discarded] carries output the old
+/// `throw Exception(primary)` dropped on the floor -- in practice only the
+/// rare case where git wrote to both streams.
+DotweaveError _createGitCommandFailedError(
+  String primary, {
+  List<String?> discarded = const [],
+}) {
+  return DotweaveError(
+    primary,
+    code: gitCommandFailedCode,
+    details: compactLines(
+      discarded.where((line) => line?.trim() != primary.trim()),
+    ),
+  );
+}
+
 bool _isEnoentError(Object error) {
   return error is ProcessException && error.errorCode == 2;
 }
@@ -121,10 +148,10 @@ Future<GitCommandResult> runGitCommandWithDependencies(
           ? stdout
           : error.message;
 
-      throw Exception(message);
+      throw _createGitCommandFailedError(message, discarded: [stdout]);
     }
 
-    throw Exception(
+    throw _createGitCommandFailedError(
       error is Exception || error is Error
           ? extractErrorMessage(error)
           : 'git failed.',
@@ -192,7 +219,7 @@ Future<GitCommandResult> runStreamingGitCommandWithDependencies(
       throw _createMissingGitExecutableError();
     }
 
-    throw Exception(
+    throw _createGitCommandFailedError(
       error is Exception || error is Error
           ? extractErrorMessage(error)
           : 'git failed.',
@@ -212,12 +239,13 @@ Future<GitCommandResult> runStreamingGitCommandWithDependencies(
   final trimmedStderr = stderr.trim();
   final trimmedStdout = stdout.trim();
 
-  throw Exception(
+  throw _createGitCommandFailedError(
     trimmedStderr.isNotEmpty
         ? trimmedStderr
         : trimmedStdout.isNotEmpty
         ? trimmedStdout
         : 'git exited with code ${code ?? 'unknown'}.',
+    discarded: [trimmedStdout],
   );
 }
 
