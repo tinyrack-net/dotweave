@@ -5,9 +5,21 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import 'error.dart';
 
+/// Reads [filePath], reporting a missing file as a [ToolException] rather than
+/// letting a raw [FileSystemException] escape.
+Future<String> _readVersionFile(String filePath) async {
+  final file = File(filePath);
+
+  if (!await file.exists()) {
+    throw ToolException('Version file not found: $filePath');
+  }
+
+  return file.readAsString();
+}
+
 /// Reads the `version` field from a pubspec.yaml file.
 Future<String> readPubspecVersion(String filePath) async {
-  final content = await File(filePath).readAsString();
+  final content = await _readVersionFile(filePath);
   final Object? parsed = loadYaml(content);
 
   if (parsed is! YamlMap) {
@@ -47,7 +59,7 @@ String renderVersionConstant(String version) {
 
 /// Reads the `packageVersion` constant from a generated `version.g.dart`.
 Future<String> readVersionConstant(String filePath) async {
-  final content = await File(filePath).readAsString();
+  final content = await _readVersionFile(filePath);
   final match = _versionConstantPattern.firstMatch(content);
 
   if (match == null) {

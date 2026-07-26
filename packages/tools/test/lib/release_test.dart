@@ -3,7 +3,29 @@ import 'dart:io';
 import 'package:dotweave_tools/src/lib/git.dart';
 import 'package:dotweave_tools/src/lib/release.dart';
 import 'package:dotweave_tools/src/lib/version.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+
+/// Walks up from the test's working directory to the workspace root, i.e. the
+/// nearest ancestor holding the `packages/` directory release targets are
+/// addressed from.
+String findRepoRoot() {
+  var directory = Directory.current.absolute;
+
+  while (true) {
+    if (Directory(p.join(directory.path, 'packages')).existsSync()) {
+      return directory.path;
+    }
+
+    final parent = directory.parent;
+
+    if (parent.path == directory.path) {
+      fail('Could not locate the workspace root from ${Directory.current}');
+    }
+
+    directory = parent;
+  }
+}
 
 class FakeReleaseTarget implements ReleaseTarget {
   FakeReleaseTarget(this.path, {this.version = '1.2.3', this.readError});
@@ -85,8 +107,23 @@ void main() {
     test('updates the cli pubspec and version.g.dart', () {
       expect(releaseTargets.map((target) => target.path), [
         'packages/cli/pubspec.yaml',
-        'packages/cli/lib/src/lib/version.g.dart',
+        'packages/cli/lib/src/util/version.g.dart',
       ]);
+    });
+
+    // The paths above are plain strings, so a file move elsewhere in the
+    // workspace silently breaks `release` with an unhandled FileSystemException
+    // and fails the tag-verification job in CI. Check they still resolve.
+    test('point at files that exist in the workspace', () {
+      final repoRoot = findRepoRoot();
+
+      for (final target in releaseTargets) {
+        expect(
+          File(p.join(repoRoot, target.path)).existsSync(),
+          isTrue,
+          reason: 'Release target ${target.path} does not exist',
+        );
+      }
     });
   });
 
