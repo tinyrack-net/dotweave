@@ -3,7 +3,7 @@
 import 'dart:async' show Timer;
 
 import 'package:dotweave/src/lib/env.dart';
-import 'package:dotweave/src/services/terminal/logger.dart' show Stream;
+import 'package:dotweave/src/services/terminal/logger.dart' show WriteStream;
 import 'package:dotweave/src/services/terminal/theme.dart';
 
 /// Mirror of the TS `Spinner` interface.
@@ -76,7 +76,7 @@ class _SpinnerHandle implements Spinner {
 /// The optional [color]/[symbols]/[env]/[startInterval] overrides are the DI
 /// seams replacing the vitest theme mock, `vi.stubEnv`, and fake timers.
 Spinner createSpinner(
-  Stream stream,
+  WriteStream stream,
   String text, {
   ColorTheme? color,
   Symbols? symbols,
@@ -93,7 +93,7 @@ Spinner createSpinner(
 
   void clear() {
     // The TS guard also checks that clearLine/cursorTo exist; the Dart
-    // Stream interface always provides them.
+    // WriteStream interface always provides them.
     if (stream.isTTY) {
       stream.clearLine(0);
       stream.cursorTo(0);

@@ -5,7 +5,7 @@ import 'package:dotweave/src/services/terminal/logger.dart';
 
 /// Mirror of the TS `MockStream`: records writes and counts the
 /// clearLine/cursorTo spy calls.
-class MockStream implements Stream {
+class MockStream implements WriteStream {
   MockStream({this.isTTY = true});
 
   @override

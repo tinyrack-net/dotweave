@@ -1,6 +1,5 @@
 // Dart port of `packages/cli/src/cli/doctor.ts`.
 
-import 'package:dotweave/src/application.dart' show CommandExitCode;
 import 'package:dotweave/src/cli/router.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/doctor.dart';

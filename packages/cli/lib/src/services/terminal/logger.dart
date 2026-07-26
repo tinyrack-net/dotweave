@@ -37,7 +37,10 @@ abstract class CliLogger {
 
 /// Mirror of the TS `Stream` type:
 /// `Pick<NodeJS.WriteStream, "write" | "isTTY" | "clearLine" | "cursorTo">`.
-abstract class Stream {
+///
+/// Named `WriteStream` rather than `Stream` so it does not shadow
+/// `dart:async`'s `Stream` in every consumer.
+abstract class WriteStream {
   bool get isTTY;
   void write(String chunk);
   void clearLine(int dir);
@@ -46,8 +49,8 @@ abstract class Stream {
 
 /// Adapts a `dart:io` [io.Stdout] to the Node write-stream surface, emitting
 /// the same ANSI sequences Node's `clearLine`/`cursorTo` write.
-class _StdioStream implements Stream {
-  _StdioStream(this._sink);
+class StdioWriteStream implements WriteStream {
+  StdioWriteStream(this._sink);
 
   final io.Stdout _sink;
 
@@ -80,7 +83,7 @@ const String _INDENT = '  '; // ignore: constant_identifier_names
 
 ColorTheme _defaultColorTheme() => color;
 
-Spinner _defaultCreateSpinner(Stream stream, String text) =>
+Spinner _defaultCreateSpinner(WriteStream stream, String text) =>
     createSpinner(stream, text);
 
 class _CliLogger implements CliLogger {
@@ -93,15 +96,15 @@ class _CliLogger implements CliLogger {
     required this.createSpinnerFn,
   });
 
-  final Stream stdout;
-  final Stream stderr;
+  final WriteStream stdout;
+  final WriteStream stderr;
   final String prefix;
   final ColorTheme color;
   final Symbols symbols;
-  final Spinner Function(Stream stream, String text) createSpinnerFn;
+  final Spinner Function(WriteStream stream, String text) createSpinnerFn;
 
   /// Single write helper for all stdout/stderr output paths.
-  void _w(Stream dest, String msg) {
+  void _w(WriteStream dest, String msg) {
     dest.write('$prefix$msg\n');
   }
 
@@ -190,17 +193,17 @@ class _CliLogger implements CliLogger {
 /// seams replacing the vitest module mocks of `./theme.ts` and
 /// `./spinner.ts`.
 CliLogger createCliLogger({
-  Stream? stderr,
-  Stream? stdout,
+  WriteStream? stderr,
+  WriteStream? stdout,
   String? tag,
   ColorTheme? color,
   Symbols? symbols,
-  Spinner Function(Stream stream, String text)? createSpinner,
+  Spinner Function(WriteStream stream, String text)? createSpinner,
 }) {
   // Default to process streams when callers don't pass explicit destination
   // streams.
-  final stdoutStream = stdout ?? _StdioStream(io.stdout);
-  final stderrStream = stderr ?? _StdioStream(io.stderr);
+  final stdoutStream = stdout ?? StdioWriteStream(io.stdout);
+  final stderrStream = stderr ?? StdioWriteStream(io.stderr);
   final prefix = tag == null ? '' : pc.dim('[$tag] ');
 
   // Core logger surface used across commands; each method formats

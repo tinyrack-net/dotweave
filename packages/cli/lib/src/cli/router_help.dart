@@ -99,11 +99,11 @@ String _formatUsageLineForParameters(
     switch (flag) {
       case BooleanFlag():
         usage = displayName;
-      case EnumFlag f when f.placeholder == null:
+      case final EnumFlag f when f.placeholder == null:
         usage = '$displayName ${f.values.join('|')}';
-      case EnumFlag f:
+      case final EnumFlag f:
         usage = '$displayName ${f.placeholder}';
-      case ParsedFlag f:
+      case final ParsedFlag f:
         usage = '$displayName ${f.placeholder ?? 'value'}';
       case CounterFlag():
         usage = '$displayName value';

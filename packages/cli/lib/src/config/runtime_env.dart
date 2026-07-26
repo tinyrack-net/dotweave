@@ -22,14 +22,6 @@ String _osRelease() {
   return Platform.operatingSystemVersion;
 }
 
-/// Mirrors node:os `homedir()` for the platforms dotweave supports.
-String _osHomedir() {
-  if (Platform.isWindows) {
-    return Platform.environment['USERPROFILE'] ?? '';
-  }
-  return Platform.environment['HOME'] ?? '';
-}
-
 /// Test seam standing in for the vitest `vi.mock("#app/lib/env.ts")` module
 /// mock used by the sync service integration suites: when set, every env read
 /// that would fall back to the process-wide [ENV] resolves against this
@@ -72,7 +64,7 @@ String resolveDotweaveHomeDirectoryFromEnv({
     dotweaveHome: readEnvValue('DOTWEAVE_HOME', env: env),
     home: readEnvValue('HOME', env: env),
     localAppData: readEnvValue('LOCALAPPDATA', env: env),
-    osHomeDirectory: osHomeDirectory ?? _osHomedir(),
+    osHomeDirectory: osHomeDirectory ?? osHomedir(),
     platform: platform ?? _osPlatform(),
     userProfile: readEnvValue('USERPROFILE', env: env),
     xdgConfigHome: readEnvValue('XDG_CONFIG_HOME', env: env),

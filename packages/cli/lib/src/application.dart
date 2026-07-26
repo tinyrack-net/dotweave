@@ -16,12 +16,6 @@ import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/version.dart';
 import 'package:dotweave/src/services/terminal/logger.dart';
 
-/// Mirror of the TS `CommandError` shape (`Error & { exitCode?: number }`).
-/// Errors that should drive a custom process exit code implement this.
-abstract interface class CommandExitCode {
-  int? get exitCode;
-}
-
 /// Mirror of `stringifyThrownValue`.
 String _stringifyThrownValue(Object? error) {
   if (error is String) {
@@ -113,47 +107,16 @@ Application _buildApplication(ApplicationText dotweaveText) {
   );
 }
 
-/// Adapts a `dart:io` [io.Stdout] to the logger/router stream surface.
-class _StdioStream implements Stream {
-  _StdioStream(this._sink);
-
-  final io.Stdout _sink;
-
-  @override
-  bool get isTTY => _sink.hasTerminal;
-
-  @override
-  void write(String chunk) {
-    _sink.write(chunk);
-  }
-
-  @override
-  void clearLine(int dir) {
-    _sink.write(
-      dir < 0
-          ? '\x1B[1K'
-          : dir > 0
-          ? '\x1B[0K'
-          : '\x1B[2K',
-    );
-  }
-
-  @override
-  void cursorTo(int column) {
-    _sink.write('\x1B[${column + 1}G');
-  }
-}
-
 /// Runs the dotweave CLI and returns the process exit code (the TS module
 /// assigns it to `process.exitCode`; `bin/dotweave.dart` applies the returned
 /// value and flushes stdout/stderr).
 Future<int> runCli(
   List<String> inputs, {
-  Stream? stdout,
-  Stream? stderr,
+  WriteStream? stdout,
+  WriteStream? stderr,
 }) async {
-  final stdoutStream = stdout ?? _StdioStream(io.stdout);
-  final stderrStream = stderr ?? _StdioStream(io.stderr);
+  final stdoutStream = stdout ?? StdioWriteStream(io.stdout);
+  final stderrStream = stderr ?? StdioWriteStream(io.stderr);
   final errorLogger = createCliLogger(
     stderr: stderrStream,
     stdout: stderrStream,

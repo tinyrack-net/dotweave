@@ -662,7 +662,7 @@ Future<TrackResult> trackTarget(
   final profilesChanged =
       effectiveProfiles != null &&
       (trackedEntry.profiles.length != candidate.profiles.length ||
-          !candidate.profiles.every((m) => trackedEntry.profiles.contains(m)));
+          !candidate.profiles.every(trackedEntry.profiles.contains));
   final repoPathChanged =
       request.repoPath != null &&
       (trackedEntry.repoPath != nextEntry.repoPath ||

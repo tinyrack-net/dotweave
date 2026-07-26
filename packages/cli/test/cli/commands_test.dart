@@ -20,7 +20,6 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:dotweave/src/application.dart' show CommandExitCode;
 import 'package:dotweave/src/cli/cd.dart';
 import 'package:dotweave/src/cli/doctor.dart';
 import 'package:dotweave/src/cli/init.dart';
