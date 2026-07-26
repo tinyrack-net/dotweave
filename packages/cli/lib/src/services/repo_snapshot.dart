@@ -10,6 +10,7 @@ import 'package:dotweave/src/lib/file_mode.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
+import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/repo_artifacts.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:path/path.dart' as p;
@@ -357,7 +358,10 @@ Future<Map<String, SnapshotNode>> buildRepositorySnapshot(
   EffectiveSyncConfig config,
 ) async {
   final snapshot = <String, SnapshotNode>{};
-  final artifactProfiles = collectArtifactProfiles(config);
+  final artifactProfiles = collectArtifactProfiles(
+    entries: config.entries,
+    registeredProfiles: config.profiles ?? const [],
+  );
   final committedProfiles = await readCommittedProfileRegistry(syncDirectory);
 
   if (committedProfiles != null) {

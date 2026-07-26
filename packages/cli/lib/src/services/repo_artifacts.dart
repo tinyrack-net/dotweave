@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -18,6 +17,7 @@ import 'package:dotweave/src/lib/jsonc.dart';
 import 'package:dotweave/src/lib/path_util.dart';
 import 'package:dotweave/src/lib/perf_trace.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
+import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:path/path.dart' as p;
 
@@ -33,16 +33,6 @@ typedef ArtifactOwnershipConfig = ({
   List<ResolvedSyncConfigEntry> entries,
   List<String>? profiles,
 });
-
-/// Mirror of the TS inline return shape of [parseArtifactRelativePath].
-typedef ParsedArtifactPath = ({
-  String profile,
-  String repoPath,
-  bool secret,
-  bool symlink,
-});
-
-const String _physicalProfilesRoot = 'profiles';
 
 /// Bridges [EffectiveSyncConfig] into the [ResolvedSyncConfig] shape accepted
 /// by the sync-query helpers. TS relies on structural typing for this; the
@@ -68,37 +58,21 @@ bool _isActiveArtifactRule(SyncRule? rule, String profile) {
   return rule != null && rule.mode != 'ignore' && rule.profile == profile;
 }
 
-/// Mirror of the TS `collectArtifactProfiles` union parameter, which is
-/// either an entry list picking `profiles` or a config picking
-/// `entries`/`profiles`: accepts a `List<ResolvedSyncConfigEntry>`, an
-/// [ArtifactOwnershipConfig] record, an [EffectiveSyncConfig], or a
-/// [ResolvedSyncConfig].
-Set<String> collectArtifactProfiles(Object configOrEntries) {
+/// Every profile that may own a repository artifact: the default profile, the
+/// [registeredProfiles] from the manifest, and every profile named by an
+/// [entries] item.
+///
+/// The TS original took a union of "entry list or config" and dispatched on it
+/// at runtime. Dart has no such union, and the three config types involved
+/// have no common supertype, so the two fields it actually reads are named
+/// parameters instead. Callers pass `config.entries` / `config.profiles`
+/// directly, which is checked at compile time.
+Set<String> collectArtifactProfiles({
+  required List<ResolvedSyncConfigEntry> entries,
+  List<String> registeredProfiles = const [],
+}) {
   final profiles = <String>{};
   profiles.add(AppConstants.sync.defaultProfile);
-
-  final List<ResolvedSyncConfigEntry> entries;
-  final List<String> registeredProfiles;
-
-  if (configOrEntries is List<ResolvedSyncConfigEntry>) {
-    entries = configOrEntries;
-    registeredProfiles = const [];
-  } else if (configOrEntries is ArtifactOwnershipConfig) {
-    entries = configOrEntries.entries;
-    registeredProfiles = configOrEntries.profiles ?? const [];
-  } else if (configOrEntries is EffectiveSyncConfig) {
-    entries = configOrEntries.entries;
-    registeredProfiles = configOrEntries.profiles ?? const [];
-  } else if (configOrEntries is ResolvedSyncConfig) {
-    entries = configOrEntries.entries;
-    registeredProfiles = configOrEntries.profiles ?? const [];
-  } else {
-    throw ArgumentError.value(
-      configOrEntries,
-      'configOrEntries',
-      'Expected a sync config or a list of sync entries',
-    );
-  }
 
   for (final profile in registeredProfiles) {
     profiles.add(profile);
@@ -165,35 +139,6 @@ Set<String> _collectRawManifestProfiles(Object? manifest) {
   return profiles;
 }
 
-/// Default `execFile` used by [readCommittedProfileRegistry], mirroring the
-/// Node `promisify(execFile)` call shape.
-Future<GitCommandResult> _execFileAsync(
-  String file,
-  List<String> args, {
-  String? cwd,
-}) async {
-  final result = await Process.run(
-    file,
-    args,
-    workingDirectory: cwd,
-    runInShell: false,
-    stdoutEncoding: utf8,
-    stderrEncoding: utf8,
-  );
-  final stdout = result.stdout as String;
-  final stderr = result.stderr as String;
-
-  if (result.exitCode != 0) {
-    throw GitExecFileException(
-      'Command failed: $file ${args.join(' ')}',
-      stderr: stderr,
-      stdout: stdout,
-    );
-  }
-
-  return GitCommandResult(stderr: stderr, stdout: stdout);
-}
-
 /// Reads the profile registry from the committed manifest via
 /// `git show HEAD:manifest.jsonc`, or `null` when it cannot be read. The
 /// optional [dependencies] mirror the module-mock seam used in TS tests.
@@ -201,7 +146,7 @@ Future<Set<String>?> readCommittedProfileRegistry(
   String syncDirectory, [
   GitCommandDependencies? dependencies,
 ]) async {
-  final execFileAsync = dependencies?.execFileAsync ?? _execFileAsync;
+  final execFileAsync = dependencies?.execFileAsync ?? defaultGitExecFile;
 
   try {
     final result = await execFileAsync('git', [
@@ -551,164 +496,6 @@ String buildArtifactKey(RepoArtifact artifact) {
       : relativePath;
 }
 
-/// Mirror of the TS `resolveArtifactLogicalPath` whose parameter picks
-/// `category`/`profile`/`repoPath` from `RepoArtifact` with an optional
-/// `kind`; [kind] is optional accordingly.
-String resolveArtifactLogicalPath({
-  required String category,
-  String? kind,
-  required String profile,
-  required String repoPath,
-}) {
-  final profileRelativePath = '$profile/$repoPath';
-
-  if (kind == 'symlink') {
-    return '$profileRelativePath${AppConstants.sync.symlinkArtifactSuffix}';
-  }
-
-  return category == 'secret'
-      ? '$profileRelativePath${AppConstants.sync.secretArtifactSuffix}'
-      : profileRelativePath;
-}
-
-bool isSecretArtifactPath(String relativePath) {
-  return relativePath.endsWith(AppConstants.sync.secretArtifactSuffix);
-}
-
-String? stripSecretArtifactSuffix(String relativePath) {
-  if (!isSecretArtifactPath(relativePath)) {
-    return null;
-  }
-
-  return relativePath.substring(
-    0,
-    relativePath.length - AppConstants.sync.secretArtifactSuffix.length,
-  );
-}
-
-bool isSymlinkArtifactPath(String relativePath) {
-  return relativePath.endsWith(AppConstants.sync.symlinkArtifactSuffix);
-}
-
-String? stripSymlinkArtifactSuffix(String relativePath) {
-  if (!isSymlinkArtifactPath(relativePath)) {
-    return null;
-  }
-
-  return relativePath.substring(
-    0,
-    relativePath.length - AppConstants.sync.symlinkArtifactSuffix.length,
-  );
-}
-
-void assertStorageSafeRepoPath(String repoPath) {
-  if (!hasReservedSyncArtifactSuffixSegment(repoPath)) {
-    return;
-  }
-
-  throw DotweaveError(
-    'Tracked sync paths must not use the reserved suffixes '
-    '${AppConstants.sync.secretArtifactSuffix} or '
-    '${AppConstants.sync.symlinkArtifactSuffix}.',
-    code: 'RESERVED_ARTIFACT_SUFFIX',
-    details: ['Repository path: $repoPath'],
-    hint:
-        'Rename the tracked path so no segment ends with a reserved artifact '
-        'suffix.',
-  );
-}
-
-/// Mirror of the TS `resolveArtifactRelativePath`; see
-/// [resolveArtifactLogicalPath] for the parameter shape.
-String resolveArtifactRelativePath({
-  required String category,
-  String? kind,
-  required String profile,
-  required String repoPath,
-}) {
-  final logicalPath = resolveArtifactLogicalPath(
-    category: category,
-    kind: kind,
-    profile: profile,
-    repoPath: repoPath,
-  );
-
-  return '$_physicalProfilesRoot/$logicalPath';
-}
-
-({String logicalPath, bool secret, bool symlink}) _stripArtifactSuffix(
-  String relativePath,
-) {
-  final symlink = relativePath.endsWith(
-    AppConstants.sync.symlinkArtifactSuffix,
-  );
-  final secret =
-      !symlink && relativePath.endsWith(AppConstants.sync.secretArtifactSuffix);
-  final suffixLength = symlink
-      ? AppConstants.sync.symlinkArtifactSuffix.length
-      : secret
-      ? AppConstants.sync.secretArtifactSuffix.length
-      : 0;
-
-  return (
-    logicalPath: suffixLength == 0
-        ? relativePath
-        : relativePath.substring(0, relativePath.length - suffixLength),
-    secret: secret,
-    symlink: symlink,
-  );
-}
-
-ParsedArtifactPath parseArtifactRelativePath(String relativePath) {
-  final stripped = _stripArtifactSuffix(relativePath);
-  final segments = stripped.logicalPath.split('/');
-
-  if (segments.length < 3 || segments[0] != _physicalProfilesRoot) {
-    throw DotweaveError(
-      'Repository artifact path is invalid.',
-      code: 'INVALID_REPO_ENTRY',
-      details: ['Repository path: $relativePath'],
-    );
-  }
-
-  final profile = segments[1];
-  final repoPathSegments = segments.sublist(2);
-  final normalizedProfile = normalizeSyncProfileName(
-    profile,
-    'Repository artifact profile',
-  );
-
-  return (
-    profile: normalizedProfile,
-    repoPath: repoPathSegments.join('/'),
-    secret: stripped.secret,
-    symlink: stripped.symlink,
-  );
-}
-
-ParsedArtifactPath _parseArtifactLogicalPath(String relativePath) {
-  final stripped = _stripArtifactSuffix(relativePath);
-  final segments = stripped.logicalPath.split('/');
-
-  if (segments.length < 2) {
-    throw DotweaveError(
-      'Repository artifact key is invalid.',
-      code: 'INVALID_REPO_ENTRY',
-      details: ['Artifact key: $relativePath'],
-    );
-  }
-
-  final profile = segments[0];
-  final repoPathSegments = segments.sublist(1);
-
-  return (
-    profile: normalizeSyncProfileName(profile, 'Repository artifact profile'),
-    repoPath: repoPathSegments.join('/'),
-    secret: stripped.secret,
-    symlink: stripped.symlink,
-  );
-}
-
 Future<List<RepoArtifact>> buildRepoArtifacts(
   Map<String, SnapshotNode> snapshot,
   EffectiveSyncConfig config,
@@ -861,8 +648,11 @@ Future<Set<String>> collectExistingArtifactKeys(
   final effectiveOwnershipConfig =
       ownershipConfig ?? (entries: config.entries, profiles: config.profiles);
   final keys = <String>{};
-  final artifactProfiles = collectArtifactProfiles(effectiveOwnershipConfig);
-  final profilesDirectory = p.join(syncDirectory, _physicalProfilesRoot);
+  final artifactProfiles = collectArtifactProfiles(
+    entries: effectiveOwnershipConfig.entries,
+    registeredProfiles: effectiveOwnershipConfig.profiles ?? const [],
+  );
+  final profilesDirectory = p.join(syncDirectory, artifactProfilesRoot);
 
   final committedProfiles = await readCommittedProfileRegistry(syncDirectory);
 
@@ -908,7 +698,7 @@ Future<Set<String>> collectExistingArtifactKeys(
     }
 
     final isDirectoryKey = key.endsWith('/');
-    final artifact = _parseArtifactLogicalPath(
+    final artifact = parseArtifactLogicalPath(
       isDirectoryKey ? key.substring(0, key.length - 1) : key,
     );
     final ownership = classifyArtifactOwnership(

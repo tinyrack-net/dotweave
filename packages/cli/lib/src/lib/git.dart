@@ -159,7 +159,13 @@ Future<GitCommandResult> runGitCommandWithDependencies(
   }
 }
 
-Future<GitCommandResult> _execFileAsync(
+/// Spawns a command and captures its output, mirroring the Node
+/// `promisify(execFile)` call shape, and raising [GitExecFileException] on a
+/// non-zero exit.
+///
+/// Public because `services/repo_artifacts.dart` runs its own `git show` and
+/// needs the same default rather than a second copy of this function.
+Future<GitCommandResult> defaultGitExecFile(
   String file,
   List<String> args, {
   String? cwd,
@@ -193,7 +199,7 @@ Future<GitCommandResult> _runGitCommand(
   return runGitCommandWithDependencies(
     args,
     options,
-    const GitCommandDependencies(execFileAsync: _execFileAsync),
+    const GitCommandDependencies(execFileAsync: defaultGitExecFile),
   );
 }
 
