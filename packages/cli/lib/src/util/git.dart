@@ -76,12 +76,7 @@ class InitializeRepositoryResult {
 const _missingGitExecutableCode = 'GIT_EXECUTABLE_NOT_FOUND';
 
 /// Error code for "git ran but exited non-zero".
-const String gitCommandFailedCode = 'GIT_COMMAND_FAILED';
-
-/// Whether [error] is a non-zero git exit surfaced by this module.
-bool isGitCommandFailedError(Object? error) {
-  return error is DotweaveError && error.code == gitCommandFailedCode;
-}
+const String _gitCommandFailedCode = 'GIT_COMMAND_FAILED';
 
 /// Builds the user-facing failure for a git command that exited non-zero.
 ///
@@ -95,7 +90,7 @@ DotweaveError _createGitCommandFailedError(
 }) {
   return DotweaveError(
     primary,
-    code: gitCommandFailedCode,
+    code: _gitCommandFailedCode,
     details: compactLines(
       discarded.where((line) => line?.trim() != primary.trim()),
     ),

@@ -90,7 +90,10 @@ Set<String> collectArtifactProfiles({
 bool _isRawCommittedProfileName(String profile) {
   try {
     return normalizeSyncProfileName(profile) == profile;
-  } catch (_) {
+  } on DotweaveError {
+    // "Is this a well-formed profile name?" is a question, so a rejection is
+    // the answer rather than a failure. Narrowed so a defect in the normalizer
+    // is not silently reported as "not a profile".
     return false;
   }
 }
@@ -252,7 +255,7 @@ bool _entryCompatibleWithArtifact(
   });
 }
 
-ResolvedSyncConfigEntry? findNearestArtifactOwningEntry(
+ResolvedSyncConfigEntry? _findNearestArtifactOwningEntry(
   List<ResolvedSyncConfigEntry> entries,
   ParsedArtifactPath artifact,
   String artifactKind,
@@ -288,7 +291,7 @@ bool nearestEntryOwnsArtifact(
   ParsedArtifactPath artifact,
   String artifactKind,
 ) {
-  return findNearestArtifactOwningEntry(entries, artifact, artifactKind) !=
+  return _findNearestArtifactOwningEntry(entries, artifact, artifactKind) !=
       null;
 }
 
@@ -363,7 +366,7 @@ ArtifactOwnershipDisposition classifyArtifactOwnership(
     return 'active';
   }
 
-  final nearestEntry = findNearestArtifactOwningEntry(
+  final nearestEntry = _findNearestArtifactOwningEntry(
     ownershipConfig.entries,
     artifact,
     artifactKind,
@@ -391,14 +394,6 @@ ArtifactOwnershipDisposition classifyArtifactOwnership(
   }
 
   return 'platform-protected';
-}
-
-bool entryOwnsArtifact(
-  ResolvedSyncConfigEntry entry,
-  ParsedArtifactPath artifact,
-) {
-  return _entryOwnsArtifactProfile(entry, artifact.profile) &&
-      _entryOwnsArtifactPath(entry, artifact.repoPath);
 }
 
 /// Mirror of the TS `RepoArtifact` discriminated union. The `plain`/`secret`

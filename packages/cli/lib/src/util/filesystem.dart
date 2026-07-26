@@ -278,7 +278,7 @@ Future<void> _renameNode(String from, String to) async {
 
 /// Renames a node by dispatching to the matching `dart:io` entity class,
 /// falling back to copy-and-delete when the OS reports a cross-device rename.
-Future<void> renamePath(String from, String to) async {
+Future<void> _renamePath(String from, String to) async {
   try {
     await _renameNode(from, to);
   } on FileSystemException catch (error) {
@@ -471,11 +471,11 @@ Future<void> replacePathAtomically(String targetPath, String nextPath) async {
 
   try {
     if (existingStats != null) {
-      await renamePath(targetPath, backupPath);
+      await _renamePath(targetPath, backupPath);
       targetMoved = true;
     }
 
-    await renamePath(nextPath, targetPath);
+    await _renamePath(nextPath, targetPath);
 
     if (targetMoved) {
       await removePath(backupPath);
@@ -483,7 +483,7 @@ Future<void> replacePathAtomically(String targetPath, String nextPath) async {
   } catch (error) {
     if (targetMoved && !(await pathExists(targetPath))) {
       try {
-        await renamePath(backupPath, targetPath);
+        await _renamePath(backupPath, targetPath);
       } catch (_) {
         // Mirrors the TS `.catch(() => {})`: rollback is best-effort.
       }
@@ -513,7 +513,7 @@ Future<void> removePathAtomically(String targetPath) async {
     '.${p.basename(targetPath)}.dotweave-sync-remove-${_randomUuid()}',
   );
 
-  await renamePath(targetPath, backupPath);
+  await _renamePath(targetPath, backupPath);
   await removePath(backupPath);
 }
 
