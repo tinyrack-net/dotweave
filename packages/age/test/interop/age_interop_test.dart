@@ -6,7 +6,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:dotweave/src/crypto/age/age.dart';
+import 'package:dotweave_age/src/age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -14,14 +14,7 @@ import 'package:test/test.dart';
 /// (installed at this package's node_modules), driven via node.
 void main() {
   final packageRoot = Directory.current.path;
-  final script = p.join(
-    packageRoot,
-    'test',
-    'crypto',
-    'age',
-    'interop',
-    'age_interop.mjs',
-  );
+  final script = p.join(packageRoot, 'test', 'interop', 'age_interop.mjs');
 
   Future<String> runNode(List<String> args, {String stdinText = ''}) async {
     final process = await Process.start('node', [

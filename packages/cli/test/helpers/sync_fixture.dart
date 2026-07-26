@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
-import 'package:dotweave/src/crypto/age/keys.dart';
 import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/lib/path_util.dart';
+import 'package:dotweave_age/dotweave_age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

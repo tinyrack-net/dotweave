@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dotweave/src/crypto/age/armor.dart';
-import 'package:dotweave/src/crypto/age/exception.dart';
+import 'package:dotweave_age/src/armor.dart';
+import 'package:dotweave_age/src/exception.dart';
 import 'package:test/test.dart';
 
 void main() {
