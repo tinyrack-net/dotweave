@@ -14,6 +14,12 @@ import '../helpers/sync_fixture.dart';
 // Port of `sync.service.test.ts` (part B): the tests from "prunes orphaned
 // non-default-profile artifacts after the last profile entry is removed"
 // through "preserves inactive parent-owned empty child directories".
+//
+// Of the three parts this is the one with a single subject: what push and
+// status do to repository artifacts that no manifest entry owns any more.
+// Orphan pruning across profiles, secrets, and symlinks; replacing a stale
+// directory root with a file or symlink; and the preservation rules that stop
+// all of that from eating artifacts another profile or parent still owns.
 
 /// Mirror of `(await lstat(path)).isDirectory()).toBe(true)`.
 void _expectDirectory(String path) {
@@ -34,7 +40,7 @@ void _expectFile(String path) {
 void main() {
   tearDown(cleanUpSyncFixture);
 
-  group('sync service', () {
+  group('sync service: orphan pruning and stale root replacement', () {
     test('prunes orphaned non-default-profile artifacts after the last '
         'profile entry is removed', () async {
       final workspace = await createWorkspace();
