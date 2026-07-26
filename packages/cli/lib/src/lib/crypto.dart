@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dotweave_age/dotweave_age.dart';
 import 'package:path/path.dart' as p;
 
-import '../crypto/age/age.dart';
 import 'error.dart';
 import 'string.dart';
 

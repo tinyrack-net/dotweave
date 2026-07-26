@@ -1,0 +1,3 @@
+tags:
+  # Cross-implementation tests against the npm age-encryption package (needs node).
+  interop:

@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
-import 'package:dotweave/src/crypto/age/keys.dart';
 import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/lib/git.dart';
 import 'package:dotweave/src/services/init.dart';
+import 'package:dotweave_age/dotweave_age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
