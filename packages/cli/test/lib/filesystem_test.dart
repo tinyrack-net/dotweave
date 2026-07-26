@@ -59,6 +59,32 @@ void main() {
       expect((await getPathStats(filePath))?.isFile, true);
     });
 
+    test('reports a path that vanished mid-scan as a DotweaveError', () async {
+      // Snapshot walkers stat paths a directory listing just reported. When
+      // the path is removed in between, the caller must get an actionable
+      // error rather than the `TypeError` the old `!` assertion produced.
+      final workspace = await createWorkspace();
+      final filePath = p.join(workspace, 'vanished.txt');
+
+      await File(filePath).writeAsString('value\n');
+      expect((await requirePathStats(filePath)).isFile, true);
+
+      await File(filePath).delete();
+
+      await expectLater(
+        requirePathStats(filePath),
+        throwsA(
+          isA<DotweaveError>()
+              .having((error) => error.code, 'code', 'PATH_DISAPPEARED')
+              .having(
+                (error) => error.details.join(),
+                'details',
+                contains(filePath),
+              ),
+        ),
+      );
+    });
+
     test('lists directory entries in sorted order', () async {
       final workspace = await createWorkspace();
 

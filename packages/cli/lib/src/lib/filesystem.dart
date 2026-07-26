@@ -145,6 +145,27 @@ Future<PathStats?> getPathStats(String path) async {
   );
 }
 
+/// Reads path metadata for a path a directory walk just reported as present.
+///
+/// The walk and this stat call are not atomic, so the path can disappear in
+/// between (an editor rewriting a dotfile during `dotweave push` is enough).
+/// Callers used to assert non-null here, which surfaced that race as an
+/// unhandled `TypeError` stack dump instead of an actionable message.
+Future<PathStats> requirePathStats(String path) async {
+  final stats = await getPathStats(path);
+
+  if (stats == null) {
+    throw DotweaveError(
+      'Path disappeared while scanning.',
+      code: 'PATH_DISAPPEARED',
+      details: ['Path: $path'],
+      hint: 'Re-run the command; the path was removed mid-scan.',
+    );
+  }
+
+  return stats;
+}
+
 /// Reads path metadata while following symlinks and treating missing paths as
 /// an absent result.
 Future<PathStats?> getFollowedPathStats(String path) async {

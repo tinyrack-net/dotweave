@@ -113,7 +113,7 @@ Future<void> _readArtifactLeaf(
   // The walker already learned this path is not a directory (that's how it
   // routed here instead of recursing), so reuse its stat result instead of
   // re-deriving the same type/mode with a second full stat call.
-  final stats = providedStats ?? (await getPathStats(absolutePath))!;
+  final stats = providedStats ?? await requirePathStats(absolutePath);
 
   if (artifact.secret) {
     if (rule.mode != 'secret') {
@@ -285,7 +285,7 @@ Future<void> _walkArtifactTree(
     // Non-directories still need one stat call (for `mode`), but that result
     // is now threaded into `_readArtifactLeaf` so it doesn't re-derive the
     // same type/mode with a second full stat call on the same path.
-    final stats = (await getPathStats(absolutePath))!;
+    final stats = await requirePathStats(absolutePath);
 
     await _readArtifactLeaf(absolutePath, storagePath, config, snapshot, stats);
   }

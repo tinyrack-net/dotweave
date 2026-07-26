@@ -205,7 +205,7 @@ Future<void> _walkLocalDirectory(
 
     // Files (and any other node kind) still need a stat call: `mode` is not
     // available from the directory listing.
-    final stats = (await getPathStats(localPath))!;
+    final stats = await requirePathStats(localPath);
 
     await _addLocalNode(snapshot, config, repoPath, localPath, stats);
   }
