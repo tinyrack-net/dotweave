@@ -34,6 +34,7 @@ import 'package:dotweave/src/cli/skill/install.dart';
 import 'package:dotweave/src/cli/status.dart';
 import 'package:dotweave/src/cli/track.dart';
 import 'package:dotweave/src/cli/untrack.dart';
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/init.dart';
@@ -1540,7 +1541,9 @@ void main() {
         initialize: false,
       );
 
-      mockCurrentPlatformKey(io.Platform.isWindows ? 'linux' : 'win');
+      mockCurrentPlatformKey(
+        io.Platform.isWindows ? PlatformKey.linux : PlatformKey.win,
+      );
 
       expect(await io.Directory(workspace.syncDirectory).exists(), isFalse);
 

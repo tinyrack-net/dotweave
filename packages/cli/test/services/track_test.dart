@@ -102,7 +102,7 @@ class MockedTrackSeams {
   SyncConfigResolutionContext resolveSyncConfigResolutionContext() {
     return SyncConfigResolutionContext(
       homeDirectory: homeDirectory,
-      platformKey: 'linux',
+      platformKey: PlatformKey.linux,
       readEnv: readEnvValue,
       xdgConfigHome: userPath('/home/user/.config'),
     );

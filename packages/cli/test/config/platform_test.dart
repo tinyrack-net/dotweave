@@ -4,15 +4,24 @@ import 'package:test/test.dart';
 void main() {
   group('detectCurrentPlatformKey', () {
     test('maps win32 to win', () {
-      expect(detectCurrentPlatformKey('win32', '10.0.0', null, null), 'win');
+      expect(
+        detectCurrentPlatformKey('win32', '10.0.0', null, null),
+        PlatformKey.win,
+      );
     });
 
     test('maps darwin to mac', () {
-      expect(detectCurrentPlatformKey('darwin', '24.0.0', null, null), 'mac');
+      expect(
+        detectCurrentPlatformKey('darwin', '24.0.0', null, null),
+        PlatformKey.mac,
+      );
     });
 
     test('maps linux to linux', () {
-      expect(detectCurrentPlatformKey('linux', '6.6.0', null, null), 'linux');
+      expect(
+        detectCurrentPlatformKey('linux', '6.6.0', null, null),
+        PlatformKey.linux,
+      );
     });
 
     test('maps linux with WSL markers to wsl', () {
@@ -23,14 +32,14 @@ void main() {
           null,
           null,
         ),
-        'wsl',
+        PlatformKey.wsl,
       );
     });
 
     test('maps unknown platforms to linux', () {
       expect(
         detectCurrentPlatformKey('freebsd', '14.0.0', null, null),
-        'linux',
+        PlatformKey.linux,
       );
     });
   });
@@ -58,12 +67,18 @@ void main() {
         win: '%LOCALAPPDATA%/app',
       );
 
-      expect(resolvePlatformValue(localPath, 'linux'), r'$XDG_CONFIG_HOME/app');
       expect(
-        resolvePlatformValue(localPath, 'mac'),
+        resolvePlatformValue(localPath, PlatformKey.linux),
+        r'$XDG_CONFIG_HOME/app',
+      );
+      expect(
+        resolvePlatformValue(localPath, PlatformKey.mac),
         '~/Library/Application Support/app',
       );
-      expect(resolvePlatformValue(localPath, 'win'), '%LOCALAPPDATA%/app');
+      expect(
+        resolvePlatformValue(localPath, PlatformKey.win),
+        '%LOCALAPPDATA%/app',
+      );
     });
 
     test('falls back to default when platform key is absent', () {
@@ -72,15 +87,18 @@ void main() {
         linux: r'$XDG_CONFIG_HOME/app',
       );
 
-      expect(resolvePlatformValue(localPath, 'win'), '~/.config/app');
-      expect(resolvePlatformValue(localPath, 'mac'), '~/.config/app');
+      expect(resolvePlatformValue(localPath, PlatformKey.win), '~/.config/app');
+      expect(resolvePlatformValue(localPath, PlatformKey.mac), '~/.config/app');
     });
 
     test('returns default when only default is specified', () {
       const localPath = PlatformStringValue(defaultValue: '~/.config/app');
 
-      expect(resolvePlatformValue(localPath, 'linux'), '~/.config/app');
-      expect(resolvePlatformValue(localPath, 'win'), '~/.config/app');
+      expect(
+        resolvePlatformValue(localPath, PlatformKey.linux),
+        '~/.config/app',
+      );
+      expect(resolvePlatformValue(localPath, PlatformKey.win), '~/.config/app');
     });
 
     test('prefers wsl and falls back to linux on WSL', () {
@@ -91,7 +109,7 @@ void main() {
             linux: r'$XDG_CONFIG_HOME/app-linux',
             wsl: r'$XDG_CONFIG_HOME/app-wsl',
           ),
-          'wsl',
+          PlatformKey.wsl,
         ),
         r'$XDG_CONFIG_HOME/app-wsl',
       );
@@ -102,7 +120,7 @@ void main() {
             defaultValue: '~/.config/app',
             linux: r'$XDG_CONFIG_HOME/app-linux',
           ),
-          'wsl',
+          PlatformKey.wsl,
         ),
         r'$XDG_CONFIG_HOME/app-linux',
       );
@@ -117,15 +135,15 @@ void main() {
       );
 
       expect(
-        resolvePlatformValue(repoPath, 'linux'),
+        resolvePlatformValue(repoPath, PlatformKey.linux),
         '.config/app/config.linux.json',
       );
       expect(
-        resolvePlatformValue(repoPath, 'mac'),
+        resolvePlatformValue(repoPath, PlatformKey.mac),
         'Library/Application Support/app/config.json',
       );
       expect(
-        resolvePlatformValue(repoPath, 'win'),
+        resolvePlatformValue(repoPath, PlatformKey.win),
         'AppData/Local/app/config.json',
       );
     });
@@ -138,7 +156,7 @@ void main() {
             linux: '.gnupg/gpg-agent.linux.conf',
             wsl: '.gnupg/gpg-agent.wsl.conf',
           ),
-          'wsl',
+          PlatformKey.wsl,
         ),
         '.gnupg/gpg-agent.wsl.conf',
       );
@@ -149,7 +167,7 @@ void main() {
             defaultValue: '.gnupg/gpg-agent.conf',
             linux: '.gnupg/gpg-agent.linux.conf',
           ),
-          'wsl',
+          PlatformKey.wsl,
         ),
         '.gnupg/gpg-agent.linux.conf',
       );

@@ -186,22 +186,14 @@ SyncMode _resolvePlatformMode(
   PlatformSyncMode configuredMode,
   PlatformKey platformKey,
 ) {
-  if (platformKey == 'wsl') {
-    return configuredMode.wsl ??
-        configuredMode.linux ??
-        configuredMode.defaultValue;
-  }
-
-  switch (platformKey) {
-    case 'win':
-      return configuredMode.win ?? configuredMode.defaultValue;
-    case 'mac':
-      return configuredMode.mac ?? configuredMode.defaultValue;
-    case 'linux':
-      return configuredMode.linux ?? configuredMode.defaultValue;
-    default:
-      return configuredMode.defaultValue;
-  }
+  return resolveForPlatform(
+    platformKey,
+    defaultValue: configuredMode.defaultValue,
+    win: configuredMode.win,
+    mac: configuredMode.mac,
+    linux: configuredMode.linux,
+    wsl: configuredMode.wsl,
+  );
 }
 
 PlatformSyncMode _buildConfiguredMode(

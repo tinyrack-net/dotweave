@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/lib/posix_chmod.dart';
 import 'package:dotweave/src/services/init.dart';
@@ -174,7 +175,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await Directory(replacementFile).create(recursive: true);
       await pushChanges(const PushRequest(dryRun: false));
 
@@ -223,7 +224,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final status = await getStatus();
       final dryRunResult = await pushChanges(const PushRequest(dryRun: true));
       final result = await pushChanges(const PushRequest(dryRun: false));
@@ -295,7 +296,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await Directory(replacementPath).create(recursive: true);
       await File(p.join(replacementPath, 'owned.txt')).writeAsString('owned\n');
       await pushChanges(const PushRequest(dryRun: false));
@@ -347,7 +348,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final status = await getStatus();
       final dryRunResult = await pushChanges(const PushRequest(dryRun: true));
       final result = await pushChanges(const PushRequest(dryRun: false));

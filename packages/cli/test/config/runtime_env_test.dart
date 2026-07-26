@@ -1,3 +1,4 @@
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/lib/env.dart';
 import 'package:path/path.dart' as p;
@@ -188,7 +189,7 @@ void main() {
             platform: 'linux',
             osRelease: '6.1.0-generic',
           ),
-          'linux',
+          PlatformKey.linux,
         );
       });
 
@@ -199,7 +200,7 @@ void main() {
             platform: 'linux',
             osRelease: '5.15.0-microsoft-standard',
           ),
-          'wsl',
+          PlatformKey.wsl,
         );
       });
 
@@ -210,7 +211,7 @@ void main() {
             platform: 'linux',
             osRelease: '5.15.0-microsoft-standard',
           ),
-          'wsl',
+          PlatformKey.wsl,
         );
       });
 
@@ -221,7 +222,7 @@ void main() {
             platform: 'darwin',
             osRelease: '23.0.0',
           ),
-          'mac',
+          PlatformKey.mac,
         );
       });
 
@@ -232,7 +233,7 @@ void main() {
             platform: 'win32',
             osRelease: '10.0.19045',
           ),
-          'win',
+          PlatformKey.win,
         );
       });
     });

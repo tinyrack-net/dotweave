@@ -1226,48 +1226,30 @@ SyncMode _resolveSyncModeForPlatform(
   PlatformSyncMode configuredMode,
   PlatformKey platformKey,
 ) {
-  if (platformKey == 'wsl') {
-    return configuredMode.wsl ??
-        configuredMode.linux ??
-        configuredMode.defaultValue;
-  }
-
-  switch (platformKey) {
-    case 'win':
-      return configuredMode.win ?? configuredMode.defaultValue;
-    case 'mac':
-      return configuredMode.mac ?? configuredMode.defaultValue;
-    case 'linux':
-      return configuredMode.linux ?? configuredMode.defaultValue;
-    default:
-      return configuredMode.defaultValue;
-  }
+  return resolveForPlatform(
+    platformKey,
+    defaultValue: configuredMode.defaultValue,
+    win: configuredMode.win,
+    mac: configuredMode.mac,
+    linux: configuredMode.linux,
+    wsl: configuredMode.wsl,
+  );
 }
 
 int _resolveSyncPermissionForPlatform(
   PlatformPermission configuredPermission,
   PlatformKey platformKey,
 ) {
-  if (platformKey == 'wsl') {
-    final raw =
-        configuredPermission.wsl ??
-        configuredPermission.linux ??
-        configuredPermission.defaultValue;
-    return parsePermissionOctal(raw);
-  }
-
-  final String raw;
-  switch (platformKey) {
-    case 'win':
-      raw = configuredPermission.win ?? configuredPermission.defaultValue;
-    case 'mac':
-      raw = configuredPermission.mac ?? configuredPermission.defaultValue;
-    case 'linux':
-      raw = configuredPermission.linux ?? configuredPermission.defaultValue;
-    default:
-      raw = configuredPermission.defaultValue;
-  }
-  return parsePermissionOctal(raw);
+  return parsePermissionOctal(
+    resolveForPlatform(
+      platformKey,
+      defaultValue: configuredPermission.defaultValue,
+      win: configuredPermission.win,
+      mac: configuredPermission.mac,
+      linux: configuredPermission.linux,
+      wsl: configuredPermission.wsl,
+    ),
+  );
 }
 
 ConfiguredSyncRepoPath _normalizeConfiguredRepoPath(

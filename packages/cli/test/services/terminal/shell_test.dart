@@ -1,3 +1,4 @@
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/lib/env.dart';
 import 'package:dotweave/src/lib/error.dart';
 import 'package:dotweave/src/services/terminal/shell.dart';
@@ -9,7 +10,7 @@ Env _env([Map<String, String> values = const {}]) {
 
 ShellDependencies _deps({
   Map<String, String> env = const {},
-  String platformKey = 'linux',
+  PlatformKey platformKey = PlatformKey.linux,
   ShellSpawn? spawn,
 }) {
   return ShellDependencies(
@@ -25,7 +26,7 @@ void main() {
       test('resolves SHELL on linux', () async {
         expect(
           await resolveShellCommandForPlatform(
-            'linux',
+            PlatformKey.linux,
             env: _env({'SHELL': '/bin/zsh'}),
           ),
           const ShellCommand(args: [], command: '/bin/zsh'),
@@ -34,7 +35,7 @@ void main() {
 
       test('falls back to /bin/sh when SHELL is not set', () async {
         expect(
-          await resolveShellCommandForPlatform('wsl', env: _env()),
+          await resolveShellCommandForPlatform(PlatformKey.wsl, env: _env()),
           const ShellCommand(args: [], command: '/bin/sh'),
         );
       });
@@ -42,7 +43,7 @@ void main() {
       test('uses COMSPEC on windows', () async {
         expect(
           await resolveShellCommandForPlatform(
-            'win',
+            PlatformKey.win,
             env: _env({'COMSPEC': r'C:\Windows\System32\cmd.exe'}),
           ),
           const ShellCommand(args: [], command: r'C:\Windows\System32\cmd.exe'),
@@ -53,7 +54,7 @@ void main() {
         'falls back to cmd.exe on windows when COMSPEC is not set',
         () async {
           expect(
-            await resolveShellCommandForPlatform('win', env: _env()),
+            await resolveShellCommandForPlatform(PlatformKey.win, env: _env()),
             const ShellCommand(args: [], command: 'cmd.exe'),
           );
         },
@@ -96,7 +97,7 @@ void main() {
               '/tmp',
               dependencies: _deps(
                 env: {'COMSPEC': 'missing-cmd.exe'},
-                platformKey: 'win',
+                platformKey: PlatformKey.win,
                 spawn: (command, args, directory) async {
                   throw Exception('not found');
                 },

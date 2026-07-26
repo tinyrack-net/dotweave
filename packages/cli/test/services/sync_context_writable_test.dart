@@ -1,3 +1,4 @@
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:test/test.dart';
@@ -11,7 +12,7 @@ const SyncPaths mockResolveSyncPaths = SyncPaths(
 
 final SyncConfigResolutionContext mockContext = SyncConfigResolutionContext(
   homeDirectory: '/home/test',
-  platformKey: 'linux',
+  platformKey: PlatformKey.linux,
   readEnv: (name) => null,
   xdgConfigHome: '/home/test/.config',
 );

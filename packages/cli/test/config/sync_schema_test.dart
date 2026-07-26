@@ -11,7 +11,7 @@ import 'package:dotweave/src/lib/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-PlatformKey forcedPlatformKey = 'linux';
+PlatformKey forcedPlatformKey = PlatformKey.linux;
 
 void forcePlatform(PlatformKey platformKey) {
   forcedPlatformKey = platformKey;
@@ -70,7 +70,7 @@ ResolvedSyncConfigEntry? findEntry(
 
 void main() {
   tearDown(() {
-    forcedPlatformKey = 'linux';
+    forcedPlatformKey = PlatformKey.linux;
   });
 
   group('sync config', () {
@@ -104,7 +104,7 @@ void main() {
           syncDirectory,
           SyncConfigResolutionContext(
             homeDirectory: p.join(workspace, 'home'),
-            platformKey: 'linux',
+            platformKey: PlatformKey.linux,
             readEnv: (_) => null,
             xdgConfigHome: p.join(workspace, 'home', '.config'),
           ),
@@ -351,7 +351,7 @@ void main() {
     });
 
     test('uses explicit platform-aware repoPath when configured', () async {
-      forcePlatform('linux');
+      forcePlatform(PlatformKey.linux);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -456,7 +456,7 @@ void main() {
 
     test('rejects duplicate resolved repo paths from platform-specific entries '
         'on the active platform', () async {
-      forcePlatform('linux');
+      forcePlatform(PlatformKey.linux);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -609,7 +609,7 @@ void main() {
     test(
       'inherits the full parent mode policy when child mode is omitted',
       () async {
-        forcePlatform('win');
+        forcePlatform(PlatformKey.win);
         final workspace = await createTemporaryDirectory(
           'dotweave-sync-config-',
         );
@@ -653,7 +653,7 @@ void main() {
     test(
       'does not merge parent platform overrides into explicit child mode',
       () async {
-        forcePlatform('win');
+        forcePlatform(PlatformKey.win);
         final workspace = await createTemporaryDirectory(
           'dotweave-sync-config-',
         );
@@ -866,7 +866,7 @@ void main() {
     });
 
     test('resolves localPath using linux platform override', () async {
-      forcePlatform('linux');
+      forcePlatform(PlatformKey.linux);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
       final xdgConfigHome = p.join(homeDirectory, '.config');
@@ -891,7 +891,7 @@ void main() {
     });
 
     test('resolves repoPath using linux platform override', () async {
-      forcePlatform('linux');
+      forcePlatform(PlatformKey.linux);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -916,7 +916,7 @@ void main() {
     });
 
     test('resolves localPath using WSL override before linux', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
       final xdgConfigHome = p.join(homeDirectory, '.config');
@@ -950,7 +950,7 @@ void main() {
     });
 
     test('falls back to linux localPath on WSL when wsl is omitted', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
       final xdgConfigHome = p.join(homeDirectory, '.config');
@@ -975,7 +975,7 @@ void main() {
     });
 
     test('resolves repoPath using WSL override before linux', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1001,7 +1001,7 @@ void main() {
     });
 
     test('falls back to linux repoPath on WSL when wsl is omitted', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1026,7 +1026,7 @@ void main() {
     });
 
     test('resolves platform-specific modes for the current OS', () async {
-      forcePlatform('mac');
+      forcePlatform(PlatformKey.mac);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1056,7 +1056,7 @@ void main() {
     });
 
     test('resolves WSL-specific mode before linux', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1086,7 +1086,7 @@ void main() {
     });
 
     test('falls back to linux mode on WSL when wsl is omitted', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1110,7 +1110,7 @@ void main() {
     test(
       'inherits WSL mode policy from parent when child mode is omitted',
       () async {
-        forcePlatform('wsl');
+        forcePlatform(PlatformKey.wsl);
         final workspace = await createTemporaryDirectory(
           'dotweave-sync-config-',
         );
@@ -1158,7 +1158,7 @@ void main() {
     test(
       'does not merge parent WSL overrides into explicit child mode',
       () async {
-        forcePlatform('wsl');
+        forcePlatform(PlatformKey.wsl);
         final workspace = await createTemporaryDirectory(
           'dotweave-sync-config-',
         );
@@ -1311,7 +1311,7 @@ void main() {
     });
 
     test('resolves platform-specific permission', () async {
-      forcePlatform('mac');
+      forcePlatform(PlatformKey.mac);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1440,7 +1440,7 @@ void main() {
     });
 
     test('resolves WSL permission with fallback to linux', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 
@@ -1462,7 +1462,7 @@ void main() {
     });
 
     test('inherits WSL permission fallback from parent directories', () async {
-      forcePlatform('wsl');
+      forcePlatform(PlatformKey.wsl);
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');
       final homeDirectory = p.join(workspace, 'home');
 

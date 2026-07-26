@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/lib/filesystem.dart';
 import 'package:dotweave/src/services/init.dart';
 import 'package:dotweave/src/services/profile.dart';
@@ -1345,7 +1346,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await pushChanges(const PushRequest(dryRun: false));
 
       final artifactPath = p.join(
@@ -1388,7 +1389,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final status = await getStatus();
       final dryRunResult = await pushChanges(const PushRequest(dryRun: true));
       final result = await pushChanges(const PushRequest(dryRun: false));
@@ -1465,7 +1466,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('linux');
+      mockCurrentPlatformKey(PlatformKey.linux);
       await pushChanges(const PushRequest(dryRun: false));
 
       final artifactPath = p.join(
@@ -1508,7 +1509,7 @@ void main() {
         }),
       );
 
-      mockCurrentPlatformKey('win');
+      mockCurrentPlatformKey(PlatformKey.win);
       final status = await getStatus();
       final dryRunResult = await pushChanges(const PushRequest(dryRun: true));
       final result = await pushChanges(const PushRequest(dryRun: false));
