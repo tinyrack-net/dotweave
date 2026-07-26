@@ -176,6 +176,21 @@ Future<ShellCloseEvent> _spawnShellProcess(
   return ShellCloseEvent(code: code);
 }
 
+/// Opens a shell rooted at the sync directory, creating it if it does not
+/// exist yet.
+///
+/// The `cd` command used to do the `mkdir -p` itself. Whether launching a
+/// shell in a not-yet-initialized sync directory should create it is a
+/// behavioral rule, not presentation, so it belongs next to the launch.
+Future<void> launchShellInSyncDirectory(
+  String syncDirectory, {
+  ShellDependencies? dependencies,
+}) async {
+  await Directory(syncDirectory).create(recursive: true);
+
+  return launchShellInDirectory(syncDirectory, dependencies: dependencies);
+}
+
 Future<void> launchShellInDirectory(
   String directory, {
   ShellDependencies? dependencies,

@@ -6,7 +6,9 @@ import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/config/xdg.dart';
 import 'package:dotweave/src/services/config_file.dart';
+import 'package:dotweave/src/services/profile.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/services/sync_mode.dart';
 import 'package:dotweave/src/services/sync_paths.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/file_mode.dart';
@@ -743,4 +745,73 @@ Future<TrackResult> trackTarget(
         ? nextEntry.repoPath
         : trackedEntry.repoPath,
   );
+}
+
+/// Outcome of [trackOrSetMode]: whether the target was tracked outright, or
+/// whether it already existed inside a tracked directory and only had its
+/// sync mode set.
+sealed class TrackOutcome {
+  const TrackOutcome();
+}
+
+/// The target was newly tracked (or an existing entry was updated).
+final class TrackedOutcome extends TrackOutcome {
+  const TrackedOutcome(this.result);
+
+  final TrackResult result;
+}
+
+/// The target was not trackable on its own, so its sync mode was set instead.
+final class ModeSetOutcome extends TrackOutcome {
+  const ModeSetOutcome(this.result);
+
+  final SetModeResult result;
+}
+
+/// Tracks [request], falling back to setting the target's sync mode when it
+/// turns out to live inside an already-tracked directory.
+///
+/// This orchestration -- track, and on "target not found" validate the
+/// profiles, set the mode, then assign the profiles -- is a policy about what
+/// `dotweave track` means, not about how to render it, but it used to live in
+/// the command. Note two rules that are easy to lose: the fallback is skipped
+/// when the caller pinned an explicit repository path (there is nothing to
+/// infer), and a profile list of exactly `['']` means "clear the profiles"
+/// rather than "assign the empty-named profile".
+Future<TrackOutcome> trackOrSetMode(
+  TrackRequest request,
+  String cwd, {
+  required SyncMode fallbackMode,
+}) async {
+  try {
+    return TrackedOutcome(await trackTarget(request, cwd));
+  } catch (error) {
+    if (request.repoPath != null || !isSyncTargetNotFoundError(error)) {
+      rethrow;
+    }
+
+    final profiles = request.profiles ?? const <String>[];
+    final isProfileClear = profiles.length == 1 && profiles[0] == '';
+
+    if (profiles.isNotEmpty && !isProfileClear) {
+      await validateProfilesExist(profiles);
+    }
+
+    final setResult = await setTargetMode(
+      SetModeRequest(mode: fallbackMode, target: request.target),
+      cwd,
+    );
+
+    if (profiles.isNotEmpty) {
+      await assignProfiles(
+        AssignProfilesRequest(
+          profiles: isProfileClear ? const [] : profiles,
+          target: request.target,
+        ),
+        cwd,
+      );
+    }
+
+    return ModeSetOutcome(setResult);
+  }
 }

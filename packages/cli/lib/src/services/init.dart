@@ -131,6 +131,97 @@ DotweaveError createMissingRepositoryAgeKeyError() {
   );
 }
 
+/// The age-identity decision `init` makes before touching the repository.
+///
+/// [shouldPrompt] is the only part the CLI acts on directly; everything else
+/// feeds [resolveAgeIdentity].
+typedef AgeIdentityPlan = ({
+  /// Contents of `--key-file`, read and trimmed. Null when absent or blank.
+  String? providedKey,
+
+  /// Whether the caller must ask the user for a key before continuing.
+  bool shouldPrompt,
+
+  /// Whether an existing repository is being adopted rather than created.
+  bool importingRepository,
+
+  /// Whether a usable identity file is already on disk (always false under
+  /// `--force`, which regenerates).
+  bool identityFileExists,
+});
+
+/// Reads `--key-file` and decides whether `init` needs to prompt for a key.
+///
+/// This precedence -- explicit key beats prompt beats existing identity beats
+/// generating a new one -- is a domain rule, and it used to be spread across
+/// five booleans in the `init` command, alongside a raw `File(...).readAsString`.
+Future<AgeIdentityPlan> planAgeIdentity({
+  required String? keyFile,
+  required String? repository,
+  required bool force,
+  Future<String> Function(String path)? readKeyFile,
+  String Function()? resolveIdentityFile,
+  Future<bool> Function(String path)? identityFileExists,
+}) async {
+  final read = readKeyFile ?? (path) => File(path).readAsString();
+  final identityFile =
+      (resolveIdentityFile ??
+      () =>
+          resolveDefaultIdentityFile(resolveDotweaveHomeDirectoryFromEnv()))();
+  final exists = identityFileExists ?? pathExists;
+
+  final rawKey = keyFile == null ? null : (await read(keyFile)).trim();
+  final providedKey = rawKey == null || rawKey.isEmpty ? null : rawKey;
+  // `--force` regenerates, so an identity already on disk does not count.
+  final hasIdentityFile = force ? false : await exists(identityFile);
+  final importingRepository =
+      repository != null && repository.trim().isNotEmpty;
+
+  return (
+    providedKey: providedKey,
+    // A key file that was given but turned out blank still counts as "asked
+    // and answered": do not prompt on top of it.
+    shouldPrompt:
+        providedKey == null &&
+        keyFile == null &&
+        !hasIdentityFile &&
+        importingRepository,
+    importingRepository: importingRepository,
+    identityFileExists: hasIdentityFile,
+  );
+}
+
+/// Final identity decision, given the answer to the prompt [plan] asked for
+/// (null when it did not ask).
+///
+/// Throws when an existing repository is being adopted with no key at all,
+/// since its artifacts would be undecryptable.
+({String? ageIdentity, bool generateAgeIdentity}) resolveAgeIdentity(
+  AgeIdentityPlan plan,
+  String? promptAnswer,
+) {
+  final trimmedAnswer = promptAnswer?.trim();
+
+  if (plan.importingRepository &&
+      plan.providedKey == null &&
+      trimmedAnswer == '') {
+    throw createMissingRepositoryAgeKeyError();
+  }
+
+  return (
+    ageIdentity:
+        plan.providedKey ??
+        (trimmedAnswer != null && trimmedAnswer.isNotEmpty
+            ? trimmedAnswer
+            : null),
+    generateAgeIdentity:
+        !plan.importingRepository &&
+        plan.providedKey == null &&
+        (trimmedAnswer == '' ||
+            (trimmedAnswer == null && !plan.identityFileExists)),
+  );
+}
+
 DotweaveError createAlreadyInitializedError(String syncDirectory) {
   return DotweaveError(
     'Sync directory is already initialized.',
