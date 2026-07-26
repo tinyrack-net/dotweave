@@ -37,7 +37,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
-- `packages/tinyrack_cli`: The CLI framework — command routing, argument scanning, help rendering, exit codes, and completion proposals (`tinyrack_cli.dart`), plus the logger, spinner, and colour theme (`terminal.dart`). A Dart implementation of the `@stricli/core` model.
+- `packages/tinyrack_cli`: The CLI framework — command routing, argument scanning, help rendering, exit codes, completion proposals, and the bash/zsh/fish/PowerShell completion-script generators (`tinyrack_cli.dart`), plus the logger, spinner, and colour theme (`terminal.dart`). A Dart implementation of the `@stricli/core` model.
 - `packages/age`: Pure-Dart age v1 encryption (X25519 recipients), consumed by the CLI through the `dotweave_age` barrel.
 
 `tinyrack_cli` and `age` are **reusable packages that happen to live here**. Keep every dotweave type out of them; anything they need from the environment is taken as a parameter (see `EnvLookup`). Both are publish-ready apart from a deliberate `publish_to: none` — releasing means deleting that line, so treat their READMEs, CHANGELOGs, and public API as user-facing.

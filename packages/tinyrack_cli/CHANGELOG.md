@@ -8,6 +8,9 @@
   flag and positional parameters, argument scanning with kebab/camel aliasing
   and did-you-mean suggestions, help rendering, structured exit codes, and
   completion proposals.
+- `CompletionScripts` generates bash, zsh, fish, and PowerShell completion
+  scripts for any executable name, and normalizes the tokens a shell hands
+  back through `resolveCompletionInputs`.
 - `package:tinyrack_cli/terminal.dart`: levelled logger, TTY-aware spinner, and
   a colour theme honouring `NO_COLOR`, `FORCE_COLOR`, and `CI`.
 - Environment access goes through an injectable `EnvLookup` rather than a

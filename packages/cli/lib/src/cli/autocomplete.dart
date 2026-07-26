@@ -1,7 +1,15 @@
 // Dart port of `packages/cli/src/cli/autocomplete.ts`.
 
-import 'package:dotweave/src/services/autocomplete.dart';
+import 'package:dotweave/src/config/constants.dart';
 import 'package:tinyrack_cli/tinyrack_cli.dart';
+
+/// dotweave's binding of the framework's shell-script generators. The scripts
+/// themselves are generic; only the executable name and the hidden subcommand
+/// they call are dotweave's.
+final CompletionScripts completionScripts = CompletionScripts(
+  executableName: AppConstants.autocomplete.cliCommandName,
+  completeSubcommand: AppConstants.autocomplete.completeSubcommand,
+);
 
 Application? _application;
 
@@ -26,19 +34,19 @@ Command _buildAutocompleteScriptCommand(String shell, String script) {
 
 final Command _bashAutocompleteCommand = _buildAutocompleteScriptCommand(
   'bash',
-  bashAutocompleteScript,
+  completionScripts.bash,
 );
 final Command _zshAutocompleteCommand = _buildAutocompleteScriptCommand(
   'zsh',
-  zshAutocompleteScript,
+  completionScripts.zsh,
 );
 final Command _fishAutocompleteCommand = _buildAutocompleteScriptCommand(
   'fish',
-  fishAutocompleteScript,
+  completionScripts.fish,
 );
 final Command _powershellAutocompleteCommand = _buildAutocompleteScriptCommand(
   'powershell',
-  powershellAutocompleteScript,
+  completionScripts.powershell,
 );
 
 final Command _completeCommand = buildCommand(
@@ -52,7 +60,7 @@ final Command _completeCommand = buildCommand(
 
     final completions = await proposeCompletions(
       application,
-      resolveCompletionInputs(positional.cast<String>()),
+      completionScripts.resolveCompletionInputs(positional.cast<String>()),
       context,
     );
 

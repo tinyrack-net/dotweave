@@ -13,6 +13,7 @@
 /// an independent project and is not affiliated with or endorsed by Bloomberg.
 library;
 
+export 'src/completion_scripts.dart';
 export 'src/env.dart' show EnvLookup, lookupPlatformEnv;
 export 'src/router.dart';
 export 'src/write_stream.dart';
