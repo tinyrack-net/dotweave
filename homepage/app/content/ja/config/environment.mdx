@@ -1,0 +1,54 @@
+---
+title: 環境変数とパス
+description: DOTWEAVE_HOME、XDG_CONFIG_HOME、Windows の AppData フォールバックが dotweave のデータ保存先をどう決めるかを説明します。
+section: config
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 解決の順序
+
+dotweave が管理するファイルは、すべて dotweave ホームディレクトリ 1 つの下にまとまっています。`settings.jsonc`、age identity ファイルの `keys.txt`、同期ディレクトリの `repository` はいずれもこの中にあります。
+
+値が得られた最初のルールで解決を打ち切ります。
+
+1. `DOTWEAVE_HOME` が設定されていれば、すべてのプラットフォームでその値をそのまま使います。
+2. Windows では `%APPDATA%\dotweave`、次に `%LOCALAPPDATA%\dotweave`、次に `%USERPROFILE%\AppData\Roaming\dotweave`、最後に `<os home>\AppData\Roaming\dotweave` の順です。
+3. macOS、Linux、WSL では `$XDG_CONFIG_HOME/dotweave` を使い、未設定なら `$HOME/.config/dotweave` にフォールバックします。
+
+空文字列や空白だけの環境変数は、未設定として扱います。
+
+## 変数
+
+| 変数 | 参照するプラットフォーム | 用途 |
+| --- | --- | --- |
+| `DOTWEAVE_HOME` | すべて | dotweave ホームディレクトリを直接指定します。 |
+| `HOME` | すべて | `localPath` の `~` を解決する基点であり、すべてのトラッキング項目が越えられない境界です。 |
+| `XDG_CONFIG_HOME` | macOS、Linux、WSL | dotweave ホームディレクトリの親として `~/.config` を置き換えます。`$XDG_CONFIG_HOME/...` と書いた `localPath` でも展開されます。 |
+| `APPDATA` | Windows | dotweave ホームディレクトリの親として最初に使われます。 |
+| `LOCALAPPDATA` | Windows | `APPDATA` が未設定のときに使われます。 |
+| `USERPROFILE` | Windows | AppData 系の変数がどちらも未設定のときに使われ、Windows のホームディレクトリも兼ねます。 |
+| `SHELL` | macOS、Linux、WSL | `dotweave cd` が起動するシェルです。未設定なら `/bin/sh` を使います。 |
+| `COMSPEC` | Windows | `dotweave cd` が起動するシェルです。未設定なら `cmd.exe` を使います。 |
+| `WSL_DISTRO_NAME` | WSL | 設定されていると `wsl` プラットフォームキーを選びます。 |
+| `WSL_INTEROP` | WSL | `wsl` プラットフォームキー判定の補助シグナルです。 |
+
+WSL 系の変数がどちらか設定されている場合、または報告された OS リリース文字列に `microsoft` が含まれる場合に `wsl` プラットフォームキーと判定します。このキーが何を変えるかは[プラットフォーム別パス](/ja/concepts/platform-paths/)を参照してください。
+
+## Windows のフォールバック
+
+Windows では環境変数名を大文字小文字の区別なく検索するため、`%AppData%` と `%APPDATA%` は同じ値に解決されます。ほかのプラットフォームでは区別されます。
+
+`USERPROFILE` を基点にするフォールバックは、`AppData\Roaming` を自身で付け足します。サービスアカウントやコンテナのように環境変数が最小限しかない場所でも、失敗せずに使えるパスが得られるようにするための仕組みです。
+
+`localPath` には `%VARIABLE%` 参照も書けます。dotweave が同じ環境を使って展開します。`localPath` の中で未定義の変数を参照した場合は、空文字列に展開されるのではなくコマンドが失敗します。
+
+<TRAlert.Root variant="warning">
+`DOTWEAVE_HOME` を変更すると、dotweave は別の同期ディレクトリと identity ファイルを参照します。既存のファイルは移動されません。ディレクトリを自分で移動するか、新しい場所で `dotweave init` を実行し直してください。
+</TRAlert.Root>
+
+## 関連ページ
+
+これらのパスを使うフィールドは [manifest.jsonc](/ja/config/manifest/)、解決されたディレクトリの中に dotweave が何を書き込むかは[ディレクトリとリポジトリの構造](/ja/concepts/repository-layout/)を参照してください。

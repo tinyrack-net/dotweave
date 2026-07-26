@@ -1,24 +1,44 @@
 ---
 title: "dotweave cd"
-description: "syncディレクトリでシェルを開きます。"
+description: 同期ディレクトリをルートとする子シェルを起動し、git を自分で実行できるようにします。
 section: reference
-order: 6
+order: 8
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-syncディレクトリで新しいシェルを起動します。
-
-`chezmoi cd` と同様に、現在のシェルのディレクトリを変更するのではなく、syncディレクトリをルートとする子シェルを開きます。シェルを終了すると元のセッションに戻ります。
-
-## Usage
+## 使い方
 
 ```bash
 dotweave cd
 ```
 
-<TRAlert.Root variant="success">
-syncディレクトリ内で直接gitコマンド（`commit`、`push`、`pull`）を実行するのに便利です。
+git リポジトリがある同期ディレクトリの中で、シェルセッションを開きます。
+
+## 動作
+
+`cd` は同期ディレクトリを解決し、存在しなければ作成し、そこをルートとする子シェルを起動します。子シェルは現在のターミナルの stdio をそのまま引き継ぎます。実行元のシェルの作業ディレクトリを変更することはできません。プロセスが親のディレクトリを変えられないためです。子シェルを終了すると元の場所に戻ります。
+
+起動するシェルは環境変数から決まります。Windows では `%COMSPEC%` を使い、なければ `cmd.exe` にフォールバックします。それ以外のプラットフォームでは `$SHELL` を使い、なければ `/bin/sh` にフォールバックします。
+
+同期ディレクトリに対して git を実行する正式な方法がこれです。`push` と `pull` は artifact を書くだけで、git 自体を呼び出しません。自分でコミットして push するまで、リモートには何も反映されません。
+
+```bash
+dotweave cd
+git add -A
+git commit -m "Update dotfiles"
+git push
+```
+
+<TRAlert.Root variant="info">
+子シェルが 0 以外のコードで終了した場合や、シグナルで終了した場合、`dotweave cd` は終了コード `1` で終わります。子シェル自身の終了コードは引き継がれないため、シェルの状態で分岐するスクリプトでは使わないでください。
 </TRAlert.Root>
 
+## エラー
+
+シェルをまったく起動できない場合は `Failed to launch shell.` を返し、Windows では `COMSPEC`、それ以外では `SHELL` に有効なシェル実行ファイルを設定するようヒントを添えます。子シェルが 0 以外のコードで終了した場合は `Shell exited with code <n>.`、シグナルで終了した場合は `Shell exited due to signal <SIGNAME>.` を返します。いずれもエラーコードを持ちません。報告される失敗の形式は[エラーメッセージ](/ja/config/errors/)のエラーの読み方の節を参照してください。
+
+## 関連コマンド
+
+git を自分の手に残している理由は[同期のしくみ](/ja/concepts/how-it-works/)、コミット対象の artifact を書き出す手順は [dotweave push](/ja/reference/push/) を参照してください。

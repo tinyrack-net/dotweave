@@ -1,6 +1,6 @@
 ---
 title: "dotweave track"
-description: "로컬 파일이나 디렉터리를 동기화 대상으로 등록해요."
+description: 로컬 파일과 디렉터리를 등록하고, 플랫폼별 동기화 모드, permission, 경로, 프로필을 지정해요.
 section: reference
 order: 1
 ---
@@ -8,66 +8,86 @@ order: 1
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-로컬 파일이나 디렉터리를 동기화 대상으로 등록해요.
-
-홈 디렉터리 안에 있는 파일이나 디렉터리를 등록하면, dotweave가 sync 디렉터리에 미러링해요. 이미 추적 중인 대상은 지정한 manifest 필드만 갱신하고 나머지는 유지해요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave track <target> [flags]
+dotweave track [--kind file|directory] [--mode mode|platform=mode]... [--permission octal|platform=octal]... [--profile profile]... [--local platform=path]... [--repo path|platform=path]... <target>...
 ```
 
-## Arguments
+파일이나 디렉터리를 `manifest.jsonc`에 기록해서, `push`와 `pull`이 홈 디렉터리와 sync 디렉터리 사이를 미러링할 수 있게 해요.
 
-| Argument   | Description                              |
-| ---------- | ---------------------------------------- |
-| `<target>` | 추적할 로컬 경로 또는 저장소 경로예요.  |
+## 인자
 
-## Flags
+| 인자 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `target` | `string`, 하나 이상 필수 | 추적할 홈 디렉터리 아래의 로컬 파일이나 디렉터리예요. 현재 디렉터리 기준 상대 경로, 추적 중인 디렉터리 안의 저장소 경로도 쓸 수 있어요. |
 
-| Flag                             | Description                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `--kind <file\|directory>`       | 아직 존재하지 않는 경로를 추적할 때 사용할 대상 종류예요.                   |
-| `--repo <path\|platform=path>`   | 저장소 상대 경로예요. platform별 override도 지정할 수 있어요.               |
-| `--local <platform=path>`        | platform별 로컬 경로 override예요.                                           |
-| `--mode <mode\|platform=mode>`   | sync mode: `normal`(기본값), `secret`, `ignore` 중 하나예요.                 |
-| `--permission <octal\|platform=octal>` | 복원할 파일 permission이에요(4자리 octal).                            |
-| `--profile <profile>`            | 등록된 특정 profile에서만 동기화해요. 여러 개는 flag를 반복하세요.          |
+## 플래그
 
-## Examples
+| 플래그 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `--kind` | `file` 또는 `directory`, 값 하나, 없음 | 아직 존재하지 않는 경로를 추적할 때 사용할 대상 종류예요. |
+| `--mode` | `mode` 또는 `platform=mode`, 반복 가능, 없음 | 추적 대상의 동기화 모드예요. `normal`, `secret`, `ignore` 중 하나를 써요. |
+| `--permission` | `octal` 또는 `platform=octal`, 반복 가능, 없음 | 복원할 파일 permission이에요. `0600`처럼 네 자리 octal 값을 써요. Windows에서는 적용되지 않아요. |
+| `--profile` | `profile`, 반복 가능, 없음 | 등록된 프로필로 동기화 범위를 제한해요. 빈 값 하나만 넘기는 `--profile ""`은 반대로 할당을 지워요. |
+| `--repo` | `path` 또는 `platform=path`, 반복 가능, 없음 | 프로필 네임스페이스 아래의 저장소 상대 경로예요. 대상이 정확히 하나일 때만 쓸 수 있어요. |
+| `--local` | `platform=path`, 반복 가능, 없음 | 플랫폼별 로컬 경로 override예요. `platform=` 접두사가 없는 값은 거부해요. |
 
-설정 파일 하나를 추적해요:
+boolean 플래그에는 `--no-` 형태가 함께 생겨요. `track`에는 boolean 플래그가 없어서 해당하는 값이 없어요.
+
+## 플랫폼별 플래그 문법
+
+`--mode`, `--permission`, `--repo`, `--local`은 `default`, `win`, `mac`, `linux`, `wsl` 키를 받아요. 키 없이 값만 주면 `default`에 들어가서, `--mode secret`과 `--mode default=secret`은 같은 뜻이에요.
+
+`--mode normal --mode win=ignore`처럼 플래그를 반복하면 여러 플랫폼을 한 번에 지정해요. 한 플래그에서 같은 키를 반복하면 `DUPLICATE_PLATFORM_FLAG`로 실패하고, 알 수 없는 키는 `INVALID_PLATFORM_FLAG`로 실패해요. `--local`은 키를 반드시 붙여야 하고, `--permission`을 쓸 때는 `default` 값이 반드시 필요해요.
+
+## 동작
+
+새 경로를 추적하면 `manifest.jsonc`에 항목 하나를 추가하고, 결정된 필드를 출력해요.
 
 ```bash
-dotweave track ~/.config/starship.toml
+dotweave track ~/.gitconfig
 ```
 
-secret이 포함된 디렉터리를 추적해요:
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
+
+값을 지정한 플래그가 늘어나면 출력의 키 열도 그만큼 넓어져요.
 
 ```bash
-dotweave track ~/.ssh --mode secret
+dotweave track ~/.ssh/config --mode secret --permission 0600
 ```
 
-특정 profile에만 파일을 추적해요:
-
-```bash
-dotweave track ~/.config/work-proxy.conf --profile work
+```
+✔ Started tracking .ssh/config
+  kind        file
+  path        /home/you/.ssh/config
+  repo        .ssh/config
+  mode        secret
+  permission  0600
 ```
 
-추적 중인 디렉터리 안의 자식 경로에 mode를 재정의해요:
+이미 추적 중인 경로에 `track`을 다시 실행하면 지정한 필드만 갱신하고 나머지는 유지해요. 그래서 `dotweave track ~/.ssh/config --profile work`를 실행해도 앞서 지정한 mode와 permission은 그대로 남아요.
 
-```bash
-dotweave track .ssh/config --mode ignore
-```
+대상이 manifest에 없는 경로이고 `--repo`를 넘기지 않았다면, `track`은 이미 추적 중인 디렉터리 안의 중첩 경로에 동기화 모드나 프로필을 지정하고 자식 override 항목을 만들어요. 이때 출력은 `Updated sync mode for <path>` 또는 `Sync mode unchanged for <path>`가 돼요. 추적 중인 디렉터리 안의 중첩 경로를 조정하는 방법은 이것뿐이에요.
 
-저장소 경로와 복원 permission을 지정해요:
+자식 항목은 부모 디렉터리 항목보다 우선해요. `mode`, `permission`, `profiles`는 각각 따로 가장 가까운 상위 `directory` 항목에서 상속돼요. 그래서 `mode`만 지정한 자식 항목은 부모의 `permission`과 `profiles`를 그대로 물려받아요.
 
-```bash
-dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
-```
+대상은 홈 디렉터리 안으로 해석돼야 하고, 홈 디렉터리 자체일 수는 없어요. sync 디렉터리와 겹치거나 `keys.txt`를 포함하는 경로도 쓰지 마세요.
 
 <TRAlert.Root variant="neutral">
-`track`은 `manifest.jsonc`만 갱신해요. 파일을 sync 디렉터리에 복사하려면 `dotweave push`를 실행하세요.
+`track`은 `manifest.jsonc`만 기록해요. `dotweave push`를 실행하기 전에는 어떤 파일도 sync 디렉터리로 복사되지 않아요.
 </TRAlert.Root>
 
+## 오류
+
+`track`은 아직 없는 경로를 `--kind` 없이 넘긴 경우, `--kind`가 디스크의 실제 종류와 다른 경우, 결정된 로컬 경로나 저장소 경로가 기존 항목과 충돌하는 경우에 실패해요. 대상이 홈 디렉터리를 벗어나거나 sync 디렉터리와 겹치거나 age identity 파일을 포함할 때도 실패해요. `--repo`를 대상 하나가 아닌 상황에서 쓰면 `REPO_PATH_TARGET_COUNT`로, 등록되지 않은 프로필 이름은 `UNKNOWN_PROFILE`로 실패해요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 추적 대상 절에서 확인하세요.
+
+## 관련 명령
+
+작업 중심 설명은 [파일과 디렉터리 추적하기](/ko/guides/tracking-files/)를 읽고, 등록하기 전에 `normal`, `secret`, `ignore` 중 무엇을 쓸지 고르려면 [동기화 모드](/ko/concepts/sync-modes/)를 확인하세요.

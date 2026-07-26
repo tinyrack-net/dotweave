@@ -1,51 +1,69 @@
 ---
 title: "dotweave push"
-description: "ローカルファイルをsyncディレクトリに反映します。"
+description: トラッキング項目のローカルファイルを同期ディレクトリに反映し、secret 対象は書き込む前に暗号化します。
 section: reference
-order: 2
+order: 3
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
-
-
-ローカルの設定をgitベースのsyncディレクトリにミラーリングします。
-
-trackされたローカルファイル・ディレクトリの現在の状態を収集し、syncディレクトリの内容を一致するよう更新します。secretモードのターゲットは、リポジトリに書き込む前に暗号化されます。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave push [flags]
+dotweave push [--dry-run] [--profile <profile>]
 ```
 
-## Flags
+トラッキング項目のローカルパスの現在の状態を読み取り、`profiles/<profile>/` 配下の artifact をその状態に合わせて書き直します。
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--dry-run`        | 実際には書き込まず、変更内容をプレビューします。     |
-| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+## フラグ
 
-## Examples
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--dry-run` | boolean、`false` | 何も書き込まずに計画だけを組み立てて表示します。`--no-dry-run` で既定値を明示できます。 |
+| `--profile` | `string`、なし | このコマンドに限り、`settings.jsonc` のアクティブなプロファイルの代わりに指定したプロファイル 1 つを使います。 |
 
-trackされたすべてのファイルをsyncディレクトリにpushする:
+## 動作
+
+リポジトリ形式のマイグレーションは計画よりも先に実行されるため、計画はマイグレーション後の状態を反映します。この処理はリポジトリに書き込むので、`--dry-run` では省略されます。
+
+`push` は書き込む前に内容を比較するため、変更のないファイルは一切書き込みません。secret 項目では保存された暗号文を復号して平文どうしを比較します。そのため内容が同じシークレットは再暗号化されず、git の履歴に無意味な差分が積み上がりません。
+
+書き込みは決まった順序で進みます。管理 `.gitignore` ブロックを更新し、不要になった置き換え用ディレクトリのルートを削除し、不要になった artifact キーを削除してから artifact を書き込みます。別プラットフォームの override や別プロファイルが所有する artifact は保護されるので、ある端末から push しても別の端末が保存した内容は消えません。
 
 ```bash
 dotweave push
 ```
 
-変更内容を実際に書き込まずにプレビューする:
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+dry run でも同じ件数を表示します。プレビューであることを示すため、結果の行と stale artifact の行だけ表現が変わります。
 
 ```bash
 dotweave push --dry-run
 ```
 
-workプロファイルのレイヤーのみpushする:
-
-```bash
-dotweave push --profile work
+```
+· Pushing changes...
+~ Push preview (dry run)
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts would be removed
 ```
 
-<TRAlert.Root variant="neutral">
-`push` はリモートへの通信を行いません。ローカルのsyncディレクトリに書き込むだけです。commitやリモートへのpushには、別途 `git` を使用してください。
-</TRAlert.Root>
+`push` は `git add`、`git commit`、`git push` のいずれも実行しません。同期ディレクトリ内のファイルだけを変更します。コミットとリモートへの反映は [`dotweave cd`](/ja/reference/cd/) と git で行ってください。
 
+## エラー
+
+`push` は、同期ディレクトリが git のワークツリーでない場合、`manifest.jsonc` が存在しない・読み取れない・妥当でない場合に失敗します。未適用のリポジトリ形式マイグレーションを完了できない場合、および保存された artifact がトラッキング項目と食い違う場合にも失敗します。`secret` 項目の artifact が暗号化されずに保存されているケースがその一例です。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)のパスと artifact の節を参照してください。
+
+## 関連コマンド
+
+同じ計画を書き込みなしで確認するには [`dotweave status`](/ja/reference/status/)、両方向が共有するスナップショットの考え方は[同期のしくみ](/ja/concepts/how-it-works/)を参照してください。

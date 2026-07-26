@@ -1,51 +1,69 @@
 ---
 title: "dotweave push"
-description: "Mirror local files into the sync directory."
+description: Mirror tracked local files into the sync directory, encrypting secret targets on the way in.
 section: reference
-order: 2
+order: 3
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
-
-
-Mirror local config into the git-backed sync directory.
-
-Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave push [flags]
+dotweave push [--dry-run] [--profile <profile>]
 ```
+
+Read the current state of the tracked local paths and rewrite the artifacts under `profiles/<profile>/` to match.
 
 ## Flags
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--dry-run`        | Preview changes without writing.     |
-| `--profile <name>` | Use a specific profile layer.        |
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--dry-run` | boolean, `false` | Build and print the plan without writing anything. `--no-dry-run` selects the default explicitly. |
+| `--profile` | `string`, none | Use one registered profile for this command instead of the active profile from `settings.jsonc`. |
 
-## Examples
+## Behavior
 
-Push all tracked files to the sync directory:
+Repository-format migration runs first, before any planning, so the plan reflects the migrated state. That step writes to the repository, so `--dry-run` skips it.
+
+`push` compares content before it writes, so an unchanged file produces no write at all. For a secret entry the comparison decrypts the stored ciphertext and compares plaintext, which means an unchanged secret is not re-encrypted and its git history stays free of meaningless churn.
+
+The write pass runs in a fixed order: refresh the managed `.gitignore` block, delete stale replacement directory roots, delete stale artifact keys, then write the artifacts. `push` protects artifacts owned by another platform's overrides or another profile, so pushing from one machine does not delete what another machine stored.
 
 ```bash
 dotweave push
 ```
 
-Preview what would be written without making changes:
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+A dry run reports the same counts. The result line and the stale-artifact line change wording to mark the run as a preview.
 
 ```bash
 dotweave push --dry-run
 ```
 
-Push only the work profile layer:
-
-```bash
-dotweave push --profile work
+```
+· Pushing changes...
+~ Push preview (dry run)
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts would be removed
 ```
 
-<TRAlert.Root variant="neutral">
-`push` does not contact any remote. It only writes to the local sync directory. Use `git` separately to commit and push upstream.
-</TRAlert.Root>
+`push` never runs `git add`, `git commit`, or `git push`. It only changes files inside the sync directory. Commit and publish yourself with [`dotweave cd`](/en/reference/cd/) and git.
 
+## Errors
+
+`push` fails when the sync directory is not a git work tree and when `manifest.jsonc` is missing, unreadable, or invalid. It also fails when a pending repository-format migration cannot complete, and when a stored artifact disagrees with its entry, for example a `secret` entry whose artifact is stored unencrypted. Read [Error messages](/en/config/errors/#paths-and-artifacts) for each message and its fix.
+
+## Related commands
+
+Read [`dotweave status`](/en/reference/status/) to see the same plan without writing anything, or [How syncing works](/en/concepts/how-it-works/) for the snapshot model both directions share.

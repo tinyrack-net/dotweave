@@ -1,0 +1,52 @@
+---
+title: "dotweave skill"
+description: Dotweave に同梱されたポータブルなエージェント skill を、コーディングエージェントの skills ディレクトリにインストールします。
+section: reference
+order: 10
+---
+
+## 使い方
+
+```bash
+dotweave skill install [--dry-run] [--force] <directory>
+```
+
+コーディングエージェントがコマンドやフラグ、同期の向きを推測せずに Dotweave を正しく扱えるよう、手順書を渡します。
+
+## skill install
+
+| 引数 | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `directory` | `string`、必須 | インストール先の skills ルートディレクトリです。 |
+
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--dry-run` | boolean、`false` | ファイルを書き込まずにインストール先だけを報告します。`--no-dry-run` も受け取ります。 |
+| `--force` | boolean、`false` | 既存の dotweave skill を上書きします。`--no-force` も受け取ります。 |
+
+```bash
+dotweave skill install ~/.claude/skills
+```
+
+```
+✔ Installed dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+## 動作
+
+`skill install` は、バイナリに同梱された skill を `<directory>/dotweave/SKILL.md` という 1 つのファイルとして書き込みます。渡したルートの下に `dotweave` サブディレクトリを作成します。
+
+渡す `<directory>` は、あらかじめ存在するディレクトリである必要があります。`skill install` が skills ルート自体を作ることはありません。
+
+報告される動作は `Installed dotweave skill`、`Overwrote dotweave skill`、`Would install dotweave skill`、`Would overwrite dotweave skill` のいずれかで、その後に対象ファイルを示す `target: <path>` の行が続きます。`Would` で始まる 2 つは、何も書き込まない `--dry-run` のときに出ます。
+
+このコマンドは git も同期ディレクトリも必要としない唯一のコマンドなので、`dotweave init` より前に実行できます。
+
+## エラー
+
+`skill install` は、渡したパスが存在しないかディレクトリでない場合に `Skills root must be a directory.` で失敗し、`<directory>/dotweave/SKILL.md` がすでにある場合に `Dotweave skill already exists.` で失敗します。2 つ目のメッセージは、ファイルを上書きする `--force` をヒントとして示します。両方のコードと対処は[エラーメッセージ](/ja/config/errors/)の skills の節を参照してください。
+
+## 関連コマンド
+
+エージェントが skill を探す場所は[エージェントに Dotweave skill を渡す](/ja/guides/agent-skill/)、skill が説明する考え方は [Dotweave とは](/ja/intro/)を参照してください。

@@ -1,49 +1,57 @@
 ---
 title: "dotweave untrack"
-description: "Remove a path from sync tracking."
+description: Remove a tracked entry or a nested override from the manifest, and delete its repository artifacts.
 section: reference
-order: 5
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Stop tracking a synced path.
-
-Remove a tracked root entry or a nested override from dotweave configuration. This only updates the sync config; actual file changes happen on the next `push` or `pull`. Use a local path to remove the main tracked target, or use a repository-relative child path inside a tracked directory to remove only that override.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave untrack <target> [flags]
+dotweave untrack <target>
 ```
+
+Drop one record from `manifest.jsonc` and clear what that record wrote into the sync directory.
 
 ## Arguments
 
-| Argument   | Description                                             |
-| ---------- | ------------------------------------------------------- |
-| `<target>` | Tracked local path or repository path to stop tracking. |
+| Argument | Type and default | Purpose |
+| --- | --- | --- |
+| `target` | `string`, required | Tracked local path (including cwd-relative) or repository path to stop tracking. |
 
-## Flags
+## Behavior
 
-| Flag        | Description            |
-| ----------- | ---------------------- |
+`untrack` writes the manifest without the matching entry, then deletes that entry's plain, secret, and symlink artifacts under every profile directory it occupied, pruning parent directories that become empty. The command's own `--help` text says it only updates the sync config; that is wrong. The artifacts are already gone when the command returns.
 
-## Examples
+The local file under your home directory is not touched. Your config stays exactly where it is, and only the mirrored copy in the sync directory disappears.
 
-Stop tracking a config file:
+Pass a local path to remove the main tracked entry. Pass a repository-relative child path inside a tracked directory to remove only that nested override, which leaves the parent entry tracked.
 
-```bash
-dotweave untrack ~/.config/starship.toml
-```
-
-Remove a child override inside a tracked directory:
+A target that matches more than one entry fails instead of guessing. Pass the full local path to choose between them.
 
 ```bash
-dotweave untrack .ssh/config
+dotweave untrack ~/.gitconfig
 ```
 
-<TRAlert.Root variant="neutral">
-`untrack` only updates `manifest.jsonc`. It does **not** delete local files or sync directory artifacts.
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
+```
+
+The two counts report how many plain and secret artifacts were removed.
+
+<TRAlert.Root variant="warning">
+`untrack` deletes the repository artifacts for the entry immediately, in every profile. The local file under your home directory is left alone, but the mirrored copy and its history-ready content are removed from the sync directory. Commit the deletion so other devices stop restoring the file.
 </TRAlert.Root>
 
+## Errors
+
+An empty target reports `Target path is required.`, and an unknown one reports `No tracked sync entry matches: <target>`. Neither carries an error code or a hint. An ambiguous target reports `Multiple tracked sync entries match: <target>` with the hint to use an explicit local path. Read [Error messages](/en/config/errors/#tracking-targets) for each message and its fix.
+
+## Related commands
+
+Read [dotweave track](/en/reference/track/) for the command that creates the entry, or [Track files and directories](/en/guides/tracking-files/) for choosing what belongs in the repository at all.

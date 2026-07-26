@@ -1,6 +1,6 @@
 ---
 title: "dotweave track"
-description: "Register local files or directories for syncing."
+description: Register local files and directories, with platform-scoped mode, permission, path, and profile overrides.
 section: reference
 order: 1
 ---
@@ -8,66 +8,86 @@ order: 1
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Track local files or directories for syncing.
-
-Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If the target is already tracked, specified manifest fields are updated and unspecified fields are preserved.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave track <target> [flags]
+dotweave track [--kind file|directory] [--mode mode|platform=mode]... [--permission octal|platform=octal]... [--profile profile]... [--local platform=path]... [--repo path|platform=path]... <target>...
 ```
+
+Record a file or directory in `manifest.jsonc` so `push` and `pull` can mirror it between your home directory and the sync directory.
 
 ## Arguments
 
-| Argument   | Description                                  |
-| ---------- | -------------------------------------------- |
-| `<target>` | Local path or repository path to track.      |
+| Argument | Type and default | Purpose |
+| --- | --- | --- |
+| `target` | `string`, one or more required | Local files or directories under your home directory to track, including cwd-relative paths or repository paths inside tracked directories. |
 
 ## Flags
 
-| Flag                             | Description                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `--kind <file\|directory>`       | Target kind to use when the path does not exist yet.                         |
-| `--repo <path\|platform=path>`   | Repository-relative path, with optional platform overrides.                  |
-| `--local <platform=path>`        | Platform-specific local path override.                                       |
-| `--mode <mode\|platform=mode>`   | Sync mode: `normal` (default), `secret`, or `ignore`.                        |
-| `--permission <octal\|platform=octal>` | File permission to restore, as a 4-character octal value.             |
-| `--profile <profile>`            | Restrict syncing to a registered profile. Repeat for multiple profiles.      |
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--kind` | `file` or `directory`, single value, none | Target kind to use when the path does not exist yet. |
+| `--mode` | `mode` or `platform=mode`, repeatable, none | Sync mode for the tracked target: `normal`, `secret`, or `ignore`. |
+| `--permission` | `octal` or `platform=octal`, repeatable, none | File permission to restore, as a four-character octal value such as `0600`. Has no effect on Windows. |
+| `--profile` | `profile`, repeatable, none | Restrict syncing to registered profiles. A single empty value, `--profile ""`, clears the assignments instead. |
+| `--repo` | `path` or `platform=path`, repeatable, none | Repository-relative path under the profile namespace. Valid with exactly one target. |
+| `--local` | `platform=path`, repeatable, none | Platform-specific local path override. A bare value with no `platform=` prefix is rejected. |
 
-## Examples
+Every boolean flag also accepts a `--no-` form. `track` registers no boolean flags, so none applies here.
 
-Track a single config file:
+## Platform-scoped flag syntax
 
-```bash
-dotweave track ~/.config/starship.toml
-```
+`--mode`, `--permission`, `--repo`, and `--local` accept the keys `default`, `win`, `mac`, `linux`, and `wsl`. A bare value with no key sets `default`, so `--mode secret` and `--mode default=secret` mean the same thing.
 
-Track a directory containing secrets:
+Repeat a flag to cover several platforms at once, as in `--mode normal --mode win=ignore`. Repeating the same key for one flag fails with `DUPLICATE_PLATFORM_FLAG`, and an unrecognized key fails with `INVALID_PLATFORM_FLAG`. `--local` requires an explicit key, and `--permission` requires a `default` value whenever it is used at all.
 
-```bash
-dotweave track ~/.ssh --mode secret
-```
+## Behavior
 
-Track a file restricted to a specific profile:
+Tracking a new path appends one entry to `manifest.jsonc` and prints the resolved fields.
 
 ```bash
-dotweave track ~/.config/work-proxy.conf --profile work
+dotweave track ~/.gitconfig
 ```
 
-Override the mode for a child path inside a tracked directory:
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
+
+Flags that carry a value widen the printed key column.
 
 ```bash
-dotweave track .ssh/config --mode ignore
+dotweave track ~/.ssh/config --mode secret --permission 0600
 ```
 
-Customize the repository path and restore permission:
-
-```bash
-dotweave track ~/.ssh/config --repo ssh/config --mode secret --permission 0600
 ```
+✔ Started tracking .ssh/config
+  kind        file
+  path        /home/you/.ssh/config
+  repo        .ssh/config
+  mode        secret
+  permission  0600
+```
+
+Running `track` again on an already-tracked path updates only the fields you name and preserves the rest, so `dotweave track ~/.ssh/config --profile work` keeps the mode and permission set earlier.
+
+When the target is not an existing manifest entry and you passed no `--repo`, `track` instead sets the sync mode or profiles of a nested path inside an already-tracked directory, creating a child override entry. The output then reads `Updated sync mode for <path>` or `Sync mode unchanged for <path>`. This is the only way to adjust a path nested inside a tracked directory.
+
+A child entry overrides its parent directory entry. Each of `mode`, `permission`, and `profiles` inherits independently from the nearest ancestor `directory` entry, so a child that sets only `mode` still inherits the parent's `permission` and `profiles`.
+
+Targets must resolve inside your home directory, may not be the home directory itself, may not overlap the sync directory, and may not contain `keys.txt`.
 
 <TRAlert.Root variant="neutral">
-`track` only updates `manifest.jsonc`. Run `dotweave push` afterward to copy files into the sync directory.
+`track` writes `manifest.jsonc` only. No file is copied into the sync directory until you run `dotweave push`.
 </TRAlert.Root>
 
+## Errors
+
+`track` fails when a path that does not exist yet is passed without `--kind`, when `--kind` disagrees with the path on disk, and when the resolved local or repository path collides with an existing entry. It also fails when the target leaves your home directory, overlaps the sync directory, or contains the age identity file. Passing `--repo` with anything other than one target fails with `REPO_PATH_TARGET_COUNT`, and an unregistered profile name fails with `UNKNOWN_PROFILE`. Read [Error messages](/en/config/errors/#tracking-targets) for each message and its fix.
+
+## Related commands
+
+Read [Track files and directories](/en/guides/tracking-files/) for the task-oriented walkthrough, or [Sync modes](/en/concepts/sync-modes/) to choose between `normal`, `secret`, and `ignore` before you register anything.

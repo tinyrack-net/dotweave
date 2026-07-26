@@ -1,0 +1,92 @@
+---
+title: プラットフォーム別パス
+description: 1 つのトラッキング項目に、OS ごとに異なるローカルパス、同期モード、パーミッションを指定できます。
+section: concepts
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 1 つの値と 4 つのオーバーライド
+
+トラッキング項目が指すのは 1 つのパスではなく、1 つの論理的な設定ファイルです。`localPath`、`repoPath`、`mode`、`permission` はいずれもプラットフォーム値オブジェクトとして保存されるため、1 つの `manifest.jsonc` が Windows、macOS、Linux、WSL を同時に記述します。
+
+```jsonc
+{
+  "kind": "file",
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  },
+  "repoPath": { "default": "vscode/settings.json" }
+}
+```
+
+これらのオブジェクトにはいずれも `default` が必要です。`win`、`mac`、`linux`、`wsl` のキーは任意のオーバーライドで、シリアライズもこの順序になります。フィールドの型と検証ルールは [`manifest.jsonc`](/ja/config/manifest/) にあります。
+
+`localPath` の値には、絶対パス、`~/...` のパス、`$XDG_CONFIG_HOME/...` とその波かっこ形式の `${XDG_CONFIG_HOME}`、そして `%VARIABLE%` 参照を使えます。定義されていない `%VARIABLE%` は空文字列に展開されるのではなく、コマンドを失敗させます。
+
+`repoPath` は常にリポジトリ相対の POSIX パスで、ほとんどの項目ではどのプラットフォームでも同じです。2 台のマシンがどうしても別のリポジトリ位置に保存する必要があるときだけオーバーライドしてください。両方のマシンが同じ artifact を見られるのは、`repoPath` を共有しているからです。
+
+dotweave はこれらの値を推測しません。macOS のパスを Windows 用に変換することもなく、`dotweave track` は実行したマシンのパスだけを記録します。ほかのプラットフォームの値は、自分で宣言する値です。
+
+## WSL の解決方法
+
+dotweave は実行ごとに 1 つのプラットフォームキーを選び、すべてのプラットフォーム値オブジェクトをそのキーで解決します。`win32` は `win`、`darwin` は `mac` になります。`linux` のホストは、`WSL_DISTRO_NAME` または `WSL_INTEROP` が設定されているとき、あるいは OS のリリース文字列に大文字小文字を区別せず `microsoft` が含まれるときに `wsl` となり、それ以外は `linux` のままです。ほかの OS はすべて `linux` として解決されます。
+
+| 検出されたプラットフォーム | 試すキーの順序 |
+| --- | --- |
+| `win` | `win`、`default` |
+| `mac` | `mac`、`default` |
+| `linux` | `linux`、`default` |
+| `wsl` | `wsl`、`linux`、`default` |
+
+2 段階のフォールバックを持つキーは `wsl` だけです。WSL のマシンは追加設定なしで Linux のオーバーライドを引き継ぐので、`wsl` キーは WSL がネイティブの Linux と異なる必要がある場所にだけ追加してください。
+
+## コマンドラインからオーバーライドを指定する
+
+これらのオブジェクトは `dotweave track` が書き込みます。オーバーライドしたいプラットフォームごとに `--local` を 1 回渡してください。
+
+```bash
+dotweave track ~/.config/Code/User/settings.json \
+  --local 'mac=~/Library/Application Support/Code/User/settings.json' \
+  --local 'win=%APPDATA%/Code/User/settings.json'
+```
+
+`--local` は `platform=value` の形式だけを受け取り、値だけを渡す形式は拒否します。`default` のローカルパスは常にトラッキング対象そのものから決まります。
+
+`--mode`、`--permission`、`--repo` は、`default` を設定する値だけの形式と `platform=value` の形式のどちらも受け取ります。
+
+```bash
+dotweave track ~/.ssh/config --mode secret --mode win=ignore --permission 0600
+```
+
+```bash
+dotweave track ~/.config/nvim --repo default=.config/nvim --repo win=nvim-windows
+```
+
+これらのフラグはいずれも複数回指定できます。値を 1 つの引数にまとめず、フラグを繰り返してください。1 つのフラグに同じプラットフォームキーを 2 回渡すと `DUPLICATE_PLATFORM_FLAG` で失敗し、認識できないプラットフォームキーは `INVALID_PLATFORM_FLAG` で失敗します。`--repo` は 1 回の実行で対象を 1 つだけ受け取り、それ以外は `REPO_PATH_TARGET_COUNT` で失敗します。`--permission` には `default` が必要なため、`--permission linux=0755` だけを渡すと失敗します。各メッセージと対処法は[エラーメッセージ](/ja/config/errors/)のフラグの節を参照してください。
+
+## Windows で表現できないこと
+
+Windows もほかのプラットフォームキーと同等に扱われますが、いくつかの POSIX の保証はそのまま持ち込めず、どのオーバーライドでも取り戻せません。
+
+Windows では POSIX のファイルモードを適用しません。`permission` の値は manifest に残り、macOS、Linux、WSL では反映されます。Windows でアクセスを制限するために `permission` に頼らないでください。`0600` は記録されるだけで無視されます。
+
+Windows での内容比較は、まずバイト列を比べ、次に UTF-8 としてデコードしたテキストを CRLF を LF に正規化して比べます。そのため改行だけが異なるファイルは変更として扱われず、`push` も `pull` もそのファイルを書き直しません。dotweave が改行を変換してくれることを期待しないでください。なお BOM は依然として実際の差分として扱われます。
+
+リポジトリ形式 1 は、シンボリックリンクをリンク先を保持する `<name>.dotweave.symlink` メタデータファイルとして保存し、`pull` がローカルにリンクを作り直します。Windows のディレクトリの場合は、相対のリンク先を相対のまま保つ本物のディレクトリシンボリックリンクを優先します。Developer Mode も管理者権限もなく OS がシンボリックリンクの作成を拒否したときは、Windows のジャンクションにフォールバックします。ジャンクションのリンク先は常に絶対パスなので、こうして作られたリンクは元のシンボリックリンクより移植性が低くなります。
+
+環境変数名は Windows では大文字小文字を区別せず、ほかのプラットフォームでは区別します。Windows では `%AppData%` と `%APPDATA%` が同じ値に解決されますが、Linux や macOS では正確な名前だけが解決されます。dotweave が読み取る変数の一覧は[環境変数とパス](/ja/config/environment/)を参照してください。
+
+<TRAlert.Root variant="neutral">
+これらの制約は隠れているわけではありません。push や pull の前に対象のマシンで `dotweave status` を実行し、解決されたプラットフォームキーが生む計画を確認してください。
+</TRAlert.Root>
+
+## 実装とリファレンス
+
+プラットフォームの解決が決めるのは、このマシンで dotweave がどの値を使うかだけです。それ自体は何も書き込まず、そのあとファイルをどう扱うかは解決された `mode` が決めます。
+
+これらのオブジェクトの背後にあるフィールドの型と検証ルールは [`manifest.jsonc`](/ja/config/manifest/)、実際にこの値を書き込む流れは[ファイルとディレクトリのトラッキング](/ja/guides/tracking-files/)を参照してください。

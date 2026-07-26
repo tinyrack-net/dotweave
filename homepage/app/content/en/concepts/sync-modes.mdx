@@ -1,0 +1,84 @@
+---
+title: Sync modes
+description: How normal, secret, and ignore change what push writes and what pull restores.
+section: concepts
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Choose a mode per target
+
+Every tracked entry carries one sync mode, and that value decides what `push` stores in the sync directory and what `pull` writes back into your home directory. The three modes are `normal`, `secret`, and `ignore`. An entry that does not set `mode` is `normal`.
+
+`mode` is a platform value object with a `default` and optional `win`, `mac`, `linux`, and `wsl` overrides, so one entry can behave differently per operating system. A WSL machine resolves `wsl`, then `linux`, then `default`.
+
+| Mode | What push stores | Encrypted | Restored by pull |
+| --- | --- | --- | --- |
+| `normal` | The file, byte for byte | No | Yes |
+| `secret` | age ciphertext under a `.dotweave.secret` suffix | Yes | Yes, after decryption |
+| `ignore` | Nothing | — | No |
+
+To change a mode later, track the same target again with the new `--mode`. Re-tracking updates only the fields you pass and preserves the rest, so the entry keeps its `repoPath`, `permission`, and `profiles`. There is no separate command for editing a mode.
+
+## normal
+
+A `normal` file is copied verbatim into `profiles/<profile>/<repoPath>`. Nothing is transformed, so a git diff on the artifact reads exactly like a diff on the original file.
+
+Use it for anything you would be comfortable publishing: shell startup files, editor configuration, `git` configuration, and tool configuration such as `starship.toml`.
+
+```bash
+dotweave track ~/.gitconfig
+```
+
+Because `normal` is the default, the command above needs no `--mode`. Passing `--mode normal` is equivalent and is useful when you are switching an entry back from another mode.
+
+## secret
+
+A `secret` file is encrypted to every recipient listed in `manifest.jsonc` and stored with a `.dotweave.secret` suffix. The stored artifact is ASCII-armored age ciphertext, so it is plain text that git can diff, merge-conflict, and transport without binary handling.
+
+Use it for credentials: SSH configuration and keys, API tokens, `.env` files with real values, and cloud credential files.
+
+```bash
+dotweave track ~/.ssh/config --mode secret
+```
+
+`pull` decrypts the artifact with the identity in `keys.txt` before writing the file. A machine whose identity does not match one of the recipients cannot restore the file.
+
+A `secret` path must be a regular file. Pointing `secret` at a symlink fails with `Secret sync paths must be regular files, not symlinks`, because there is no plaintext content to encrypt.
+
+<TRAlert.Root variant="warning">
+Only the file content is encrypted. The file name and its path stay readable in the repository, so `.ssh/config.dotweave.secret` tells anyone with repository access that you track an SSH configuration. Do not rely on `secret` to hide a sensitive path.
+</TRAlert.Root>
+
+## ignore
+
+An `ignore` entry stays in `manifest.jsonc` and is skipped in both directions. The local snapshot does not read the path, and `pull` does not write it.
+
+```bash
+dotweave track ~/.config/my-tool/cache --mode ignore
+```
+
+Use it to park an entry you want to keep recorded but not sync: a generated cache inside a tracked directory, a machine-specific file, or an entry you are disabling for now.
+
+On `push` and `status`, repository artifacts that an ignored entry solely owns are pruned, so switching to `ignore` removes stored content on your next push. When `ignore` is only a per-platform override and another platform still owns the same repository path as `normal` or `secret`, the artifact is preserved instead.
+
+## How nested paths inherit a mode
+
+Tracking a directory and then tracking a file inside it creates two entries that describe overlapping paths. Dotweave resolves the overlap by ordering entries by `repoPath` length, shortest first, and giving each entry a parent: the nearest ancestor entry whose `kind` is `directory`.
+
+An entry that does not set `mode` explicitly takes its parent's `mode`. `mode`, `permission`, and `profiles` inherit independently, so an entry can inherit a mode while setting its own permission. An entry with an explicit mode keeps it, whatever the parent says.
+
+```bash
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
+```
+
+Everything under `~/.config/my-tool` is stored verbatim, and `credentials.json` is encrypted. The nested entry also carves itself out of the directory's walk, so the directory does not mirror the same file a second time in `normal` mode.
+
+## Implementation and reference
+
+Modes are declared per entry in the manifest and resolved per platform at load time. The mode list lives in `packages/cli/lib/src/config/constants.dart`, platform resolution and inheritance in `config/sync_schema.dart`, and artifact ownership and pruning in `services/repo_artifacts.dart`.
+
+Read [Encrypting secrets with age](/en/concepts/secrets/) for how recipients and identities are set up, or [manifest.jsonc](/en/config/manifest/) for the `mode` field beside the rest of an entry.

@@ -1,36 +1,50 @@
 ---
 title: "dotweave doctor"
-description: "sync 설정의 상태를 점검해요."
+description: sync 저장소, 설정, age identity, 추적 중인 로컬 경로를 점검해요.
 section: reference
-order: 8
+order: 7
 ---
 
-sync 디렉터리, 설정 파일, age identity, 추적 중인 로컬 경로를 점검해요.
-
-로컬 sync 환경에 대해 상태 점검을 실행해요. 저장소 접근 가능 여부, 설정 파일 유효성, age identity 구성, 추적 중인 로컬 경로의 존재 여부를 확인해요.
-
-## Usage
-
-```bash
-dotweave doctor [flags]
-```
-
-## Flags
-
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--profile <name>` | 특정 profile 레이어를 사용해요.        |
-
-## Examples
-
-모든 상태 점검을 실행해요:
+## 사용법
 
 ```bash
 dotweave doctor
 ```
 
-특정 profile에 대해 점검해요:
+`push`나 `pull`이 문제에 부딪히기 전에 로컬 환경을 살펴보고 무엇이 잘못됐는지 알려줘요. `doctor`는 인자를 받지 않고, `--help` 외의 플래그도 없어요.
+
+## 체크 항목
+
+`doctor`는 여섯 개의 체크를 정해진 순서로 실행해요. 두 체크 id는 출력용 이름이 달라요. 내부 `age`는 `identity`로, 내부 `local-paths`는 `local`로 표시돼요. 아래 이름은 출력에서 보이는 쪽이에요.
+
+| 체크 | 확인하는 것 | 실패가 뜻하는 것 |
+| --- | --- | --- |
+| `git` | sync 디렉터리가 git 작업 트리인지 확인해요. | sync 디렉터리가 없거나 저장소가 아니에요. 여기서 곧바로 실패하고 실행이 멈춰요. |
+| `config` | `manifest.jsonc`를 읽고 검증하며, 항목 수와 recipient 수를 알려줘요. | manifest를 읽을 수 없거나 유효하지 않아요. 여기서 곧바로 실패하고 실행이 멈춰요. |
+| `profiles` | 활성 프로필을, 없으면 설정되지 않았다는 사실을 알려줘요. | 실패하지 않는 체크예요. 현재 선택 상태만 알려줘요. |
+| `identity` | 해석된 경로에 age identity 파일이 있는지 확인해요. | 이 기기에서는 시크릿 artifact를 복호화할 수 없어요. |
+| `entries` | 항목이 하나도 없으면 경고해요. | 실패하지 않는 체크예요. 경고는 아직 추적 중인 항목이 없다는 뜻이에요. |
+| `local` | `ignore`가 아닌 항목 중 로컬 경로가 없는 것들에 대해, 그 부재가 현재 동기화 상태와 맞는지 확인해요. | 없어진 로컬 경로를 저장소 상태로 설명할 수 없어요. |
+
+## 동작
+
+`doctor`는 ok, 경고, 실패 개수를 한 줄로 요약한 뒤, ok가 아닌 체크를 최대 세 개까지 출력해요. 더 남아 있으면 `... N more issues`를 덧붙여요.
 
 ```bash
-dotweave doctor --profile work
+dotweave doctor
 ```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+체크 중 하나라도 실패하면 종료 코드 `1`로 끝나요. 경고만 있으면 실패로 처리하지 않아요. `doctor`는 아무것도 쓰지 않아요. manifest를 고치거나 로컬 경로를 복원하거나 저장소를 건드리지 않아요.
+
+## 오류
+
+`doctor`는 문제를 명령 오류가 아니라 체크 결과로 보고해요. 예외는 `git`과 `config` 체크로, 이 둘은 실패하는 즉시 실행을 멈춰요. 실패가 하나라도 남은 상태로 끝나면 `Doctor found issues.`를 던지는데, 이 오류에는 오류 코드도 힌트도 없어요. 실패한 체크의 상세 줄이 따르는 메시지 형식은 [오류 메시지](/ko/config/errors/)의 오류 읽는 방법 절에서 확인하세요.
+
+## 관련 명령
+
+보고된 문제 뒤에 어떤 변경이 밀려 있는지는 [dotweave status](/ko/reference/status/), 체크가 출력한 메시지를 찾아보려면 [오류 메시지](/ko/config/errors/)를 확인하세요.

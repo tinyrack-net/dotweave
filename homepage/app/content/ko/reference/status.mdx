@@ -1,44 +1,76 @@
 ---
 title: "dotweave status"
-description: "push와 pull이 변경할 내용을 미리 확인해요."
+description: 현재 sync 설정으로 push와 pull이 만들 변경을 아무것도 쓰지 않고 알려줘요.
 section: reference
-order: 4
+order: 5
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
-
-
-현재 sync 설정에 대해 push와 pull이 변경할 내용을 보여줘요.
-
-추적 중인 로컬 파일과 sync 디렉터리를 비교해서, `push`가 저장소에 쓸 내용과 `pull`이 로컬에 적용할 내용을 알려줘요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave status [flags]
+dotweave status [--profile <profile>]
 ```
 
-## Flags
+두 방향의 계획을 모두 만들어서 보여줘요. `status`는 `push`와 `pull`이 적용하는 그 비교를 읽기 전용으로 보는 화면이에요.
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--profile <name>` | 특정 profile 레이어를 사용해요.        |
+## 플래그
 
-## Examples
+| 플래그 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `--profile` | `string`, 없음 | 이 명령에서만 `settings.jsonc`의 활성 프로필 대신 지정한 프로필 하나를 사용해요. |
 
-전체 sync 상태를 확인해요:
+## 동작
+
+`status`는 아무것도 쓰지 않아요. 그래서 언제 실행해도 안전해요.
+
+먼저 추적 항목 수, recipient 수, 활성 프로필이 담긴 머리글을 출력해요. 그다음 `Push changes (repository)` 아래에 `Add (n)`, `Modify (n)`, `Delete (n)` 절을, 이어서 `Pull changes (local)` 아래에 `Changed (n)`, `Remove (n)` 절을 출력해요. 각 목록은 10개까지만 보여주고 그 뒤에 `... and N more`를 출력해요. 한쪽 방향에 할 일이 없으면 절 대신 `No push changes`나 `No pull changes`를 출력해요.
 
 ```bash
 dotweave status
 ```
 
-특정 profile의 상태를 확인해요:
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-```bash
-dotweave status --profile work
+Push changes (repository)
+
+Add (4)
+  + .config/nvim
+  + .config/nvim/init.lua
+  + .gitconfig
+  + .ssh/config
+
+Pull changes (local)
+
+Remove (4)
+  - /home/you/.config/nvim
+  - /home/you/.config/nvim/init.lua
+  - /home/you/.gitconfig
+  - /home/you/.ssh/config
 ```
 
-<TRAlert.Root variant="neutral">
-`status`는 `manifest.jsonc`를 읽고 파일 내용을 비교해요. `git status`를 실행하는 것이 **아니라**, dotweave 수준의 차이만 보여줘요.
-</TRAlert.Root>
+위 예시는 아직 한 번도 push하지 않은 첫 실행 상태예요. 두 방향을 같이 읽어 보세요. `push`는 artifact 네 개를 새로 추가하고, `pull`은 추적 중인 로컬 파일을 전부 삭제해요. 저장소에 되돌려 놓을 내용이 아직 없기 때문이에요. 이 비대칭이 `pull` 전에 `status`를 실행해야 하는 구체적인 이유예요.
 
+두 방향이 일치하면 보고는 두 줄로 줄어들어요.
+
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
+
+Push changes (repository)
+  No push changes
+
+Pull changes (local)
+  No pull changes
+```
+
+`status`는 시작할 때 manifest를 검증하므로, 손으로 고친 `manifest.jsonc`를 확인하는 가장 값싼 방법이기도 해요.
+
+## 오류
+
+`status`는 sync 디렉터리가 git 작업 트리가 아닐 때, `manifest.jsonc`가 없거나 읽을 수 없거나 검증에 실패할 때 실패해요. 저장된 artifact가 추적 항목과 어긋날 때, 그리고 내 identity로 secret artifact를 복호화할 수 없을 때도 실패해요. push 쪽 비교가 평문을 필요로 하기 때문이에요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 설정 파일 절에서 확인하세요.
+
+## 관련 명령
+
+저장소 방향을 적용하려면 [`dotweave push`](/ko/reference/push/), 로컬 방향을 적용하려면 [`dotweave pull`](/ko/reference/pull/)을 확인하세요.

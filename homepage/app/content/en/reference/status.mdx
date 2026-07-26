@@ -1,44 +1,76 @@
 ---
 title: "dotweave status"
-description: "Preview what push and pull would change."
+description: Report the push and pull changes the current sync configuration would produce, without writing anything.
 section: reference
-order: 4
+order: 5
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
-
-
-Show planned push and pull changes for the current sync config.
-
-Compare the tracked local files with the sync directory and report what `push` would write to the repository and what `pull` would write back locally.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave status [flags]
+dotweave status [--profile <profile>]
 ```
+
+Build both plans and report them. `status` is the read-only view of the same comparison `push` and `pull` apply.
 
 ## Flags
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--profile <name>` | Use a specific profile layer.        |
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--profile` | `string`, none | Use one registered profile for this command instead of the active profile from `settings.jsonc`. |
 
-## Examples
+## Behavior
 
-Show the full sync status:
+`status` writes nothing at all, so it is safe to run at any time.
+
+It prints a header with the entry count, the recipient count, and the active profile. Then it prints `Push changes (repository)` with an `Add (n)`, `Modify (n)`, and `Delete (n)` section, followed by `Pull changes (local)` with a `Changed (n)` and `Remove (n)` section. Each list is capped at 10 items and then prints `... and N more`. When a direction has no work, `status` prints `No push changes` or `No pull changes` instead of the sections.
 
 ```bash
 dotweave status
 ```
 
-Show status for a specific profile:
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-```bash
-dotweave status --profile work
+Push changes (repository)
+
+Add (4)
+  + .config/nvim
+  + .config/nvim/init.lua
+  + .gitconfig
+  + .ssh/config
+
+Pull changes (local)
+
+Remove (4)
+  - /home/you/.config/nvim
+  - /home/you/.config/nvim/init.lua
+  - /home/you/.gitconfig
+  - /home/you/.ssh/config
 ```
 
-<TRAlert.Root variant="neutral">
-`status` reads `manifest.jsonc` and compares file contents. It does **not** run `git status` — it only reports dotweave-level differences.
-</TRAlert.Root>
+That sample is a first-run state where nothing has been pushed yet. Read the two directions together: `push` would add four artifacts, and `pull` would remove every tracked local file, because the repository has nothing to put back. That asymmetry is the concrete reason to run `status` before `pull`.
 
+Once both directions agree, the report collapses to two lines.
+
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
+
+Push changes (repository)
+  No push changes
+
+Pull changes (local)
+  No pull changes
+```
+
+Because `status` validates the manifest on the way in, it is also the cheapest way to check a hand-edited `manifest.jsonc`.
+
+## Errors
+
+`status` fails when the sync directory is not a git work tree and when `manifest.jsonc` is missing, unreadable, or fails validation. It also fails when a stored artifact contradicts its entry, and when a secret artifact cannot be decrypted with your identity, since the push comparison needs the plaintext. Read [Error messages](/en/config/errors/#config-files) for each message and its fix.
+
+## Related commands
+
+Read [`dotweave push`](/en/reference/push/) to apply the repository direction, or [`dotweave pull`](/en/reference/pull/) to apply the local one.

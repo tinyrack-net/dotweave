@@ -1,51 +1,81 @@
 ---
 title: "dotweave pull"
-description: "sync 디렉터리의 파일을 로컬에 적용해요."
+description: sync 디렉터리의 artifact를 로컬 경로로 되돌려 쓰고, 시크릿은 먼저 복호화해요.
 section: reference
-order: 3
+order: 4
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-git 기반 sync 디렉터리의 내용을 로컬 설정 경로에 적용해요.
-
-sync 디렉터리에서 추적 중인 파일을 읽어 홈 디렉터리 아래 로컬 경로에 복원해요. secret 파일은 설정된 age identity로 복호화한 뒤 로컬에 기록해요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave pull [flags]
+dotweave pull [--dry-run] [--profile <profile>] [--yes]
 ```
 
-## Flags
+추적 항목에 저장된 artifact를 읽어서 홈 디렉터리 아래 로컬 경로로 다시 써요.
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--dry-run`        | 실제로 쓰지 않고 변경 내용을 미리 확인해요.     |
-| `--profile <name>` | 특정 profile 레이어를 사용해요.        |
+## 플래그
 
-## Examples
+| 플래그 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `--dry-run` | boolean, `false` | 로컬 경로를 건드리지 않고 계획만 만들어 출력해요. `--no-dry-run`으로 기본값을 명시할 수도 있어요. |
+| `--profile` | `string`, 없음 | 이 명령에서만 `settings.jsonc`의 활성 프로필 대신 지정한 프로필 하나를 사용해요. |
+| `--yes`, `-y` | boolean, `false` | 확인 없이 계획을 적용해요. 이 플래그에는 `--no-yes` 형태가 없어요. |
 
-추적 중인 모든 파일을 로컬 경로에 적용해요:
+## 확인 프롬프트와 비대화형 셸
+
+`pull`은 먼저 계획을 출력한 다음 `Apply these changes? [y/N] `를 물어봐요. `y`라고 답할 때만 진행하고, 그 밖의 입력에는 로컬 경로를 그대로 둬요.
+
+프롬프트 없이 적용하려면 `--yes` 또는 `-y`를 쓰세요. 계획만 보고 멈추려면 `--dry-run`을 쓰세요.
+
+비대화형 터미널에서 `-y` 없이 실행하면 `Pull confirmation requires an interactive terminal.` 메시지로 실패하고, `-y`로 다시 실행하라는 힌트를 보여줘요. CI에서 마주치는 실패가 바로 이 경우라서, 스크립트로 돌리는 pull에는 이 플래그가 필요해요.
+
+차이가 없으면 이미 최신 상태라고 알리고 프롬프트 없이 그대로 끝나요.
+
+## 동작
+
+secret artifact는 로컬에 쓰기 전에 `keys.txt`의 identity로 복호화해요.
+
+로컬에 쓰는 모든 파일은 대상 경로 옆 임시 디렉터리에 먼저 준비한 다음 제자리로 rename해요. 그래서 pull이 중간에 끊겨도 반쯤 쓰인 파일이 남지 않아요. 남아 있는 로컬 경로는 깊은 곳부터 삭제하고, 디렉터리는 그 안의 모든 항목이 이미 삭제 예정일 때만 삭제해요.
+
+항목은 배치 단위로 적용해요. 한 배치 안의 두 항목이 서로 겹치는 로컬 경로를 갖지 않도록 묶어요.
 
 ```bash
 dotweave pull
 ```
 
-로컬에 어떤 변경이 생길지 미리 확인해요:
+```
+· Preparing pull...
+~ Planned pull changes
 
-```bash
-dotweave pull --dry-run
+Update from repository (1)
+  + /home/you/.config/nvim/init.lua
+· Applying pull...
+✔ Pull complete
+  updated: 1 paths updated
+  removed: 0 paths removed
 ```
 
-work profile 레이어만 적용해요:
+계획은 두 절로 나뉘어요. `Update from repository (n)`은 새로 쓸 경로를 `+` 불릿으로, `Remove locally (n)`은 삭제할 경로를 `-` 불릿으로 나열해요. 비어 있는 절은 출력하지 않아요.
 
-```bash
-dotweave pull --profile work
+dry run은 같은 계획을 출력하고 거기서 멈춰요. 마지막 줄들은 미리 보기 표현으로 바뀌어요.
+
+```
+~ Pull preview (dry run)
+  updated: 1 paths would be updated
+  removed: 0 paths would be removed
 ```
 
-<TRAlert.Root variant="success">
-적용 전에 `dotweave status`를 먼저 실행하면 `pull`이 바꿀 내용을 미리 확인할 수 있어요.
+<TRAlert.Root variant="warning">
+`pull`은 저장소에 없는 로컬 파일을 삭제해요. 첫 `push` 전에는 추적 중인 모든 경로가 삭제 목록에 올라와요. 먼저 `dotweave status`나 `dotweave pull --dry-run`을 실행하세요.
 </TRAlert.Root>
 
+## 오류
+
+`pull`은 sync 디렉터리가 git 작업 트리가 아닐 때, `manifest.jsonc`가 없거나 읽을 수 없거나 유효하지 않을 때 실패해요. 내 identity로 secret artifact를 복호화할 수 없을 때, 저장된 artifact가 추적 항목의 `kind`와 어긋날 때도 실패해요. 파일 항목이 저장소에서는 디렉터리로 해석되는 경우가 그런 예예요. 비대화형 터미널의 확인 실패는 위에서 설명한 그대로예요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 시크릿과 age 절에서 확인하세요.
+
+## 관련 명령
+
+적용하기 전에 두 방향을 미리 보려면 [`dotweave status`](/ko/reference/status/), 두 번째 기기에서 `pull`과 git을 함께 쓰는 흐름은 [여러 기기 동기화 유지하기](/ko/guides/multi-device-workflow/)를 확인하세요.

@@ -1,24 +1,44 @@
 ---
 title: "dotweave cd"
-description: "sync 디렉터리에서 셸을 열어요."
+description: sync 디렉터리를 루트로 하는 자식 셸을 띄워서 git을 직접 실행하게 해 줘요.
 section: reference
-order: 6
+order: 8
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-sync 디렉터리에서 셸을 열어요.
-
-`chezmoi cd`처럼, 현재 셸의 디렉터리를 바꾸는 대신 로컬 sync 디렉터리를 루트로 하는 새 자식 셸을 열어요. 셸을 종료하면 이전 세션으로 돌아가요.
-
-## Usage
+## 사용법
 
 ```bash
 dotweave cd
 ```
 
-<TRAlert.Root variant="success">
-sync 디렉터리 안에서 git 명령(`commit`, `push`, `pull`)을 직접 실행할 때 유용해요.
+git 저장소가 있는 sync 디렉터리 안에서 셸 세션을 열어요.
+
+## 동작
+
+`cd`는 sync 디렉터리를 확인하고, 없으면 만들고, 그곳을 루트로 하는 자식 셸을 띄워요. 자식 셸은 현재 터미널의 stdio를 그대로 물려받아요. 명령을 실행한 셸의 작업 디렉터리는 바꿀 수 없어요. 프로세스는 원래 부모의 디렉터리를 바꿀 수 없어요. 자식 셸을 종료하면 원래 자리로 돌아와요.
+
+띄우는 셸은 환경 변수에서 가져와요. Windows에서는 `%COMSPEC%`를 쓰고 없으면 `cmd.exe`로 넘어가요. 그 밖의 플랫폼에서는 `$SHELL`을 쓰고 없으면 `/bin/sh`로 넘어가요.
+
+sync 디렉터리에 git을 실행하는 방법은 이게 정석이에요. `push`와 `pull`은 artifact만 쓰고 git을 직접 호출하지 않아요. 직접 커밋하고 push할 때까지는 원격에 아무것도 올라가지 않아요.
+
+```bash
+dotweave cd
+git add -A
+git commit -m "Update dotfiles"
+git push
+```
+
+<TRAlert.Root variant="info">
+자식 셸이 0이 아닌 코드로 끝나거나 시그널로 죽으면 `dotweave cd`는 종료 코드 `1`로 끝나요. 자식의 종료 코드는 그대로 전달되지 않으니, 셸의 상태로 분기하는 스크립트에서는 쓰지 마세요.
 </TRAlert.Root>
 
+## 오류
+
+셸을 아예 띄울 수 없으면 `Failed to launch shell.`과 함께 Windows에서는 `COMSPEC`, 그 밖에서는 `SHELL`을 올바른 셸 실행 파일로 지정하라는 힌트가 나와요. 자식 셸이 0이 아닌 코드로 끝나면 `Shell exited with code <n>.`, 시그널로 죽으면 `Shell exited due to signal <SIGNAME>.`이 나와요. 셋 다 오류 코드를 담지 않아요. 보고되는 실패의 형태는 [오류 메시지](/ko/config/errors/)의 오류 읽는 방법 절에서 확인하세요.
+
+## 관련 명령
+
+git을 직접 다루게 한 이유는 [동기화 원리](/ko/concepts/how-it-works/)에서, 커밋할 artifact를 만드는 단계는 [dotweave push](/ko/reference/push/)에서 확인하세요.

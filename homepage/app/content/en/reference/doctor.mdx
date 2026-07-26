@@ -1,36 +1,50 @@
 ---
 title: "dotweave doctor"
-description: "Check the health of your sync setup."
+description: Run health checks over the sync repository, config, age identity, and tracked local paths.
 section: reference
-order: 8
+order: 7
 ---
 
-Check sync directory, config, age identity, and tracked local paths.
-
-Run health checks for the local sync setup, including repository availability, config validity, age identity configuration, and whether tracked local paths still exist where dotweave expects them.
-
-## Usage
-
-```bash
-dotweave doctor [flags]
-```
-
-## Flags
-
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--profile <name>` | Use a specific profile layer.        |
-
-## Examples
-
-Run all health checks:
+## Synopsis
 
 ```bash
 dotweave doctor
 ```
 
-Run checks for a specific profile:
+Inspect the local setup and report what is wrong before a `push` or `pull` runs into it. `doctor` takes no arguments and no flags other than `--help`.
+
+## Checks
+
+`doctor` runs six checks in a fixed order. Two check ids are renamed for display: the internal `age` prints as `identity`, and the internal `local-paths` prints as `local`. The names below are the ones you see in the output.
+
+| Check | Verifies | A failure means |
+| --- | --- | --- |
+| `git` | The sync directory is a git work tree. | The sync directory is missing or not a repository. Fails fast: the run stops here. |
+| `config` | `manifest.jsonc` loads and validates, and reports the entry and recipient counts. | The manifest is unreadable or invalid. Fails fast: the run stops here. |
+| `profiles` | Reports the active profile, or that none is configured. | Not a failing check; it only reports the current selection. |
+| `identity` | The age identity file exists at the resolved path. | Secret artifacts cannot be decrypted on this machine. |
+| `entries` | Warns when the manifest has zero entries. | Not a failing check; a warning means nothing is tracked yet. |
+| `local` | For every non-`ignore` entry whose local path is missing, whether that absence is consistent with the current sync state. | A missing local path cannot be explained by the repository state. |
+
+## Behavior
+
+`doctor` prints a one-line summary with the ok, warning, and failure counts, then at most three non-ok checks followed by `... N more issues` when more remain.
 
 ```bash
-dotweave doctor --profile work
+dotweave doctor
 ```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+The command exits `1` when any check fails. Warnings alone do not fail it. `doctor` writes nothing: it does not repair the manifest, restore a local path, or touch the repository.
+
+## Errors
+
+`doctor` reports issues as check results rather than as command errors, except for the `git` and `config` checks, which stop the run as soon as they fail. When the run finishes with at least one failure, `doctor` raises `Doctor found issues.`, which carries no error code and no hint. Read [Error messages](/en/config/errors/#how-to-read-an-error) for the message format each failing check detail follows.
+
+## Related commands
+
+Read [dotweave status](/en/reference/status/) to see the pending changes behind a reported issue, or [Error messages](/en/config/errors/) to look up the message a check printed.

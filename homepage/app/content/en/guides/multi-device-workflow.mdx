@@ -1,116 +1,18 @@
 ---
-title: Multi-Device Workflow
-description: The complete flow from initial setup to daily syncing across machines.
+title: Keep several devices in sync
+description: Order of operations across machines, resolving divergence with git, and giving each machine a profile.
 section: guides
-order: 6
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
-This guide walks through the entire lifecycle of using dotweave — from setting up
-your first machine to keeping multiple devices in sync every day.
+## Pull before you edit
 
-## Initial setup on Machine A
+Dotweave never runs `git pull` itself, so a machine you have not touched in a while still holds a stale sync directory. Fetching the repository and applying it to your home directory are two separate commands, and they run in that order.
 
-<TRSteps.Root>
-<TRSteps.Item>
-
-**Initialize dotweave**
-
-```bash
-dotweave init
-```
-
-This creates a Git-backed sync directory in dotweave's app-data directory.
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Track your files**
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.config/starship.toml
-dotweave track ~/.ssh/config --mode secret
-```
-
-Each command adds an entry to `manifest.jsonc` inside the sync directory.
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Push local files into the sync directory**
-
-```bash
-dotweave push
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Commit and push to a remote**
-
-dotweave never creates Git commits for you — you stay in full control:
-
-```bash
-dotweave cd   # opens a shell inside the sync directory
-git add -A && git commit -m "initial sync"
-git remote add origin git@github.com:you/dotfiles.git
-git push -u origin main
-exit
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="success">
-Run `dotweave status` at any point to preview what would change before you
-actually push or pull.
-</TRAlert.Root>
-
-## Setting up Machine B
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**Initialize from the remote URL**
-
-```bash
-dotweave init git@github.com:you/dotfiles.git
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Pull files to their local paths**
-
-```bash
-dotweave pull
-```
-
-dotweave reads `manifest.jsonc`, resolves platform-specific paths, decrypts
-any secrets, and writes every file to the correct location.
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-## Daily workflow
-
-Once both machines are set up, the day-to-day flow is short and predictable.
-
-**On the machine where you made changes:**
-
-```bash
-dotweave push
-dotweave cd
-git add -A && git commit -m "update shell aliases"
-git push
-exit
-```
-
-**On the other machine:**
+Open the sync directory, fetch, leave the child shell, then apply:
 
 ```bash
 dotweave cd
@@ -119,61 +21,42 @@ exit
 dotweave pull
 ```
 
-<TRAlert.Root variant="neutral">
-The pattern is always **dotweave push → git push** on one side and
-**git pull → dotweave pull** on the other.
-</TRAlert.Root>
-
-## Handling conflicts
-
-The sync directory is a regular Git repository, so conflicts are resolved the
-usual way:
-
-```bash
-dotweave cd
-git pull            # may report merge conflicts
-# resolve conflicts in the affected files
-git add -A && git commit -m "resolve merge conflict"
-git push
-exit
-dotweave pull        # apply the resolved state locally
-```
+`dotweave cd` spawns a child shell rooted at the sync directory, and `exit` returns you to the shell you started from. Only after `git pull` has updated the work tree does `dotweave pull` have the new artifacts to write.
 
 <TRAlert.Root variant="warning">
-If two machines push different edits to the same file before either does a
-`git pull`, you'll get a normal Git merge conflict. Resolve it inside the sync
-directory — dotweave itself doesn't auto-merge.
+`dotweave pull` deletes local files that the repository does not have, and it prompts before applying the plan. Run `dotweave status` or `dotweave pull --dry-run` first and read the plan.
 </TRAlert.Root>
 
-## Checking health
+Editing before you pull is what produces divergence. You commit on top of a stale history, and the two machines now disagree about the same file.
+
+## Resolve divergence with git, not Dotweave
+
+Dotweave performs no merge. There is no three-way merge, no conflict markers written by Dotweave, and no resolution UI. When two machines have each pushed and committed, what you have is a git divergence in the sync repository, and you settle it with git inside `dotweave cd`.
+
+Artifacts are plain files, and `dotweave init` writes a `.gitattributes` containing `* -text` so git does not rewrite line endings. A `git diff` of the sync repository is therefore readable for `normal` artifacts, and you can merge them line by line like any other text.
+
+Secret artifacts are age ciphertext. A diff of one is not human-readable and cannot be merged line by line, so reconcile a secret by choosing one side, then push the plaintext again from the machine that holds the version you want.
+
+## Give each machine a profile
+
+Configuration that differs per machine belongs in a profile rather than in a shared entry. Register the name, restrict the machine-specific entries to it, and select it on the machine it describes:
 
 ```bash
-dotweave doctor
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+dotweave profile use work
 ```
 
-This verifies the sync directory exists, Git is configured, encryption keys are
-in place, and tracked paths are accessible.
+The selection is stored in `settings.jsonc` in the dotweave home directory. That directory sits outside the sync directory and is never committed, so each machine chooses independently.
 
-## Adding more machines
+An entry assigned to a profile is invisible while a different profile is active. It does not appear in `dotweave status`, and neither `push` nor `pull` considers it. Check the active profile before you conclude that an entry was lost.
 
-Adding a third (or fourth, or fifth) machine follows the same steps as
-Machine B — `dotweave init` with the remote URL, then `dotweave pull`. From
-there the daily push/pull cycle is identical on every device.
+`push` never prunes another profile's artifacts, so one repository holds every machine's configuration side by side.
 
-<TRAlert.Root variant="success">
-If the new machine runs a different OS, dotweave automatically resolves
-platform-specific paths. See the
-[Platform-Specific Paths](/en/guides/platform-specific-paths/) guide.
-</TRAlert.Root>
+Secrets add one requirement per machine. The machine's public key must be listed in `manifest.jsonc` under `age.recipients`, and the matching private key must sit in that machine's own `keys.txt`. A machine missing either one cannot decrypt what the others wrote; read [Secrets and encryption](/en/concepts/secrets/) for how the keys are managed.
 
-## Quick reference
+## Implementation and reference
 
-| Task                        | Commands                                                  |
-| --------------------------- | --------------------------------------------------------- |
-| Preview changes             | `dotweave status`                                          |
-| Send local edits upstream   | `dotweave push` → `git add -A && git commit` → `git push` |
-| Receive upstream edits      | `git pull` → `dotweave pull`                               |
-| Resolve conflicts           | `dotweave cd` → fix files → `git commit` → `git push`     |
-| Check setup health          | `dotweave doctor`                                          |
+The visibility rule and the machine-local selection are described in [Profiles](/en/concepts/profiles/).
 
-
+Read [`dotweave pull`](/en/reference/pull/) for the flags that let you inspect a plan before applying it, or [`dotweave cd`](/en/reference/cd/) for the shell where you run git against the sync repository.

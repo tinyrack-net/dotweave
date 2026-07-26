@@ -1,49 +1,57 @@
 ---
 title: "dotweave untrack"
-description: "경로의 동기화 추적을 중단해요."
+description: manifest에서 추적 항목이나 중첩 재정의를 제거하고, 그 저장소 artifact를 삭제해요.
 section: reference
-order: 5
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-추적 중인 경로의 동기화를 중단해요.
-
-dotweave 설정에서 추적 중인 루트 항목이나 하위 재정의를 제거해요. 이 명령은 설정만 갱신하고, 실제 파일 변경은 다음 `push`나 `pull`에서 이루어져요. 로컬 경로를 지정하면 추적 대상 자체를 제거하고, 추적 중인 디렉터리 안의 저장소 상대 경로를 지정하면 해당 재정의만 제거해요.
-
-## Usage
+## 사용법
 
 ```bash
-dotweave untrack <target> [flags]
+dotweave untrack <target>
 ```
 
-## Arguments
+`manifest.jsonc`에서 항목 하나를 지우고, 그 항목이 sync 디렉터리에 써 둔 내용을 정리해요.
 
-| Argument   | Description                                             |
-| ---------- | ------------------------------------------------------- |
-| `<target>` | 추적을 중단할 로컬 경로 또는 저장소 경로예요. |
+## 인자
 
-## Flags
+| 인자 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `target` | `string`, 필수 | 추적을 중단할 로컬 경로(cwd 기준 상대 경로 포함)나 저장소 경로예요. |
 
-| Flag        | Description            |
-| ----------- | ---------------------- |
+## 동작
 
-## Examples
+`untrack`은 해당 항목을 뺀 manifest를 쓰고, 그다음 그 항목이 차지하던 모든 프로필 디렉터리에서 plain, 시크릿, 심볼릭 링크 artifact를 삭제하면서 비게 된 상위 디렉터리를 정리해요. 이 명령의 `--help`는 설정만 갱신한다고 말하지만 그건 사실이 아니에요. 명령이 끝난 시점에 artifact는 이미 사라져 있어요.
 
-설정 파일의 추적을 중단해요:
+홈 디렉터리 아래의 로컬 파일은 건드리지 않아요. 설정 파일은 그대로 있고, sync 디렉터리에 복제된 사본만 없어져요.
+
+로컬 경로를 넘기면 주 추적 항목을 제거해요. 추적 중인 디렉터리 안의 저장소 상대 자식 경로를 넘기면 그 중첩 재정의만 제거하고, 상위 항목은 계속 추적된 상태로 남아요.
+
+두 개 이상의 항목에 맞는 대상은 임의로 고르지 않고 실패해요. 그럴 때는 전체 로컬 경로를 넘겨서 하나를 지정하세요.
 
 ```bash
-dotweave untrack ~/.config/starship.toml
+dotweave untrack ~/.gitconfig
 ```
 
-추적 중인 디렉터리 안의 자식 재정의를 제거해요:
-
-```bash
-dotweave untrack .ssh/config
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
 ```
 
-<TRAlert.Root variant="neutral">
-`untrack`은 `manifest.jsonc`만 갱신해요. 로컬 파일이나 sync 디렉터리의 파일을 **삭제하지 않아요**.
+두 숫자는 삭제된 plain artifact와 시크릿 artifact의 개수예요.
+
+<TRAlert.Root variant="warning">
+`untrack`은 해당 항목의 저장소 artifact를 모든 프로필에서 즉시 삭제해요. 홈 디렉터리 아래의 로컬 파일은 그대로 두지만, sync 디렉터리의 복제 사본은 제거돼요. 다른 기기가 파일을 되살리지 않도록 이 삭제를 커밋하세요.
 </TRAlert.Root>
 
+## 오류
+
+대상이 비어 있으면 `Target path is required.`, 맞는 항목이 없으면 `No tracked sync entry matches: <target>`이 나와요. 둘 다 오류 코드나 힌트를 담지 않아요. 대상이 모호하면 `Multiple tracked sync entries match: <target>`과 함께 명시적인 로컬 경로를 쓰라는 힌트가 나와요. 각 메시지와 해결 방법은 [오류 메시지](/ko/config/errors/)의 추적 대상 절에서 확인하세요.
+
+## 관련 명령
+
+항목을 만드는 명령은 [dotweave track](/ko/reference/track/)에서, 저장소에 무엇을 둘지 고르는 기준은 [파일과 디렉터리 추적하기](/ko/guides/tracking-files/)에서 확인하세요.

@@ -1,80 +1,56 @@
 ---
-title: 셸 자동완성
-description: 셸에서 dotweave 탭 자동완성을 설정하는 방법을 알아보세요.
+title: 셸 자동완성 켜기
+description: dotweave의 bash, zsh, fish, PowerShell 자동완성 스크립트를 설치하는 방법을 알려 줘요.
 section: guides
-order: 8
+order: 3
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
+탭 자동완성은 명령과 플래그를, `dotweave track`에서는 파일시스템 경로까지 제안해요. 이 가이드에서는 생성된 자동완성 스크립트를 bash, zsh, fish, PowerShell 중 하나에 연결해요. Tab을 누를 때마다 스크립트가 `dotweave` 바이너리를 이름으로 호출하니, dotweave가 이미 `PATH`에 있어야 해요.
 
+## 1. 자동완성 스크립트 출력
 
-탭 자동완성을 사용하면 문서를 찾지 않아도 명령어, 플래그, 인자를 발견할 수
-있어요. dotweave는 **Bash**, **Zsh**, **Fish**, **PowerShell**을 지원해요.
+`dotweave autocomplete <shell>`은 스크립트를 stdout으로 출력하고, 설치는 하지 않아요. 무엇을 불러올지 먼저 한 번 실행해서 읽어 보세요.
 
-## Bash
+```bash
+dotweave autocomplete bash
+```
 
-`~/.bashrc`에 이 줄을 추가하세요:
+받는 셸 이름은 `bash`, `zsh`, `fish`, `powershell`이에요. bash 스크립트는 마지막에 `complete -o default -o nospace`로 자동완성을 등록해요. 그래서 디렉터리 후보 뒤에 원치 않는 공백이 붙지 않고 계속 이어 쓸 수 있어요. zsh 스크립트는 여기에 더해 `precmd` 훅을 설치해서 프롬프트마다 자동완성을 다시 등록해요. 나중에 실행되는 `compinit`이 조용히 등록을 바꿔 버리는 일을 막아 줘요.
+
+자동완성이 다루는 대상은 명령과 플래그예요. `-y` 같은 한 글자 플래그 별칭은 의도적으로 출력에서 빠지고, 긴 형태만 제안해요.
+
+## 2. 셸 프로필에서 불러오기
+
+각 셸의 시작 파일에서 스크립트를 평가하면, 새 세션마다 자동완성이 준비돼요.
+
+bash라면 `~/.bashrc`에 다음 줄을 추가하세요.
 
 ```bash
 eval "$(dotweave autocomplete bash)"
 ```
 
-그런 다음 셸을 다시 로드하세요:
-
-```bash
-source ~/.bashrc
-```
-
-## Zsh
-
-`~/.zshrc`에 이 줄을 추가하세요:
+zsh라면 `~/.zshrc`에 다음 줄을 추가하세요.
 
 ```bash
 eval "$(dotweave autocomplete zsh)"
 ```
 
-그런 다음 셸을 다시 로드하세요:
-
-```bash
-source ~/.zshrc
-```
-
-## Fish
-
-현재 세션에서 사용하려면 다음을 실행하세요:
+fish라면 `~/.config/fish/config.fish`에 다음 줄을 추가하세요.
 
 ```fish
 dotweave autocomplete fish | source
 ```
 
-계속 사용하려면 completions 파일을 작성하세요:
-
-```fish
-mkdir -p ~/.config/fish/completions
-dotweave autocomplete fish > ~/.config/fish/completions/dotweave.fish
-```
-
-## PowerShell
-
-PowerShell 프로필(`$PROFILE`)에 이 줄을 추가하세요:
+PowerShell이라면 `$PROFILE`이 가리키는 파일에 다음 줄을 추가하세요.
 
 ```powershell
-dotweave autocomplete powershell | Invoke-Expression
+dotweave autocomplete powershell | Out-String | Invoke-Expression
 ```
 
-그런 다음 프로필을 다시 로드하세요:
+PowerShell에서 `Out-String`이 필요한 이유는 스크립트가 여러 줄이기 때문이에요. 줄을 그대로 `Invoke-Expression`에 넘기면 한 줄씩 평가하다가 닫히지 않은 블록에서 실패해요.
 
-```powershell
-. $PROFILE
-```
+## 결과 확인
 
-<TRAlert.Root variant="success">
-eval 줄을 추가한 후, 새 터미널을 열거나 설정 파일을 source한 뒤 `dotweave `를
-입력하고 Tab을 눌러 보세요. 사용 가능한 명령어 목록이 나타나야 해요.
-</TRAlert.Root>
+시작 파일이 실행되도록 새 셸을 열고, `dotweave pu`를 입력한 뒤 Tab을 누르세요. 셸이 `pull`과 `push`를 후보로 보여 줘요.
 
-<TRAlert.Root variant="neutral">
-`volta`나 `fnm` 같은 버전 관리자로 dotweave를 설치했다면, eval 줄이 실행되기
-전에 `dotweave` 바이너리가 `PATH`에 포함되어 있는지 확인하세요.
-</TRAlert.Root>
-
+하위 명령은 [`dotweave autocomplete`](/ko/reference/autocomplete/)에서, 경로 자동완성이 적용되는 명령은 [`dotweave track`](/ko/reference/track/)에서 확인하세요.

@@ -1,126 +1,107 @@
 ---
-title: 파일 추적하기
-description: 파일과 디렉터리를 동기화 대상으로 등록하는 방법을 알아보세요.
+title: 파일과 디렉터리 추적하기
+description: 홈 디렉터리 아래의 대상을 등록하고, 저장소 경로를 덮어쓰고, 하위 경로를 조정하고, 추적을 중단하는 방법을 정리해요.
 section: guides
-order: 1
+order: 0
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-dotweave가 파일을 동기화하려면 먼저 **추적**해야 해요. 추적은 `manifest.jsonc`에 항목을 추가해서 "이 파일을 관리할 거야"라고 알려주는 거예요. 실제로 파일이 복사되거나 push되려면 이후에 `dotweave push`를 직접 실행해야 해요.
+추적은 경로를 `manifest.jsonc`에 기록해서 `push`와 `pull`이 그 경로를 알게 하는 일이에요. 아래 절은 순서가 아니라 서로 독립적인 선택지라서, 필요한 절만 읽으면 돼요.
 
----
+## 파일이나 디렉터리 추적하기
 
-## 파일 추적하기
-
-`dotweave track`에 파일 경로를 전달하세요:
+홈 디렉터리 아래의 경로를 `dotweave track`에 넘기세요. 인자는 가변 개수라서 한 번에 여러 대상을 넘겨도 돼요.
 
 ```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
+dotweave track ~/.gitconfig ~/.config/nvim
 ```
 
-이렇게 하면 `manifest.jsonc`에 항목이 추가돼요. 그게 전부예요. 파일은 원래 위치에 그대로 있어요. 실제로 sync 디렉터리에 복사하려면 `dotweave push`를 별도로 실행하세요.
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
 
----
+`track`은 `manifest.jsonc`만 써요. `dotweave push`를 실행할 때까지 sync 디렉터리로 복사되는 파일은 없어요.
 
-## 디렉터리 추적하기
+이미 추적 중인 경로를 다시 추적하면 넘긴 필드만 갱신하고 나머지는 그대로 유지해요. 그래서 나중에 한 항목의 `mode`만 바꿀 때 `--repo`나 `--profile` 값을 다시 적지 않아도 돼요.
 
-디렉터리 전체를 추적할 수도 있어요. 디렉터리 안의 모든 파일이 (재귀적으로) push와 pull에 포함돼요.
+`--profile`에 빈 값 하나만 넘기면 그 대상의 프로필 지정이 지워지고, 항목은 다시 모든 프로필에서 적용돼요.
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/fish
+dotweave track ~/.config/my-tool --profile ""
 ```
 
-<TRAlert.Root variant="success">
-디렉터리를 추적하면, 나중에 안에 새로 추가된 파일도 다음 push 때 자동으로 포함돼요. 개별적으로 추적할 필요 없어요.
-</TRAlert.Root>
+대상은 홈 디렉터리 안으로 해석돼야 하고, 홈 디렉터리 자체는 쓸 수 없어요. sync 디렉터리와 겹치는 경로나 `keys.txt`를 포함하는 경로도 쓸 수 없어요. dotweave는 자기 상태와 age 키 자료를 미러링하지 않아요.
 
----
+## 아직 없는 경로 추적하기
 
-## 동기화 모드 설정
-
-기본적으로 추적된 항목은 `normal` 모드를 사용해요. `--mode`로 변경할 수 있어요:
+파일이 생기기 전에 항목을 먼저 만들어 두면, 나중에 `dotweave pull`이 그 파일을 제자리에 놓아 줘요. 확인할 대상이 없으니 이때는 `--kind file` 또는 `--kind directory`가 필요해요.
 
 ```bash
-dotweave track ~/.ssh/config --mode secret
-dotweave track ~/.local/share/cache-stuff --mode ignore
+dotweave track ~/.config/my-tool/settings.json --kind file
 ```
 
-각 모드에 대한 자세한 설명은 [동기화 모드](/ko/guides/sync-modes/)를 참고하세요.
+`--kind`는 이미 존재하는 경로에도 검사돼요. 값이 디스크 상태와 어긋나면 명령이 실패하기 때문에, 디렉터리를 파일로 잘못 기록하는 일은 생기지 않아요.
 
----
+## 저장소 경로 덮어쓰기
 
-## 특정 프로필에 제한하기
-
-`--profile`을 사용하면 항목을 하나 이상의 프로필에 할당할 수 있어요. 활성 프로필이 일치하는 기기에서만 해당 항목이 동기화돼요.
-
-```bash
-dotweave track ~/.config/work-tool --profile work
-dotweave track ~/.config/shared-tool --profile work --profile personal
-```
-
-`--profile` 없이 추적한 항목은 `default` 프로필에 들어가서 모든 기기에서 동기화돼요. 자세한 내용은 [프로필](/ko/guides/profiles/)을 참고하세요.
-
----
-
-## 저장소 경로 커스터마이징
-
-기본적으로 dotweave는 홈 디렉터리 기준 상대 경로를 sync 디렉터리 안에 그대로 미러링해요. 저장소 안에서 다른 경로를 사용하고 싶다면 `--repo`를 사용하세요:
+기본적으로 항목의 저장소 경로는 홈 디렉터리 기준 상대 경로를 그대로 따라가요. `--repo`로 그 경로를 직접 정할 수 있어서, 로컬 위치가 길거나 기기마다 다를 때 유용해요.
 
 ```bash
 dotweave track ~/Projects/scripts/deploy.sh --repo scripts/deploy.sh
 ```
 
----
+`--repo`는 대상이 정확히 하나일 때만 쓸 수 있어요. 대상이 둘 이상이면 저장소 경로 하나로 둘을 설명할 수 없으니 명령이 실패해요. `--repo win=path` 같은 플랫폼별 형태는 [`dotweave track`](/ko/reference/track/), 해석 규칙은 [플랫폼별 경로](/ko/concepts/platform-paths/)에서 설명해요.
 
-## 활용 패턴
+## 추적 중인 디렉터리 안의 하위 경로 조정하기
 
-**화이트리스트 방식**: 동기화하고 싶은 파일만 골라서 추적:
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
-dotweave push
-```
-
-**블랙리스트 방식**: 디렉터리 전체를 추적한 뒤, 특정 하위 파일만 제외:
+`track`에는 두 번째 의미가 있어요. 대상이 기존 manifest 항목이 아니고 `--repo`도 넘기지 않았다면, 이미 추적 중인 디렉터리 안의 하위 경로에 대한 모드나 프로필을 설정해요. 그 경로만을 위한 자식 오버라이드 항목이 만들어져요.
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/nvim/plugin/packer_compiled.lua --mode ignore
-dotweave push
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
 ```
 
----
+```
+✔ Updated sync mode for .config/my-tool/credentials.json
+  mode  secret
+```
 
-## 추적 해제
+두 번째 명령은 `Updated sync mode for ...`를 출력해요. 그 경로가 이미 같은 모드로 해석되던 경우에는 `Sync mode unchanged for ...`가 나와요.
 
-마음이 바뀌었다면 `dotweave untrack`으로 항목을 제거할 수 있어요:
+자식 항목은 부모보다 우선해요. 부모 디렉터리를 훑을 때 자식이 가진 경로는 건너뛰기 때문에, 그 파일은 자식의 모드로 한 번만 미러링돼요. 같은 방식으로 `--mode ignore`를 쓰면 추적 중인 디렉터리에서 파일 하나만 제외할 수 있어요.
+
+## 추적 중단하기
+
+<TRAlert.Root variant="warning">
+`dotweave untrack`은 manifest 항목을 제거하고 **함께** 그 항목의 미러링된 artifact를 저장소에서 삭제해요. 홈 디렉터리에 있는 로컬 파일은 건드리지 않아요.
+</TRAlert.Root>
 
 ```bash
 dotweave untrack ~/.gitconfig
 ```
 
-`manifest.jsonc`에서 항목이 제거돼요. 로컬 파일이나 sync 디렉터리에 있는 기존 복사본은 삭제되지 **않아요**.
-
----
-
-## 추적 상태 확인
-
-`dotweave status`로 모든 추적 항목과 현재 상태를 확인할 수 있어요:
-
-```bash
-dotweave status
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
 ```
 
-`--dry-run`을 추가하면 실제 적용 없이 변경 사항을 미리 볼 수 있어요:
+두 숫자는 제거된 plain artifact와 secret artifact의 개수예요. 그 뒤에는 push를 커밋할 때와 같은 방식으로 이 삭제도 git으로 커밋하세요.
+
+부모 디렉터리는 그대로 추적하면서 하위 오버라이드만 제거하려면 저장소 기준 자식 경로를 넘기세요.
 
 ```bash
-dotweave push --dry-run
-dotweave pull --dry-run
+dotweave untrack .config/my-tool/credentials.json
 ```
 
+## 구현과 참고
+
+플래그와 타입, 기본값은 [`dotweave track`](/ko/reference/track/)과 [`dotweave untrack`](/ko/reference/untrack/)에 정리돼 있어요. 두 명령이 쓰는 필드는 [manifest.jsonc](/ko/config/manifest/)에서 설명해요.
+
+항목의 `mode` 값을 고를 때는 [동기화 모드](/ko/concepts/sync-modes/)를, 필요한 경로를 모두 추적한 뒤에는 [매일 쓰는 push와 커밋 흐름](/ko/guides/daily-workflow/)을 확인하세요.

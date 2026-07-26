@@ -1,0 +1,91 @@
+---
+title: プロファイル
+description: manifest にプロファイルを登録し、項目に割り当て、マシンごとに有効なプロファイルを選びます。
+section: concepts
+order: 3
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## default プロファイルは暗黙です
+
+どのリポジトリにも `default` という名前のプロファイルがあり、自分で作る必要はありません。dotweave が利用可能なプロファイルの先頭に自動で並べ、ほかを選んでいないあいだはこれが有効になります。
+
+暗黙の存在なので、manifest の `profiles` 配列に書いてはいけません。`default` を並べた manifest は `INVALID_PROFILE_REGISTRY` で読み込みに失敗します。同じ理由で `dotweave profile add default` と `dotweave profile remove default` はどちらも `DEFAULT_PROFILE_IMPLICIT` で失敗します。正確なメッセージは[エラーメッセージ](/ja/config/errors/)のプロファイルの節を参照してください。
+
+マシンが 1 台だけなら、これ以上は必要ありません。名前付きプロファイルが意味を持つのは、複数のマシンが 1 つのリポジトリから別々の項目だけを取り出したいときです。
+
+## 使う前にプロファイルを登録する
+
+manifest バージョン 8 以降、名前付きプロファイルは `manifest.jsonc` のトップレベルの `profiles` 配列に置かれます。バージョン 7 では項目が参照する場所にしか名前が残らず、v7 から v8 への移行が項目で見つけた名前をすべてレジストリへ引き上げます。この移行は、新しい dotweave が古い manifest を最初に読むときに実行されます。
+
+名前は `profile add` で登録します。
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+プロファイル名は英字か数字で始まり、続けて英字、数字、ドット、アンダースコア、ハイフンを使えます。規則は `^[A-Za-z0-9][A-Za-z0-9._-]*$` です。`.` で始めることはできず、`.` や `..` も使えません。artifact ディレクトリ名の `profiles` も使えません。
+
+`dotweave profile remove <name>` はレジストリから名前を削除しますが、2 つの場合には拒否します。そのプロファイルが有効なとき（`PROFILE_ACTIVE`）と、いずれかの項目がまだその名前を参照しているとき（`PROFILE_IN_USE`）です。`PROFILE_IN_USE` の詳細行には参照している項目がすべて並びます。先にその割り当てを整理してください。
+
+`dotweave profile list` は `default` と登録済みの名前を並べ、有効なものに印を付けます。
+
+```bash
+dotweave profile list
+```
+
+```
+~ Profiles
+  - default
+  - work (active)
+```
+
+## プロファイルが見る項目
+
+項目が見えるかどうかは 1 つの規則で決まります。有効なプロファイルは選択中のプロファイルで、何も選んでいなければ `default` です。`profiles` が空または未指定の項目は、すべてのプロファイルで適用されます。`profiles` に名前を並べた項目は、有効なプロファイルがそのいずれかのときだけ適用されます。
+
+そのため共有する項目は割り当てずに置き、マシン固有の項目にだけプロファイルを指定します。
+
+```bash
+dotweave track ~/.gitconfig
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+```
+
+`~/.gitconfig` はすべての push と pull に含まれます。`~/.config/work-vpn` が含まれるのは `work` が有効なあいだだけで、`default` では見えません。1 つの項目に複数の名前を割り当てると、そのいずれのプロファイルでも適用されます。
+
+<TRAlert.Root variant="warning">
+プロファイルに限定した項目は、別のプロファイルが有効なあいだは完全に見えなくなります。`dotweave status` にも現れず、`push` も `pull` もその項目を扱いません。項目が失われたと判断する前に、プロファイルを選び直してください。
+</TRAlert.Root>
+
+## 有効なプロファイルはマシンごとです
+
+選択したプロファイルは、dotweave ホームディレクトリの `settings.jsonc` に `activeProfile` として保存されます。このディレクトリは同期ディレクトリの中にはないため、選択がコミットされることはなく、マシンごとに個別に選びます。
+
+仕事用のノート PC では次のようにします。
+
+```bash
+dotweave profile use work
+```
+
+```
+✔ Active profile set to work
+```
+
+引数なしで `dotweave profile use` を実行すると選択が消え、`default` に戻ります。登録されていない名前を選ぶと、何も書き込む前に `Unknown profile '<name>'.` で失敗します。
+
+`push`、`pull`、`status` は `--profile <name>` を受け取ります。保存された選択をそのコマンド 1 回だけ上書きし、値は 1 つだけ取ります。
+
+プロファイルはリポジトリを分割しません。`push` は有効でないプロファイルの artifact をそのまま保持し、削除することはありません。そのため個人用マシンから push しても `profiles/work/` は残ります。1 つのリポジトリが `profiles/<profile>/` の下にすべてのマシンの設定を並べて保持します。
+
+## 実装とリファレンス
+
+`profiles` 配列と項目ごとの `profiles` フィールドは [manifest.jsonc](/ja/config/manifest/)、そこから生まれるディレクトリは[ディレクトリとリポジトリの構造](/ja/concepts/repository-layout/)で説明しています。
+
+サブコマンドの一覧は [`dotweave profile`](/ja/reference/profile/)、選択を記録するマシンごとのフィールドは [settings.jsonc](/ja/config/settings/)を参照してください。

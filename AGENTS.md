@@ -8,6 +8,11 @@
 
 ---
 
+## Skills
+When writing, rewriting, translating, or reviewing public Dotweave documentation under `homepage/app/content`, or documentation-facing copy under `homepage/app/components`, follow `.agents/skills/dotweave-documentation-writing/SKILL.md`. Do not trigger it for release notes, changelogs, contributor README files, Dart source comments, or documentation infrastructure changes without public copy.
+
+---
+
 ## Mandatory Validation Loop
 You MUST execute a validation loop for every change to ensure system integrity.
 

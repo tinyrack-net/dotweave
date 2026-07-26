@@ -1,0 +1,132 @@
+---
+title: manifest.jsonc
+description: バージョン 8 の同期 manifest の全フィールド、項目の構造、プラットフォーム値オブジェクト、dotweave が強制する検証ルールをまとめます。
+section: config
+order: 0
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 場所とバージョン
+
+`manifest.jsonc` は同期ディレクトリのルートにあります。つまりコミットされ、すべてのマシンで共有されるファイルです。dotweave が何をトラッキングするかは、このファイルだけが決めます。
+
+現在のバージョンは `8` です。バージョン `7` も受け付け、その場でマイグレーションします。事前に `manifest.jsonc.v7.bak` バックアップを書き出します。バージョン `7` はプロファイル名を項目にだけ保存していたため、マイグレーションでトップレベルの `profiles` レジストリへ引き上げます。`8` より新しいバージョンではコマンドが失敗します。
+
+形式は JSONC なので、手で編集するときに `//` と `/* */` のコメントを残せます。隣に `manifest.json` がある場合は読み込まずに拒否します。
+
+`dotweave track`、`dotweave untrack`、`dotweave profile add|remove` を実行すると、dotweave がこのファイルを書き直します。手で入れたコメントやキーの順序は、書き直しの際に保持されません。
+
+## トップレベルのフィールド
+
+| フィールド | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `version` | `7` または `8`、必須 | スキーマのバージョンです。整数でない値は検証に失敗します。 |
+| `repositoryFormat` | 0 以上の `integer`、任意 | ディスク上の artifact 配置バージョンです。未指定なら `0` として扱います。現在の形式は `1` です。 |
+| `age` | `object`、任意 | `recipients` を保持します。同期設定を読むコマンドは、このフィールドがないと失敗します。 |
+| `age.recipients` | `string[]`、1 件以上 | すべてのシークレット artifact を暗号化する age 公開鍵です。各値は前後の空白が取り除かれ、空にできません。 |
+| `profiles` | `string[]`、既定値 `[]` | 名前付きプロファイルのレジストリです。`default` は暗黙なので、ここに書いてはいけません。 |
+| `entries` | `array`、必須 | トラッキング項目の一覧です。空でも構いません。 |
+
+dotweave はこれらのキーを `version`、`repositoryFormat`、`age`、`profiles`、`entries` の順に直列化します。
+
+## 項目のフィールド
+
+1 つの項目は、ホームディレクトリ配下のトラッキング対象ファイルまたはディレクトリ 1 つを表します。
+
+| フィールド | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `kind` | `"file"` または `"directory"`、必須 | トラッキング対象の種類です。実際のパスと種類が異なるとコマンドが失敗します。 |
+| `localPath` | プラットフォーム文字列、必須 | ホームディレクトリ配下のファイルの位置です。絶対パス、`~/...`、`$XDG_CONFIG_HOME/...`、`%VARIABLE%` 参照を使えます。 |
+| `repoPath` | プラットフォーム文字列、任意 | リポジトリ内部の相対 POSIX パスです。省略するとホームディレクトリを基準に `localPath` から導出します。 |
+| `mode` | プラットフォーム同期モード、任意 | `normal`、`secret`、`ignore` のいずれかです。既定値は `normal` で、継承されます。 |
+| `permission` | プラットフォーム権限、任意 | `0600` や `0755` のような 4 桁の 8 進数文字列です。継承され、Windows では効果がありません。 |
+| `profiles` | `string[]`、任意 | この項目が属するプロファイルです。指定する場合は空にできず、すべての名前が登録済みである必要があります。継承されます。 |
+
+項目は `kind`、`localPath`、`repoPath`、`mode`、`permission`、`profiles` の順に直列化されます。
+
+`profiles` フィールドがない項目は、すべてのプロファイルで適用されます。プロファイルを列挙した項目は、そのいずれかが有効なプロファイルのときだけ適用されます。
+
+継承は `repoPath` が短い項目から長い項目へ向かって進みます。`mode`、`permission`、`profiles` を明示していない項目は、`kind` が `directory` である最も近い上位項目からそのフィールドを受け取ります。各フィールドは互いに独立して継承されます。
+
+## プラットフォーム値オブジェクト
+
+`localPath`、`repoPath`、`mode`、`permission` はいずれも単一の値ではなくオブジェクトです。そのため 1 つの manifest で 4 つの OS を記述できます。
+
+```jsonc
+{
+  "default": "~/.config/tool/config.toml",
+  "win": "%APPDATA%/tool/config.toml"
+}
+```
+
+`default` は必須です。`win`、`mac`、`linux`、`wsl` は任意のオーバーライドで、この順に直列化されます。
+
+解決時はプラットフォームに対応する `win`、`mac`、`linux` を選び、なければ `default` にフォールバックします。`wsl` キーの解決だけは異なり、`wsl`、`linux`、`default` の順に探します。
+
+## 検証ルール
+
+dotweave はコマンドがファイルに触れる前に manifest 全体を検証します。次のルールに反する manifest はそのまま拒否します。
+
+- `repoPath` は `..` セグメントを含まない相対 POSIX パスである必要があり、空や絶対パスにはできません。
+- どのパスセグメントも `.dotweave.secret` や `.dotweave.symlink` で終わってはいけません。これらのサフィックスは artifact 専用です。
+- 2 つの項目が同じ `repoPath` に解決されてはいけません。同じ `localPath` に解決されることも許されません。
+- 一方が他方の直接の上位である場合を除き、2 つの `localPath` が重なってはいけません。トラッキング中のディレクトリの中にトラッキング中の子項目があるのは問題ありませんが、部分的にだけ重なる 2 つの項目は許可されません。
+- すべての `localPath` はホームディレクトリの内側に解決される必要があり、ホームディレクトリそのものにはできません。
+- プロファイル名は `^[A-Za-z0-9][A-Za-z0-9._-]*$` に一致し、`.` で始まらず、`.` や `..` でなく、予約名 `profiles` でもない必要があります。
+- `profiles` レジストリに `default` や重複した名前を入れてはいけません。
+- 項目が参照するすべてのプロファイルは、登録済みか `default` である必要があります。
+
+検証は報告する前に可能な限り多くの失敗を集めるため、1 回の実行で複数の問題をまとめて確認できます。
+
+<TRAlert.Root variant="warning">
+`manifest.jsonc` を手で編集しても構いませんが、編集後に `dotweave status` を実行してください。何も書き込まない状態で検証エラーを確認できます。
+</TRAlert.Root>
+
+## 例
+
+```jsonc
+{
+  "version": 8,
+  "repositoryFormat": 1,
+  "age": {
+    "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]
+  },
+  "profiles": ["work"],
+  "entries": [
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.gitconfig" }
+    },
+    {
+      "kind": "directory",
+      "localPath": {
+        "default": "~/.config/nvim",
+        "win": "%LOCALAPPDATA%/nvim"
+      },
+      "repoPath": { "default": ".config/nvim" }
+    },
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.ssh/config" },
+      "mode": { "default": "secret" },
+      "permission": { "default": "0600" }
+    },
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.config/work-vpn.conf" },
+      "mode": { "default": "secret" },
+      "profiles": ["work"]
+    }
+  ]
+}
+```
+
+## エラー
+
+JSON の構文エラー、フィールド検査の失敗、読み取れないファイル、非対応のバージョン、衝突するパスは、いずれも書き込み前にコマンドを停止させます。正確なメッセージと対処は[エラーメッセージ](/ja/config/errors/)を参照してください。
+
+## 関連ページ
+
+CLI でこれらのフィールドを変更する方法は[ファイルとディレクトリのトラッキング](/ja/guides/tracking-files/)、`mode` の各値の働きは[同期モード](/ja/concepts/sync-modes/)を参照してください。

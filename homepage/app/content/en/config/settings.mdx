@@ -1,0 +1,50 @@
+---
+title: settings.jsonc
+description: The machine-local settings file that records which sync profile is active.
+section: config
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Location and version
+
+`settings.jsonc` lives directly in the dotweave home directory, next to `keys.txt` and the `repository` sync directory. It is never committed, because it is not inside the sync directory.
+
+The current version is `3`. Dotweave migrates a version `2` file in place, writing a `settings.jsonc.v2.bak` backup first. Any other version fails the command.
+
+A missing `settings.jsonc` is not an error. Dotweave treats it as "no active profile" and uses the implicit `default` profile.
+
+The file is JSONC, so `//` and `/* */` comments are allowed. A `settings.json` file sitting beside it is rejected rather than read.
+
+## Fields
+
+| Field | Type and default | Purpose |
+| --- | --- | --- |
+| `version` | `3`, required | Schema version. Must be exactly `3` after migration. |
+| `activeProfile` | `string`, optional | Name of the profile this machine uses. Trimmed, and must be non-empty when present. Omit the field to use the `default` profile. |
+
+`activeProfile` must name a profile registered in `manifest.jsonc`, or the literal `default`. Dotweave validates the reference when it loads the sync config, not when it reads this file.
+
+## Example
+
+```jsonc
+{
+  // This laptop syncs the work profile.
+  "activeProfile": "work",
+  "version": 3
+}
+```
+
+<TRAlert.Root variant="info">
+Dotweave writes `activeProfile` only through `dotweave profile use`. Running `dotweave profile use` with no argument removes the field.
+</TRAlert.Root>
+
+## Errors
+
+An unparseable file, a wrong `version`, or an empty `activeProfile` stops the command before any file is touched. Read [Error messages](/en/config/errors/#config-files) for the exact messages and fixes.
+
+## Related pages
+
+Read [Profiles](/en/concepts/profiles/) for what an active profile changes, or [`dotweave profile`](/en/reference/profile/) for the commands that write this file.

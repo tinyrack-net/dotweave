@@ -1,0 +1,132 @@
+---
+title: manifest.jsonc
+description: Every field in the version 8 sync manifest, including entry shape, platform value objects, and the validation rules Dotweave enforces.
+section: config
+order: 0
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Location and version
+
+`manifest.jsonc` sits at the root of the sync directory, which means it is committed and shared across every machine. It is the only file that decides what Dotweave tracks.
+
+The current version is `8`. Dotweave also accepts version `7` and migrates it in place, writing a `manifest.jsonc.v7.bak` backup first. Version `7` stored profile names only on entries; the migration hoists them into the top-level `profiles` registry. A version higher than `8` fails the command.
+
+The file is JSONC, so `//` and `/* */` comments survive hand editing. A `manifest.json` file sitting beside it is rejected rather than read.
+
+Dotweave rewrites this file when you run `dotweave track`, `dotweave untrack`, or `dotweave profile add|remove`. Comments and key order you added by hand are not preserved across a rewrite.
+
+## Top-level fields
+
+| Field | Type and default | Purpose |
+| --- | --- | --- |
+| `version` | `7` or `8`, required | Schema version. A non-integer value fails validation. |
+| `repositoryFormat` | `integer` >= 0, optional | On-disk artifact layout version. Absent means `0`. The current format is `1`. |
+| `age` | `object`, optional | Holds `recipients`. Commands that read the sync config fail without it. |
+| `age.recipients` | `string[]`, at least one entry | age public keys every secret artifact is encrypted to. Each value is trimmed and must be non-empty. |
+| `profiles` | `string[]`, defaults to `[]` | Registry of named profiles. `default` is implicit and must not appear here. |
+| `entries` | `array`, required | The tracked entries. May be empty. |
+
+Dotweave serializes these keys in the order `version`, `repositoryFormat`, `age`, `profiles`, `entries`.
+
+## Entry fields
+
+An entry describes one tracked file or directory under your home directory.
+
+| Field | Type and default | Purpose |
+| --- | --- | --- |
+| `kind` | `"file"` or `"directory"`, required | What the tracked node is. A mismatch with the real path fails the command. |
+| `localPath` | platform string, required | Where the file lives under your home directory. Accepts an absolute path, `~/...`, `$XDG_CONFIG_HOME/...`, or `%VARIABLE%` references. |
+| `repoPath` | platform string, optional | Relative POSIX path inside the repository. Derived from `localPath` relative to your home directory when omitted. |
+| `mode` | platform sync mode, optional | `normal`, `secret`, or `ignore`. Defaults to `normal`, and is inheritable. |
+| `permission` | platform permission, optional | Four-character octal string such as `0600` or `0755`. Inheritable, and has no effect on Windows. |
+| `profiles` | `string[]`, optional | Profiles this entry belongs to. Must be non-empty when present, and every name must be registered. Inheritable. |
+
+Entries serialize in the order `kind`, `localPath`, `repoPath`, `mode`, `permission`, `profiles`.
+
+An entry with no `profiles` field applies under every profile. An entry that lists profiles applies only when one of them is the active profile.
+
+Inheritance walks the entry list from shortest `repoPath` to longest. An entry that does not set `mode`, `permission`, or `profiles` explicitly takes that field from the nearest ancestor entry whose `kind` is `directory`. Each field inherits independently.
+
+## Platform value objects
+
+`localPath`, `repoPath`, `mode`, and `permission` are all objects rather than bare values, so one manifest can describe four operating systems:
+
+```jsonc
+{
+  "default": "~/.config/tool/config.toml",
+  "win": "%APPDATA%/tool/config.toml"
+}
+```
+
+`default` is required. `win`, `mac`, `linux`, and `wsl` are optional overrides, and serialize in that order.
+
+Resolution picks `win`, `mac`, or `linux` for the matching platform and falls back to `default`. The `wsl` key resolves differently: it tries `wsl`, then `linux`, then `default`.
+
+## Validation rules
+
+Dotweave validates the whole manifest before any command touches a file. These rules reject a manifest outright:
+
+- `repoPath` must be a relative POSIX path with no `..` segment, and must not be empty or absolute.
+- No path segment may end with `.dotweave.secret` or `.dotweave.symlink`. Those suffixes are reserved for artifacts.
+- Two entries must not resolve to the same `repoPath`, and must not resolve to the same `localPath`.
+- Two `localPath` values must not overlap unless one is a direct ancestor of the other. A tracked directory containing a tracked child is allowed; two entries that partially overlap are not.
+- Every `localPath` must resolve inside your home directory, and must not be your home directory itself.
+- A profile name must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, must not start with `.`, must not be `.` or `..`, and must not be the reserved name `profiles`.
+- The `profiles` registry must not contain `default` or a duplicate name.
+- Every profile named by an entry must be registered, or be `default`.
+
+Validation collects every failure it can before reporting, so a single run can list several problems at once.
+
+<TRAlert.Root variant="warning">
+Editing `manifest.jsonc` by hand is supported, but run `dotweave status` afterwards. Validation errors surface there without writing anything.
+</TRAlert.Root>
+
+## Example
+
+```jsonc
+{
+  "version": 8,
+  "repositoryFormat": 1,
+  "age": {
+    "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]
+  },
+  "profiles": ["work"],
+  "entries": [
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.gitconfig" }
+    },
+    {
+      "kind": "directory",
+      "localPath": {
+        "default": "~/.config/nvim",
+        "win": "%LOCALAPPDATA%/nvim"
+      },
+      "repoPath": { "default": ".config/nvim" }
+    },
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.ssh/config" },
+      "mode": { "default": "secret" },
+      "permission": { "default": "0600" }
+    },
+    {
+      "kind": "file",
+      "localPath": { "default": "~/.config/work-vpn.conf" },
+      "mode": { "default": "secret" },
+      "profiles": ["work"]
+    }
+  ]
+}
+```
+
+## Errors
+
+Invalid JSON, a failed field check, an unreadable file, an unsupported version, or a conflicting path all stop the command before it writes. Read [Error messages](/en/config/errors/) for the exact messages and fixes.
+
+## Related pages
+
+Read [Track files and directories](/en/guides/tracking-files/) to change these fields with the CLI, or [Sync modes](/en/concepts/sync-modes/) for what each `mode` value does.

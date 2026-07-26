@@ -1,0 +1,85 @@
+---
+title: 2 台目のデバイスを設定する
+description: 既存の同期リポジトリを age の鍵とあわせて clone し、新しいマシンにトラッキング対象のファイルを復元します。
+section: overview
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+すでに公開した同期リポジトリを、暗号化されたファイルへのアクセスを失わずに引き継ぎます。最後まで進めると、すべてのトラッキング対象パスが新しいマシンに作られます。`dotweave` CLI がインストールされていること、`PATH` に `git` があること、リポジトリを作ったマシンの age 秘密鍵があることが前提です。
+
+## 1. age identity を持ち込む
+
+シークレット artifact は `manifest.jsonc` の recipient 向けに暗号化されています。対応する秘密鍵は最初のマシンの `keys.txt` にあり、dotweave はこのファイルをコミットも同期もしません。パスワードマネージャーや安全な転送手段で自分で移してください。
+
+```bash
+cat ~/dotweave.agekey
+```
+
+ファイルには `AGE-SECRET-KEY-` で始まる行が 1 つ以上あります。
+
+<TRAlert.Root variant="warning">
+リポジトリの recipient に対応する鍵がないと、`dotweave pull` はシークレットファイルを復号できません。鍵のすべての控えが失われた場合、その artifact は復元できません。
+</TRAlert.Root>
+
+## 2. dotweave init で clone する
+
+`init` が既存の identity をそのまま使えるよう、鍵ファイルを渡します。
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+```
+
+`--key-file` を省略すると `init` は鍵を尋ねます。対話型ターミナルでは動作しますが、スクリプトでは失敗します。
+
+## 3. pull をプレビューする
+
+この時点ではホームディレクトリに何も書き込まれていません。適用する前に計画を確認してください。
+
+```bash
+dotweave status
+dotweave pull --dry-run
+```
+
+```
+· Preparing pull...
+~ Planned pull changes
+
+Update from repository (1)
+  + /home/you/.config/nvim/init.lua
+~ Pull preview (dry run)
+  updated: 1 paths would be updated
+  removed: 0 paths would be removed
+```
+
+削除の一覧はよく読んでください。`pull` はリポジトリに存在しないローカルファイルを削除します。このマシンだけで作ってトラッキングしていない設定ファイルは影響を受けませんが、artifact のないトラッキング対象パスは削除されます。
+
+## 4. pull を適用する
+
+```bash
+dotweave pull
+```
+
+`pull` は計画を表示し、`Apply these changes? [y/N] ` と尋ねます。`y` と答えてください。プロンプトを省くには `-y` を渡します。非対話型ターミナルではこのフラグが必要です。
+
+```bash
+dotweave pull -y
+```
+
+## 結果を確認する
+
+```bash
+dotweave doctor
+dotweave status
+```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+`doctor` は、リポジトリが読めるか、設定が検証を通るか、identity ファイルがあるか、すべてのトラッキング対象パスが存在するかを確認します。identity の失敗が報告された場合は手順 1 に戻ってください。シークレットが復号できない場合、手元の鍵が `manifest.jsonc` のどの recipient とも一致していません。
+
+2 台の準備ができたので[日々の push とコミットの流れ](/ja/guides/daily-workflow/)へ進むか、作業を上書きしないための手順は[複数デバイスの同期を保つ](/ja/guides/multi-device-workflow/)を参照してください。

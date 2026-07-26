@@ -1,157 +1,106 @@
 ---
-title: 시작하기
-description: dotweave를 설치하고 첫 동기화를 설정해 보세요.
+title: 첫 동기화 설정
+description: sync 디렉터리를 초기화하고 첫 파일을 추적한 뒤 push하고, git으로 저장소를 게시해요.
 section: overview
-order: 2
+order: 3
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
-import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
-## 설치
+아무것도 없는 상태에서 게시된 sync 저장소까지 진행해요. 끝까지 따라가면 추적 중인 설정 파일이 git 저장소로 미러링되고, 다른 기기에서 clone할 수 있어요. `dotweave` CLI가 설치되어 있고 `PATH`에 `git`이 있어야 해요.
 
-<TRTabs.Root defaultValue="windows">
-<TRTabs.List aria-label="Installation method">
-<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
-<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
-<TRTabs.Indicator />
-</TRTabs.List>
-<TRTabs.Panel value="windows">
-
-```powershell
-winget install tinyrack.dotweave
-```
-
-</TRTabs.Panel>
-<TRTabs.Panel value="macos-linux">
-
-```bash
-brew install tinyrack-net/tap/dotweave
-```
-
-</TRTabs.Panel>
-</TRTabs.Root>
-
----
-
-## 처음 시작하기
-
-dotweave를 처음 사용한다면, 아래 단계를 따라 새로운 sync 디렉터리를 만들어 보세요.
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**초기화**
-
-새로운 sync 디렉터리를 만들고 시크릿 암호화를 위한 age 키를 생성해요.
+## 1. sync 디렉터리 초기화
 
 ```bash
 dotweave init
 ```
 
-dotweave 앱 데이터 디렉터리에 Git 저장소와 age identity가 설정돼요.
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
+```
 
-</TRSteps.Item>
-<TRSteps.Item>
+dotweave 홈 디렉터리 아래에 git 저장소를 만들고, 시크릿 암호화에 쓸 age identity를 `keys.txt`에 생성해요.
 
-**파일 추적**
+## 2. 첫 파일 추적
 
-동기화할 파일을 dotweave에 알려주세요. 예를 들면:
+추적은 경로를 `manifest.jsonc`에 등록하는 일이에요. 아직 복사되는 건 없어요.
 
 ```bash
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
+dotweave track ~/.gitconfig
 dotweave track ~/.config/nvim
 ```
 
-SSH 키 같은 민감한 파일은 secret 모드를 사용하세요:
-
-```bash
-dotweave track --mode secret ~/.ssh/config
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
-
-**sync 디렉터리로 push**
-
-추적 중인 파일을 sync 디렉터리에 복사해요:
+인증 정보가 들어 있는 파일에는 `--mode secret`을 붙이세요. 저장소에 닿기 전에 내용이 암호화돼요.
 
 ```bash
+dotweave track ~/.ssh/config --mode secret --permission 0600
+```
+
+## 3. sync 디렉터리로 push
+
+무슨 일이 일어날지 먼저 확인하고 나서 적용하세요.
+
+```bash
+dotweave status
 dotweave push
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
 
-**Git으로 commit & push**
+## 4. git으로 게시
 
-sync 디렉터리를 열고 리모트에 push하세요:
+`push`는 파일만 썼어요. 커밋과 게시는 직접 실행하는 별개의 단계예요.
 
 ```bash
 dotweave cd
 git add -A && git commit -m "Initial sync"
 git remote add origin <your-repo-url>
 git push -u origin main
+exit
 ```
 
-</TRSteps.Item>
-</TRSteps.Root>
+`dotweave cd`는 sync 디렉터리를 루트로 하는 자식 셸을 열어요. `exit`을 입력하면 원래 있던 곳으로 돌아와요.
 
-<TRAlert.Root variant="success">
-  설정을 마쳤다면, [디렉터리 구조](/ko/guides/directory-structure/) 가이드에서 dotweave가 config과 동기화된 파일을 어디에 저장하는지 확인해 보세요.
+<TRAlert.Root variant="warning">
+지금 dotweave 홈 디렉터리의 `keys.txt`를 안전한 곳에 백업하세요. 이 파일은 커밋되지도, 동기화되지도 않아요. 이게 없으면 다른 기기에서 암호화된 파일을 읽을 수 없어요.
 </TRAlert.Root>
 
----
+## 결과 확인
 
-## 기존 sync 디렉터리 연결하기
+`dotweave status`를 다시 실행하세요. 양방향 모두 깨끗해야 해요.
 
-새 기기에서는 기존 sync 디렉터리를 clone해서 연결할 수 있어요:
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-<TRSteps.Root>
-<TRSteps.Item>
+Push changes (repository)
+  No push changes
 
-**Clone & 초기화**
-
-```bash
-dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+Pull changes (local)
+  No pull changes
 ```
 
-저장소를 dotweave 앱 데이터 디렉터리의 `repository/` 아래로 clone해요. 기존 sync 저장소에 연결할 때는 시크릿 파일 복호화에 사용했던 age 비밀 키를 반드시 제공해야 해요. 키를 직접 입력하는 대신 붙여넣기 프롬프트를 사용할 수도 있어요:
+`status`에 여전히 push 변경이 나온다면 `dotweave push`를 다시 실행하고 보고 내용을 읽어 보세요. 추적 경로가 없어졌다면 `dotweave doctor`가 어떤 경로인지 알려 줘요.
 
-```bash
-dotweave init <your-repo-url>
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**파일 pull**
-
-추적 중인 모든 파일을 로컬 경로로 복원해요:
-
-```bash
-dotweave pull
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="info">
-  sync 디렉터리에 암호화된 시크릿이 있다면, 모든 기기에 같은 age 비밀 키가 있어야 해요. 자세한 내용은 [시크릿 파일 동기화](/ko/guides/syncing-secrets/)를 참고하세요.
-</TRAlert.Root>
-
----
-
-## 다음은?
-
-설정을 마쳤으니, 가이드를 둘러보세요:
-
-- [디렉터리 구조](/ko/guides/directory-structure/): dotweave가 파일을 저장하는 위치
-- [파일 추적하기](/ko/guides/tracking-files/): 추적 옵션 자세히 알아보기
-- [동기화 모드](/ko/guides/sync-modes/): normal, secret, ignore 모드
-- [시크릿 파일 동기화](/ko/guides/syncing-secrets/): age로 민감한 파일 암호화하기
-
-
+이 설정을 다른 곳에서 복원하려면 [두 번째 기기 설정](/ko/second-device/)으로 넘어가고, `push`가 무엇을 썼는지 보려면 [디렉터리와 저장소 구조](/ko/concepts/repository-layout/)를 확인하세요.

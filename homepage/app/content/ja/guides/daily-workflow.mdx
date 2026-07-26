@@ -1,0 +1,85 @@
+---
+title: 日々の push とコミットの流れ
+description: ローカルで編集し、status で確認し、push をプレビューして、git でコミットするまでの繰り返しの流れを説明します。
+section: guides
+order: 1
+---
+
+最初のセットアップが済んだあと、マシンを同期された状態に保つ作業は短い繰り返しの流れ 1 つだけです。設定ファイルを元の場所で編集し、その変更を同期ディレクトリへミラーリングし、git で公開します。このガイドは 1 台のマシンでのその流れを扱い、git に引き継ぐところで終わります。同期ディレクトリがすでに初期化済みで、トラッキング対象のパスが 1 つ以上あることを前提とします。
+
+## 1. 変更内容を確認する
+
+設定ファイルはホームディレクトリ配下の元の場所でそのまま編集します。作業中は何もミラーリングされないため、守るべき順序も先に実行するコマンドもありません。
+
+編集が済んだら、いまの状態が何を意味するかを確認します。`dotweave status` は何も書き込まず両方向を報告するので、安心して覗けます。
+
+```bash
+dotweave status
+```
+
+しばらく使っていなかったマシンでは、編集を始める**前に**同期ディレクトリで `git pull` を実行し、続けて `dotweave pull` を実行してください。そうすればほかのマシンが公開した内容の上に作業できます。この状況は[複数のマシンで使い分ける](/ja/guides/multi-device-workflow/)で扱います。
+
+## 2. push をプレビューする
+
+`--dry-run` は同じ計画を組み立てて同じ数値を表示しますが、何も書き込みません。多くのファイルに手を入れたときや、status の結果が予想と違ったときに使ってください。
+
+```bash
+dotweave push --dry-run
+```
+
+```
+· Pushing changes...
+~ Push preview (dry run)
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts would be removed
+```
+
+## 3. push してコミットする
+
+フラグを外すと計画が適用されます。`push` は同期ディレクトリ配下の artifact を書き直し、ローカルのファイルには手を付けません。
+
+```bash
+dotweave push
+```
+
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+dotweave は git を代わりに実行しないので、公開は自分で行う手順です。`dotweave cd` は同期ディレクトリをルートとする子シェルを開きます。`exit` を入力するとそのシェルが閉じ、元いた場所へ戻ります。
+
+```bash
+dotweave cd
+git add -A
+git commit -m "Update config"
+git push
+exit
+```
+
+## 結果を確認する
+
+`dotweave status` をもう一度実行します。流れが完了していれば artifact がローカルのファイルと一致するので、`No push changes` と表示されます。
+
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
+
+Push changes (repository)
+  No push changes
+
+Pull changes (local)
+  No pull changes
+```
+
+続いて git 側も確認します。同期ディレクトリで `git status` を実行すると、何も変更がない状態になっているはずです。変更されたファイルがまだ並ぶ場合は、push は済んでコミットが残っているということなので、手順 3 から再開してください。
+
+この流れで使うフラグは [`dotweave push`](/ja/reference/push/)、流れが何を書き込むかを決めるスナップショットの比較は[同期のしくみ](/ja/concepts/how-it-works/)を参照してください。

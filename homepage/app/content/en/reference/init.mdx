@@ -1,6 +1,6 @@
 ---
 title: "dotweave init"
-description: "Initialize a new sync directory or connect to an existing one."
+description: Create or clone the sync directory and establish the age identity.
 section: reference
 order: 0
 ---
@@ -8,50 +8,57 @@ order: 0
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Initialize the git-backed sync directory.
-
-Create or connect the sync directory under your dotweave app-data directory, then store the sync settings used by later `pull` and `push` operations. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.
-
-## Usage
+## Synopsis
 
 ```bash
-dotweave init [repository]
+dotweave init [--force] [--key-file <path>] [<repository>]
 ```
+
+Create or connect the sync directory under the dotweave home directory, then record the settings that later `push` and `pull` commands read.
 
 ## Arguments
 
-| Argument       | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| `[repository]` | Remote URL or local git repository path to clone. Optional — when omitted, a new local repository is created. |
+| Argument | Type and default | Purpose |
+| --- | --- | --- |
+| `repository` | `string`, optional | Remote URL or local git repository path to clone. Omit it to initialize an empty local repository instead. |
 
 ## Flags
 
-| Flag                        | Description                                                    |
-| --------------------------- | -------------------------------------------------------------- |
-| `--key-file <path>`         | Read an age private key from a file.                           |
-| `--force`                   | Replace existing local sync repository, identity, and settings before initializing. |
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--force` | boolean, `false` | Delete the existing sync directory, identity file, and settings before initializing. |
+| `--key-file` | `string`, none | Read an age private key from a file instead of prompting for it. |
 
-## Examples
+## Behavior
 
-Initialize a fresh local sync directory:
+With no `repository` argument, `init` runs `git init -b main` in the sync directory. With one, it runs `git clone`. It refuses to initialize a directory that already exists and is not empty.
+
+It then writes the repository scaffolding: `.gitattributes` containing `* -text`, the managed `.gitignore` block that keeps encrypted artifacts committable, and a `manifest.jsonc` at version `8` with `repositoryFormat` `1`, no entries, and one recipient.
+
+For the age identity it uses `--key-file` when given, reuses `keys.txt` when one already exists, and otherwise generates a new identity. When you clone a repository that already has recipients and supply no key, `init` prompts for the private key in an interactive terminal, and fails outright when it cannot prompt.
 
 ```bash
 dotweave init
 ```
 
-Clone a remote repository as the sync directory:
-
-```bash
-dotweave init https://github.com/user/dotfiles.git --key-file ~/dotweave.agekey
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
 ```
 
-Initialize with an existing age secret key:
+`init` does not add a git remote, commit anything, or push. Use `dotweave cd` and git for that.
 
-```bash
-dotweave init --key-file ~/dotweave.agekey
-```
-
-<TRAlert.Root variant="success">
-If you pass a repository to `dotweave init`, provide the existing age private key with `--key-file` or enter it at the interactive prompt so dotweave can decrypt your secret files.
+<TRAlert.Root variant="warning">
+`--force` deletes `keys.txt`. Any secret artifact encrypted only to that identity becomes unrecoverable. Back up the key before you use this flag.
 </TRAlert.Root>
 
+## Errors
+
+`init` fails when the directory is already initialized, when it exists and is not empty, when git is missing or the clone source is unreachable, and when a cloned repository needs an age key you did not supply. Read [Error messages](/en/config/errors/#initialization) for each message and its fix.
+
+## Related commands
+
+Read [Set up your first sync](/en/getting-started/) for the full first-run path, or [Set up a second device](/en/second-device/) when the repository already exists.

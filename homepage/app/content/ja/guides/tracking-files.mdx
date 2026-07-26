@@ -1,126 +1,107 @@
 ---
-title: ファイルのトラッキング
-description: ファイルやディレクトリを同期対象として登録する方法。
+title: ファイルとディレクトリのトラッキング
+description: ホームディレクトリ配下の対象を登録し、リポジトリパスを上書きし、入れ子パスを調整し、トラッキングをやめる方法をまとめます。
 section: guides
-order: 1
+order: 0
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-dotweaveで何かを同期するには、まず**トラッキング**する必要があります。トラッキングとは、「このファイルを管理したい」とdotweaveに伝えることで、`manifest.jsonc`にエントリが追加されます。ファイルのコピーやpushは、`dotweave push`を実行するまで行われません。
+トラッキングとは、パスを `manifest.jsonc` に記録して `push` と `pull` がそのパスを認識できるようにすることです。以下の節は手順ではなく、それぞれ独立した選択肢なので、必要な節だけ読んでください。
 
----
+## ファイルやディレクトリをトラッキングする
 
-## ファイルをトラッキングする
-
-`dotweave track`にファイルパスを渡します：
+ホームディレクトリ配下のパスを `dotweave track` に渡します。引数は可変長なので、1 回の呼び出しで複数の対象を指定できます。
 
 ```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
+dotweave track ~/.gitconfig ~/.config/nvim
 ```
 
-これにより`manifest.jsonc`にエントリが追加されるだけです。ファイル自体はそのまま残ります。実際にsyncディレクトリにコピーするには、別途`dotweave push`を実行してください。
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
+```
 
----
+`track` が書き込むのは `manifest.jsonc` だけです。`dotweave push` を実行するまで、同期ディレクトリにコピーされるファイルはありません。
 
-## ディレクトリをトラッキングする
+すでにトラッキング中のパスを再度トラッキングすると、渡したフィールドだけが更新され、残りはそのまま保たれます。そのため後から項目の `mode` だけを変えるときに、`--repo` や `--profile` の値を書き直す必要はありません。
 
-ディレクトリ全体をトラッキングすることもできます。pushやpull時に、その中のすべてのファイルが再帰的に含まれます。
+`--profile` に空の値を 1 つだけ渡すと、その対象のプロファイル割り当てが消去され、項目はすべてのプロファイルで適用される状態に戻ります。
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/fish
+dotweave track ~/.config/my-tool --profile ""
 ```
 
-<TRAlert.Root variant="success">
-ディレクトリをトラッキングすると、後から追加されたファイルも次回のpush時に自動的に含まれます — 個別にトラッキングする必要はありません。
-</TRAlert.Root>
+対象はホームディレクトリの内側に解決される必要があり、ホームディレクトリ自体は指定できません。同期ディレクトリと重なるパスや `keys.txt` を含むパスも指定できません。dotweave は自身の状態と age の鍵素材をミラーリングしません。
 
----
+## まだ存在しないパスをトラッキングする
 
-## 同期モードを設定する
-
-デフォルトでは、トラッキングされたエントリは`normal`モードです。`--mode`で変更できます：
+ファイルが存在する前に項目を作っておくと、後の `dotweave pull` がそのファイルを配置します。調べる対象がないため、この場合は `--kind file` または `--kind directory` が必須です。
 
 ```bash
-dotweave track ~/.ssh/config --mode secret
-dotweave track ~/.local/share/cache-stuff --mode ignore
+dotweave track ~/.config/my-tool/settings.json --kind file
 ```
 
-各モードの詳細は[同期モード](/ja/guides/sync-modes)をご覧ください。
+`--kind` はすでに存在するパスに対しても検査されます。値がディスク上の実体と食い違うとコマンドは失敗するので、ディレクトリを誤ってファイルとして記録することはありません。
 
----
+## リポジトリパスを上書きする
 
-## 特定のプロファイルに限定する
-
-`--profile`を使って、エントリを1つまたは複数のプロファイルに割り当てます。アクティブなプロファイルが一致するマシンだけがそのエントリを同期します。
-
-```bash
-dotweave track ~/.config/work-tool --profile work
-dotweave track ~/.config/shared-tool --profile work --profile personal
-```
-
-`--profile`を付けないエントリは`default`プロファイルに入り、すべてのマシンで同期されます。詳しくは[プロファイル](/ja/guides/profiles)をご覧ください。
-
----
-
-## リポジトリパスのカスタマイズ
-
-デフォルトでは、dotweaveはホームディレクトリからの相対パスをsyncディレクトリ内にミラーリングします。リポジトリ内で別のパスを使いたい場合は、`--repo`を指定します：
+既定では、項目のリポジトリパスはホームディレクトリからの相対パスをそのままたどります。`--repo` を使うとそのパスを自分で決められるので、ローカルの位置が長い場合やマシンごとに異なる場合に役立ちます。
 
 ```bash
 dotweave track ~/Projects/scripts/deploy.sh --repo scripts/deploy.sh
 ```
 
----
+`--repo` は対象がちょうど 1 つのときだけ使えます。対象が 2 つ以上あると、1 つのリポジトリパスで両方を表せないためコマンドは失敗します。`--repo win=path` のようなプラットフォーム別の形式は [`dotweave track`](/ja/reference/track/)、解決規則は[プラットフォーム別のパス](/ja/concepts/platform-paths/)で説明しています。
 
-## ユースケース
+## トラッキング中のディレクトリ内の入れ子パスを調整する
 
-**ホワイトリスト方式** — 同期したい特定のファイルだけをトラッキング：
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
-dotweave push
-```
-
-**ブラックリスト方式** — ディレクトリ全体をトラッキングし、特定のファイルをignore：
+`track` には 2 つ目の意味があります。対象が既存の manifest 項目ではなく、`--repo` も渡していない場合、すでにトラッキング中のディレクトリ内の入れ子パスに対して同期モードやプロファイルを設定します。そのパス専用の子オーバーライド項目が作られます。
 
 ```bash
-dotweave track ~/.config/nvim
-dotweave track ~/.config/nvim/plugin/packer_compiled.lua --mode ignore
-dotweave push
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
 ```
 
----
+```
+✔ Updated sync mode for .config/my-tool/credentials.json
+  mode  secret
+```
 
-## トラッキング解除
+2 つ目のコマンドは `Updated sync mode for ...` を表示します。そのパスがすでに同じモードに解決されていた場合は `Sync mode unchanged for ...` になります。
 
-気が変わった場合は、`dotweave untrack`でエントリを削除できます：
+子の項目は親よりも優先されます。親ディレクトリをたどるときに子が持つパスはスキップされるため、そのファイルは子のモードで一度だけミラーリングされます。同じしくみで `--mode ignore` を使えば、トラッキング中のディレクトリからファイル 1 つだけを除外できます。
+
+## トラッキングをやめる
+
+<TRAlert.Root variant="warning">
+`dotweave untrack` は manifest 項目を削除し、**あわせて**その項目のミラーリング済み artifact をリポジトリから削除します。ホームディレクトリにあるローカルファイルには手を付けません。
+</TRAlert.Root>
 
 ```bash
 dotweave untrack ~/.gitconfig
 ```
 
-これは`manifest.jsonc`からエントリを削除するだけです。ローカルファイルやsyncディレクトリ内の既存のコピーは**削除されません**。
-
----
-
-## トラッキング状況の確認
-
-`dotweave status`で、すべてのトラッキングエントリと現在の状態を確認できます：
-
-```bash
-dotweave status
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
 ```
 
-`--dry-run`を付けると、変更を適用せずにプレビューできます：
+2 つの数値は、削除された plain artifact と secret artifact の個数です。そのあとは push をコミットするときと同じように、この削除も git でコミットしてください。
+
+親ディレクトリのトラッキングは残したまま入れ子のオーバーライドだけを外すには、リポジトリからの相対の子パスを渡します。
 
 ```bash
-dotweave push --dry-run
-dotweave pull --dry-run
+dotweave untrack .config/my-tool/credentials.json
 ```
 
+## 実装とリファレンス
+
+フラグと型、既定値は [`dotweave track`](/ja/reference/track/) と [`dotweave untrack`](/ja/reference/untrack/) にまとめています。これらのコマンドが書き込むフィールドは [manifest.jsonc](/ja/config/manifest/) で説明しています。
+
+項目の `mode` の値を選ぶには[同期モード](/ja/concepts/sync-modes/)、必要なパスをトラッキングし終えたあとの流れは[日々の push とコミットの流れ](/ja/guides/daily-workflow/)を参照してください。

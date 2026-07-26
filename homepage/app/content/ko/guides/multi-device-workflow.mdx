@@ -1,116 +1,18 @@
 ---
-title: 멀티 디바이스 워크플로우
-description: 초기 설정부터 일상적인 동기화까지의 전체 흐름을 알아보세요.
+title: 여러 기기 동기화 유지하기
+description: 기기 사이의 명령 순서, git으로 분기를 해결하는 방법, 기기마다 프로필을 주는 방법을 설명해요.
 section: guides
-order: 6
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
 
 
-이 가이드에서는 dotweave 사용의 전체 생명주기를 다뤄요. 첫 기기 설정부터
-여러 기기를 매일 동기화하는 것까지요.
+## 편집하기 전에 pull하기
 
-## 기기 A에서의 초기 설정
+dotweave는 `git pull`을 직접 실행하지 않아요. 그래서 한동안 쓰지 않은 기기에는 오래된 sync 디렉터리가 그대로 남아 있어요. 저장소를 받아 오는 일과 홈 디렉터리에 적용하는 일은 별개의 명령이고, 이 순서대로 실행해요.
 
-<TRSteps.Root>
-<TRSteps.Item>
-
-**dotweave 초기화**
-
-```bash
-dotweave init
-```
-
-dotweave 앱 데이터 디렉터리 안에 Git으로 관리되는 sync 디렉터리가 생성돼요.
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**파일 추적**
-
-```bash
-dotweave track ~/.gitconfig
-dotweave track ~/.config/starship.toml
-dotweave track ~/.ssh/config --mode secret
-```
-
-각 명령어는 sync 디렉터리 안의 `manifest.jsonc`에 항목을 추가해요.
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**로컬 파일을 sync 디렉터리로 push**
-
-```bash
-dotweave push
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**Git으로 commit & 리모트에 push**
-
-dotweave는 Git commit을 자동으로 만들지 않아요. 모든 통제권은 사용자에게 있어요:
-
-```bash
-dotweave cd   # sync 디렉터리 안에서 셸을 열어요
-git add -A && git commit -m "initial sync"
-git remote add origin git@github.com:you/dotfiles.git
-git push -u origin main
-exit
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="success">
-push나 pull 전에 `dotweave status`를 실행하면 어떤 변경이 있을지 미리 확인할 수
-있어요.
-</TRAlert.Root>
-
-## 기기 B 설정
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**리모트 URL로 초기화**
-
-```bash
-dotweave init git@github.com:you/dotfiles.git
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**파일을 로컬 경로로 pull**
-
-```bash
-dotweave pull
-```
-
-dotweave가 `manifest.jsonc`을 읽고, 플랫폼별 경로를 해석하고, 시크릿을
-복호화한 뒤 모든 파일을 올바른 위치에 써줘요.
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-## 일상적인 워크플로우
-
-두 기기 모두 설정을 마치면, 매일의 흐름은 간단하고 예측 가능해요.
-
-**변경사항이 있는 기기에서:**
-
-```bash
-dotweave push
-dotweave cd
-git add -A && git commit -m "update shell aliases"
-git push
-exit
-```
-
-**다른 기기에서:**
+sync 디렉터리를 열어 받아 오고, 자식 셸을 빠져나온 뒤 적용하세요.
 
 ```bash
 dotweave cd
@@ -119,59 +21,42 @@ exit
 dotweave pull
 ```
 
-<TRAlert.Root variant="neutral">
-패턴은 항상 한쪽에서 **dotweave push → git push**, 다른 쪽에서
-**git pull → dotweave pull**이에요.
-</TRAlert.Root>
-
-## 충돌 처리
-
-sync 디렉터리는 일반 Git 저장소이므로 충돌도 일반적인 방법으로 해결해요:
-
-```bash
-dotweave cd
-git pull            # merge 충돌이 발생할 수 있어요
-# 해당 파일에서 충돌을 해결
-git add -A && git commit -m "resolve merge conflict"
-git push
-exit
-dotweave pull        # 해결된 상태를 로컬에 적용
-```
+`dotweave cd`는 sync 디렉터리를 루트로 하는 자식 셸을 띄우고, `exit`으로 원래 셸로 돌아와요. `git pull`이 작업 트리를 갱신한 뒤에야 `dotweave pull`이 쓸 새 artifact가 준비돼요.
 
 <TRAlert.Root variant="warning">
-두 기기가 같은 파일에 다른 수정을 push한 뒤 어느 쪽도 `git pull`을 하지 않으면,
-일반적인 Git merge 충돌이 발생해요. sync 디렉터리 안에서 직접 해결하세요 —
-dotweave 자체는 자동 병합을 하지 않아요.
+`dotweave pull`은 저장소에 없는 로컬 파일을 삭제하고, 계획을 적용하기 전에 물어봐요. 먼저 `dotweave status`나 `dotweave pull --dry-run`으로 계획을 확인하세요.
 </TRAlert.Root>
 
-## 상태 확인
+pull하기 전에 편집하면 분기가 생겨요. 오래된 히스토리 위에 커밋하게 되고, 같은 파일에 대해 두 기기의 상태가 어긋나요.
+
+## 분기는 dotweave가 아니라 git으로 해결하기
+
+dotweave는 병합을 하지 않아요. 3-way 병합도, dotweave가 남기는 충돌 표시도, 해결용 UI도 없어요. 두 기기가 각각 push하고 커밋한 상태라면 그건 sync 저장소의 git 분기이고, `dotweave cd` 안에서 git으로 해결해요.
+
+artifact는 평범한 파일이고, `dotweave init`은 `* -text`가 담긴 `.gitattributes`를 만들어서 git이 줄바꿈을 다시 쓰지 않게 해요. 그래서 `normal` artifact는 sync 저장소의 `git diff`로 읽을 수 있고, 다른 텍스트 파일처럼 한 줄씩 병합할 수 있어요.
+
+secret artifact는 age 암호문이에요. 이 파일의 diff는 사람이 읽을 수 없고 한 줄씩 병합할 수도 없어요. 시크릿은 한쪽을 골라서 정리하고, 원하는 버전을 가진 기기에서 평문을 다시 push하세요.
+
+## 기기마다 프로필 주기
+
+기기마다 달라지는 설정은 공용 항목이 아니라 프로필에 두세요. 이름을 등록하고, 기기별 항목을 그 프로필로 제한하고, 해당 기기에서 프로필을 선택하세요.
 
 ```bash
-dotweave doctor
+dotweave profile add work
+dotweave track ~/.config/work-vpn --profile work
+dotweave profile use work
 ```
 
-sync 디렉터리의 존재 여부, Git 설정, 암호화 키, 추적 경로의 접근 가능 여부를
-확인해 줘요.
+선택 값은 dotweave 홈 디렉터리의 `settings.jsonc`에 저장돼요. 이 디렉터리는 sync 디렉터리 밖에 있어서 커밋되지 않고, 기기마다 독립적으로 고를 수 있어요.
 
-## 기기 추가하기
+프로필에 배정된 항목은 다른 프로필이 활성인 동안 보이지 않아요. `dotweave status`에도 나오지 않고, `push`와 `pull` 모두 그 항목을 다루지 않아요. 항목이 사라졌다고 판단하기 전에 활성 프로필을 확인하세요.
 
-세 번째(또는 네 번째, 다섯 번째) 기기를 추가하는 것도 기기 B와 같은 과정이에요
-— 리모트 URL로 `dotweave init`을 하고 `dotweave pull`을 하면 돼요. 이후의 일상적인
-push/pull 사이클은 모든 기기에서 동일해요.
+`push`는 다른 프로필의 artifact를 지우지 않아요. 그래서 저장소 하나가 모든 기기의 설정을 나란히 담아요.
 
-<TRAlert.Root variant="success">
-새 기기가 다른 OS라도 dotweave가 플랫폼별 경로를 자동으로 해석해 줘요.
-[플랫폼별 경로](/ko/guides/platform-specific-paths/) 가이드를 참고하세요.
-</TRAlert.Root>
+시크릿에는 기기마다 조건이 하나 붙어요. 그 기기의 공개 키가 `manifest.jsonc`의 `age.recipients`에 있어야 하고, 짝이 되는 비밀 키가 그 기기의 `keys.txt`에 있어야 해요. 둘 중 하나라도 없으면 다른 기기가 쓴 내용을 복호화할 수 없어요. 키를 다루는 방법은 [시크릿과 암호화](/ko/concepts/secrets/)에서 확인하세요.
 
-## 빠른 참조
+## 구현과 참고
 
-| 작업                        | 명령어                                                    |
-| --------------------------- | --------------------------------------------------------- |
-| 변경사항 미리보기           | `dotweave status`                                          |
-| 로컬 수정을 업스트림으로    | `dotweave push` → `git add -A && git commit` → `git push` |
-| 업스트림 수정 가져오기      | `git pull` → `dotweave pull`                               |
-| 충돌 해결                   | `dotweave cd` → 파일 수정 → `git commit` → `git push`     |
-| 설정 상태 확인              | `dotweave doctor`                                          |
+프로필 가시성 규칙과 기기별 선택 방식은 [프로필](/ko/concepts/profiles/)에서 설명해요.
 
-
+적용 전에 계획을 살펴보는 플래그는 [`dotweave pull`](/ko/reference/pull/)에서, sync 저장소에 git을 실행하는 셸은 [`dotweave cd`](/ko/reference/cd/)에서 확인하세요.

@@ -1,0 +1,76 @@
+---
+title: How syncing works
+description: The push and pull pipelines, why Dotweave never runs git for you, and what a dry run reports.
+section: concepts
+order: 0
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Two snapshots and one plan
+
+Every Dotweave command that moves data builds two snapshots and compares them. The local snapshot walks each tracked path under your home directory. The repository snapshot reads the artifacts already stored under `profiles/` in the sync directory.
+
+The difference between those snapshots is a plan. `dotweave status` prints the plan for both directions and writes nothing. `dotweave push` applies the plan in the local-to-repository direction. `dotweave pull` applies it in the other direction.
+
+Both `push` and `pull` accept `--dry-run`, which builds and prints the plan without applying it. Use it whenever you are unsure what a command is about to touch.
+
+## What push writes
+
+`push` reads your tracked paths and rewrites the artifacts under `profiles/<profile>/` to match. It compares content before writing, so an unchanged file produces no write at all.
+
+A `normal` entry is copied verbatim. A `secret` entry is encrypted to every recipient in `manifest.jsonc` and stored with a `.dotweave.secret` suffix. A symlink is stored as a `<name>.dotweave.symlink` file holding the link target. An `ignore` entry is skipped.
+
+For secrets, the comparison decrypts the stored ciphertext and compares plaintext. Re-pushing an unchanged secret therefore does not produce a new ciphertext, which keeps your git history free of meaningless churn.
+
+`push` also removes artifacts that no longer belong. It protects artifacts owned by another platform's overrides or another profile, so pushing from a Linux machine does not delete what a Windows machine stored.
+
+```bash
+dotweave push
+```
+
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+## What pull writes
+
+`pull` reads the stored artifacts and writes them back to the resolved local paths. Secrets are decrypted with the identity in `keys.txt` first.
+
+Every local write is staged in a temporary directory next to the target and then renamed into place, so an interrupted pull cannot leave a half-written config file. Stale local paths are removed from the deepest path upward, and a directory is removed only when all of its children are already scheduled for removal.
+
+`pull` asks before it applies anything. Pass `--yes` to skip the prompt; in a non-interactive terminal the command fails rather than guessing.
+
+<TRAlert.Root variant="warning">
+`pull` deletes local files that the repository does not have. Before your first `push`, every tracked path shows up under `Remove locally`. Run `dotweave status` first.
+</TRAlert.Root>
+
+## Dotweave never runs git for you
+
+`push` and `pull` only change files on disk. Neither one runs `git add`, `git commit`, `git push`, or `git pull`. Dotweave reads git only to confirm the sync directory is a work tree and to look up committed profile names when it decides which artifacts are stale.
+
+That means publishing is a separate, explicit step:
+
+```bash
+dotweave push
+dotweave cd
+git add -A && git commit -m "Update config"
+git push
+```
+
+Dotweave also has no daemon, no filesystem watcher, and no background process. Nothing syncs until you run a command.
+
+Because git is the transport, divergence between machines is a git conflict and you resolve it with git. Dotweave does not merge.
+
+## Implementation and reference
+
+The sync directory layout is described in [Directory and repository layout](/en/concepts/repository-layout/), and the per-entry `mode` values in [Sync modes](/en/concepts/sync-modes/).
+
+Read [`dotweave status`](/en/reference/status/) to see a plan without applying it, or [Push, review, and commit day to day](/en/guides/daily-workflow/) for the loop this model produces.

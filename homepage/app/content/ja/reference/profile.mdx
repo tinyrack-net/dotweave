@@ -1,48 +1,82 @@
 ---
 title: "dotweave profile"
-description: "syncプロファイルを管理します。"
+description: manifest に登録された同期プロファイルを追加、一覧表示、削除、選択します。
 section: reference
-order: 7
+order: 6
 ---
 
-syncプロファイルの管理と切り替えを行います。
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
-設定済みのprofileを確認したり、dotweaveがデフォルトで使用するprofileを変更したりできます。
 
-## Subcommands
+## 使い方
 
-### `dotweave profile list`
+```bash
+dotweave profile add <profile>
+dotweave profile list
+dotweave profile remove <profile>
+dotweave profile use [<profile>]
+```
 
-設定済みのprofileとアクティブなprofileを表示します。
+`profile` は、`manifest.jsonc` のプロファイルレジストリと `settings.jsonc` のアクティブなプロファイルを扱う 4 つのサブコマンドをまとめたものです。どのサブコマンドも `--help` 以外のフラグを受け取りません。
+
+## profile add
+
+トラッキング項目に割り当てられるように、default 以外のプロファイルを `manifest.jsonc` に登録します。レジストリは並べ替えられた状態で保たれます。
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+`default` は暗黙に存在するプロファイルなので、`add` は拒否します。すでに登録されている名前と、無効な名前も拒否します。プロファイル名は `^[A-Za-z0-9][A-Za-z0-9._-]*$` に一致し、`.` で始まらず、`.` や `..` でもなく、予約名 `profiles` でもない必要があります。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)のプロファイルの節を参照してください。
+
+## profile list
+
+暗黙の `default` プロファイルと登録済みのすべてのプロファイルを出力し、アクティブなものに印を付けます。
 
 ```bash
 dotweave profile list
 ```
 
-### `dotweave profile use [name]`
-
-アクティブなprofileを設定またはクリアします。名前を省略すると、アクティブなprofileがクリアされます。
-
-```bash
-dotweave profile use [name]
+```
+~ Profiles
+  - default
+  - work (active)
 ```
 
-## Examples
+アクティブなプロファイルが manifest に登録されていない場合も、レジストリはそのまま出力し、そのプロファイルを指摘する警告を添えます。
 
-設定済みのすべてのprofileを一覧表示する:
+## profile remove
+
+`manifest.jsonc` からプロファイルの登録を解除します。
 
 ```bash
-dotweave profile list
+dotweave profile remove work
 ```
 
-workプロファイルをアクティブにする:
+`remove` は `default` と未登録の名前を拒否します。現在アクティブなプロファイルも削除せず、いずれかのトラッキング項目がまだそのプロファイルを参照している間は削除を拒否します。最後の場合、エラーの詳細行に参照している項目がすべて並びます。まず [`dotweave track`](/ja/reference/track/) でそれらの項目の割り当てを消すか付け替えてから、プロファイルを削除してください。
+
+## profile use
+
+dotweave ホームディレクトリの `settings.jsonc` に `activeProfile` を書き込みます。このファイルは同期ディレクトリの外にあり、コミットされないため、マシンごとに独立してプロファイルを選べます。
 
 ```bash
 dotweave profile use work
 ```
 
-アクティブなprofileをクリアする:
-
-```bash
-dotweave profile use
 ```
+✔ Active profile set to work
+```
+
+引数を省略すると、アクティブなプロファイルを解除します。プロファイルは事前に登録されている必要があり、同期ディレクトリは git リポジトリである必要があります。`push`、`pull`、`status` の `--profile` は、その 1 回の実行に限りアクティブなプロファイルを上書きします。
+
+<TRAlert.Root variant="warning">
+アクティブでないプロファイルに割り当てられた項目は、`status`、`push`、`pull` から見えません。項目の同期が止まったと判断する前に、アクティブなプロファイルを確認してください。
+</TRAlert.Root>
+
+## 関連コマンド
+
+プロファイルの選択が項目をどう絞り込むかは[プロファイル](/ja/concepts/profiles/)、マシンごとに別のプロファイルを持たせる方法は[複数デバイスの同期を保つ](/ja/guides/multi-device-workflow/)を参照してください。

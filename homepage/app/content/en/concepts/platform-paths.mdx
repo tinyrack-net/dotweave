@@ -1,0 +1,92 @@
+---
+title: Platform-specific paths
+description: Give one tracked entry a different local path, mode, or permission per operating system.
+section: concepts
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## One value, four overrides
+
+A tracked entry describes one logical config file, not one path. `localPath`, `repoPath`, `mode`, and `permission` are each stored as a platform value object, so a single `manifest.jsonc` describes Windows, macOS, Linux, and WSL at once.
+
+```jsonc
+{
+  "kind": "file",
+  "localPath": {
+    "default": "~/.config/Code/User/settings.json",
+    "mac": "~/Library/Application Support/Code/User/settings.json",
+    "win": "%APPDATA%/Code/User/settings.json"
+  },
+  "repoPath": { "default": "vscode/settings.json" }
+}
+```
+
+Every one of these objects requires `default`. The `win`, `mac`, `linux`, and `wsl` keys are optional overrides, and serialize in that order. Field types and validation rules live in [`manifest.jsonc`](/en/config/manifest/).
+
+A `localPath` value accepts an absolute path, a `~/...` path, `$XDG_CONFIG_HOME/...` or its `${XDG_CONFIG_HOME}` brace form, and `%VARIABLE%` references. A `%VARIABLE%` that is not defined fails the command instead of expanding to an empty string.
+
+`repoPath` is always a relative POSIX path, and on most entries it is the same on every platform. Override it only when two machines genuinely have to store into different repository locations, because a shared `repoPath` is what lets both machines see one artifact.
+
+Dotweave does not infer any of this. It does not translate a macOS path into its Windows equivalent, and `dotweave track` records only the machine you ran it on. Every other platform's value is one you declare.
+
+## How WSL resolves
+
+Dotweave picks one platform key per run and resolves every platform value object against it. `win32` becomes `win` and `darwin` becomes `mac`. A `linux` host becomes `wsl` when `WSL_DISTRO_NAME` or `WSL_INTEROP` is set, or when the operating system release string contains `microsoft` in any casing; otherwise it stays `linux`. Any other operating system resolves as `linux`.
+
+| Detected platform | Keys tried, in order |
+| --- | --- |
+| `win` | `win`, `default` |
+| `mac` | `mac`, `default` |
+| `linux` | `linux`, `default` |
+| `wsl` | `wsl`, `linux`, `default` |
+
+`wsl` is the only key with a two-step fallback. A WSL machine inherits your Linux overrides without any extra configuration, so add a `wsl` key only where WSL has to differ from native Linux.
+
+## Set overrides from the command line
+
+`dotweave track` writes these objects for you. Pass `--local` once per platform you want to override:
+
+```bash
+dotweave track ~/.config/Code/User/settings.json \
+  --local 'mac=~/Library/Application Support/Code/User/settings.json' \
+  --local 'win=%APPDATA%/Code/User/settings.json'
+```
+
+`--local` accepts only `platform=value` and rejects a bare value. The `default` local path always comes from the target you tracked.
+
+`--mode`, `--permission`, and `--repo` accept either a bare value, which sets `default`, or `platform=value`:
+
+```bash
+dotweave track ~/.ssh/config --mode secret --mode win=ignore --permission 0600
+```
+
+```bash
+dotweave track ~/.config/nvim --repo default=.config/nvim --repo win=nvim-windows
+```
+
+Each of these flags is variadic, so repeat the flag instead of joining values into one argument. Passing the same platform key twice for one flag fails with `DUPLICATE_PLATFORM_FLAG`, and an unrecognized platform key fails with `INVALID_PLATFORM_FLAG`. `--repo` takes exactly one target per run and fails with `REPO_PATH_TARGET_COUNT` otherwise. `--permission` needs a `default`, so `--permission linux=0755` on its own fails. Read [Error messages](/en/config/errors/#flags) for each message and its fix.
+
+## What Windows cannot express
+
+Windows is a first-class platform key, but a few POSIX guarantees do not survive there, and no override restores them.
+
+POSIX file modes are not applied on Windows. A `permission` value still lives in the manifest and is honored on macOS, Linux, and WSL. Do not rely on `permission` to restrict access on Windows, where `0600` is recorded and then ignored.
+
+Content comparison on Windows compares bytes first, then falls back to comparing the decoded UTF-8 text with CRLF normalized to LF. A file that differs only in line endings is not treated as a change there, so neither `push` nor `pull` rewrites it. Do not expect Dotweave to convert line endings for you, and note that a byte-order mark still counts as a real difference.
+
+Repository format 1 stores a symlink as a `<name>.dotweave.symlink` metadata file holding the link target, and `pull` recreates the link locally. On Windows the directory case prefers a real directory symlink, which keeps a relative target relative. When the operating system denies symlink creation, which happens without Developer Mode or elevation, Dotweave falls back to a Windows junction. A junction target is always absolute, so the resulting link is less portable than the symlink it replaced.
+
+Environment variable names are matched case-insensitively on Windows and case-sensitively everywhere else. `%AppData%` and `%APPDATA%` resolve the same value on Windows, while on Linux or macOS only the exact name resolves. Read [Environment variables and paths](/en/config/environment/) for the full list Dotweave reads.
+
+<TRAlert.Root variant="neutral">
+None of these limits are hidden from you. Run `dotweave status` on the machine in question to see the plan its resolved platform key produces before you push or pull.
+</TRAlert.Root>
+
+## Implementation and reference
+
+Platform resolution only decides which value Dotweave uses on this machine. It writes nothing on its own; the resolved `mode` decides what happens to the file afterwards.
+
+Read [`manifest.jsonc`](/en/config/manifest/) for the field types and validation rules behind these objects, or [Track files and directories](/en/guides/tracking-files/) for the workflow that writes them.

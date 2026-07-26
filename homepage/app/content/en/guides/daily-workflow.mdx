@@ -1,0 +1,85 @@
+---
+title: Push, review, and commit day to day
+description: The repeating loop of editing locally, checking status, previewing a push, and committing with git.
+section: guides
+order: 1
+---
+
+After the first setup, keeping a machine in sync is one short loop: edit your config where it already lives, mirror the changes into the sync directory, then publish them with git. This guide covers that loop on a single machine and stops where git takes over. It assumes a sync directory that is already initialized and at least one tracked path.
+
+## 1. Check what changed
+
+Edit your dotfiles in place, at their normal locations under your home directory. Nothing is mirrored while you work, so there is no order to respect and no command to run first.
+
+When you are ready, ask what the current state implies. `dotweave status` writes nothing and reports both directions, so it is the safe way to look:
+
+```bash
+dotweave status
+```
+
+On a machine you have not used in a while, run `git pull` inside the sync directory and then `dotweave pull` **before** you start editing, so that you build on what the other machine published. [Work across several machines](/en/guides/multi-device-workflow/) covers that case.
+
+## 2. Preview the push
+
+`--dry-run` builds the same plan and prints the same counts without writing anything. Use it when you have touched a lot of files, or whenever the status output surprised you:
+
+```bash
+dotweave push --dry-run
+```
+
+```
+· Pushing changes...
+~ Push preview (dry run)
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts would be removed
+```
+
+## 3. Push and commit
+
+Drop the flag to apply the plan. `push` rewrites the artifacts under the sync directory and leaves your local files alone:
+
+```bash
+dotweave push
+```
+
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
+
+Dotweave never runs git for you, so publishing is your step. `dotweave cd` opens a child shell rooted at the sync directory; `exit` closes it and returns you to where you were:
+
+```bash
+dotweave cd
+git add -A
+git commit -m "Update config"
+git push
+exit
+```
+
+## Check the result
+
+Run `dotweave status` again. A finished loop reports `No push changes`, because the artifacts now match your local files:
+
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
+
+Push changes (repository)
+  No push changes
+
+Pull changes (local)
+  No pull changes
+```
+
+Then confirm the git side: `git status` inside the sync directory should be clean. If it still lists modified files, the push landed but the commit did not, and step 3 is where to pick it up.
+
+Read [`dotweave push`](/en/reference/push/) for every flag this loop uses, or [How syncing works](/en/concepts/how-it-works/) for the snapshot comparison that decides what the loop writes.

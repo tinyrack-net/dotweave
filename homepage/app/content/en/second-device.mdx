@@ -1,0 +1,85 @@
+---
+title: Set up a second device
+description: Clone an existing sync repository with its age key and materialize tracked files on a new machine.
+section: overview
+order: 4
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+Adopt a sync repository you already published, without losing access to your encrypted files. By the end, every tracked path exists on the new machine. You need the `dotweave` CLI installed, `git` on your `PATH`, and the age private key from the machine that created the repository.
+
+## 1. Bring the age identity with you
+
+Secret artifacts are encrypted to the recipients in `manifest.jsonc`. The matching private key lives in `keys.txt` on your first machine, and Dotweave never commits or syncs it. Copy it here yourself, through a password manager or a secure transfer.
+
+```bash
+cat ~/dotweave.agekey
+```
+
+The file holds one or more lines beginning with `AGE-SECRET-KEY-`.
+
+<TRAlert.Root variant="warning">
+Without a key that matches one of the repository's recipients, `dotweave pull` cannot decrypt secret files. If every copy of the key is gone, those artifacts are unrecoverable.
+</TRAlert.Root>
+
+## 2. Clone with dotweave init
+
+Pass the key file so `init` can adopt the existing identity:
+
+```bash
+dotweave init <your-repo-url> --key-file ~/dotweave.agekey
+```
+
+Omit `--key-file` and `init` prompts for the key instead, which works in an interactive terminal and fails in a script.
+
+## 3. Preview the pull
+
+Nothing has been written to your home directory yet. Look at the plan before applying it:
+
+```bash
+dotweave status
+dotweave pull --dry-run
+```
+
+```
+· Preparing pull...
+~ Planned pull changes
+
+Update from repository (1)
+  + /home/you/.config/nvim/init.lua
+~ Pull preview (dry run)
+  updated: 1 paths would be updated
+  removed: 0 paths would be removed
+```
+
+Read the removal list carefully. `pull` deletes local files the repository does not have, so a config file you created only on this machine and never tracked is safe, but a tracked path with no artifact is removed.
+
+## 4. Apply the pull
+
+```bash
+dotweave pull
+```
+
+`pull` prints the plan and asks `Apply these changes? [y/N] `. Answer `y`. Pass `-y` to skip the prompt, which is required in a non-interactive terminal:
+
+```bash
+dotweave pull -y
+```
+
+## Check the result
+
+```bash
+dotweave doctor
+dotweave status
+```
+
+```
+· Running checks...
+✔ Doctor passed (6 ok · 0 warnings · 0 failures)
+```
+
+`doctor` confirms the repository is readable, the config validates, the identity file is present, and every tracked path exists. If it reports an identity failure, revisit step 1. If a secret will not decrypt, your key does not match any recipient in `manifest.jsonc`.
+
+Continue with [Push, review, and commit day to day](/en/guides/daily-workflow/) now that both machines are set up, or read [Keep several devices in sync](/en/guides/multi-device-workflow/) for the order of operations that avoids clobbering work.

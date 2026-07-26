@@ -1,49 +1,57 @@
 ---
 title: "dotweave untrack"
-description: "パスの同期トラッキングを停止します。"
+description: manifest からトラッキング項目またはネストしたオーバーライドを削除し、その artifact も削除します。
 section: reference
-order: 5
+order: 2
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-同期対象のパスのトラッキングを停止します。
-
-trackされたルートエントリまたはネストされたオーバーライドをdotweaveの設定から削除します。この操作は設定の更新のみを行い、実際のファイル変更は次回の `push` または `pull` で反映されます。ローカルパスを指定するとメインのtrackターゲットが削除され、trackされたディレクトリ内のリポジトリ相対の子パスを指定するとそのオーバーライドのみが削除されます。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave untrack <target> [flags]
+dotweave untrack <target>
 ```
 
-## Arguments
+`manifest.jsonc` から項目を 1 件消し、その項目が同期ディレクトリに書き込んだ内容を片付けます。
 
-| Argument   | Description                                             |
-| ---------- | ------------------------------------------------------- |
-| `<target>` | トラッキングを停止するローカルパスまたはリポジトリパスです。 |
+## 引数
 
-## Flags
+| 引数 | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `target` | `string`、必須 | トラッキングを停止するローカルパス（cwd 相対を含む）またはリポジトリパスです。 |
 
-| Flag        | Description            |
-| ----------- | ---------------------- |
+## 動作
 
-## Examples
+`untrack` は該当項目を除いた manifest を書き込み、続いてその項目が置かれていたすべてのプロファイルディレクトリから plain、シークレット、シンボリックリンクの artifact を削除し、空になった親ディレクトリを整理します。このコマンドの `--help` は設定の更新だけを行うと書いていますが、これは誤りです。コマンドが戻った時点で artifact はすでに削除されています。
 
-設定ファイルのトラッキングを停止する:
+ホームディレクトリ配下のローカルファイルには触れません。設定ファイルはそのまま残り、同期ディレクトリ内の複製だけが消えます。
+
+ローカルパスを渡すと、主となるトラッキング項目を削除します。トラッキング中のディレクトリ内のリポジトリ相対の子パスを渡すと、そのネストしたオーバーライドだけを削除し、親の項目はトラッキングされたまま残ります。
+
+複数の項目に一致する対象は、推測せずに失敗します。その場合は完全なローカルパスを渡して 1 つを指定してください。
 
 ```bash
-dotweave untrack ~/.config/starship.toml
+dotweave untrack ~/.gitconfig
 ```
 
-trackされたディレクトリ内の子オーバーライドを削除する:
-
-```bash
-dotweave untrack .ssh/config
+```
+✔ Stopped tracking .gitconfig
+  plain: 1
+  secret: 0
 ```
 
-<TRAlert.Root variant="neutral">
-`untrack` は `manifest.jsonc` を更新するだけです。ローカルファイルやsyncディレクトリのアーティファクトは削除**しません**。
+2 つの数値は、削除された plain artifact とシークレット artifact の件数です。
+
+<TRAlert.Root variant="warning">
+`untrack` は対象項目のリポジトリ artifact を、すべてのプロファイルで即座に削除します。ホームディレクトリ配下のローカルファイルは残りますが、同期ディレクトリ内の複製は取り除かれます。他のデバイスがファイルを復元しないよう、この削除をコミットしてください。
 </TRAlert.Root>
 
+## エラー
+
+対象が空の場合は `Target path is required.`、一致する項目がない場合は `No tracked sync entry matches: <target>` を返します。どちらもエラーコードとヒントを持ちません。対象が曖昧な場合は `Multiple tracked sync entries match: <target>` と、明示的なローカルパスを使うようにというヒントを返します。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)のトラッキング対象の節を参照してください。
+
+## 関連コマンド
+
+項目を作成するコマンドは [dotweave track](/ja/reference/track/)、リポジトリに何を入れるかの判断は[ファイルとディレクトリのトラッキング](/ja/guides/tracking-files/)を参照してください。

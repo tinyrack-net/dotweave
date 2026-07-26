@@ -90,7 +90,7 @@ describe("Dotweave built documentation", () => {
     simulateCloudflareBeacon = true;
     try {
       const response = await page.goto(
-        `${origin}/en/guides/directory-structure/`,
+        `${origin}/en/concepts/repository-layout/`,
       );
       expect(await response?.text()).toContain("data-cf-beacon");
       await page.locator('html[data-hydrated="true"]').waitFor();
@@ -127,10 +127,12 @@ describe("Dotweave built documentation", () => {
       "tinyrack-light",
     );
 
-    await page.goto(`${origin}/en/guides/directory-structure/`);
+    await page.goto(`${origin}/en/concepts/repository-layout/`);
     await page.locator('html[data-hydrated="true"]').waitFor();
     await expect(
-      page.getByRole("heading", { name: "Directory Structure" }).isVisible(),
+      page
+        .getByRole("heading", { name: "Directory and repository layout" })
+        .isVisible(),
     ).resolves.toBe(true);
     await expect(
       page
@@ -164,8 +166,14 @@ describe("Dotweave built documentation", () => {
     await page.locator('html[data-hydrated="true"]').waitFor();
 
     await expect(
-      page.getByRole("heading", { exact: true, name: "시작하기" }).isVisible(),
+      page
+        .getByRole("heading", { exact: true, name: "첫 동기화 설정" })
+        .isVisible(),
     ).resolves.toBe(true);
+
+    // The install tabs live on their own page since the overview split.
+    await page.goto(`${origin}/ko/install/`);
+    await page.locator('html[data-hydrated="true"]').waitFor();
     await expect(
       page.getByRole("tab", { name: "Windows" }).isVisible(),
     ).resolves.toBe(true);
@@ -175,9 +183,9 @@ describe("Dotweave built documentation", () => {
     await page.close();
   });
 
-  it("renders an accessible file tree with nested files for the directory guide", async () => {
+  it("renders an accessible file tree with nested files for the repository layout page", async () => {
     const page = await browser.newPage();
-    await page.goto(`${origin}/en/guides/directory-structure/`);
+    await page.goto(`${origin}/en/concepts/repository-layout/`);
     await page.locator('html[data-hydrated="true"]').waitFor();
 
     const tree = page.locator(
@@ -204,7 +212,7 @@ describe("Dotweave built documentation", () => {
 
   it("exposes the localized accessibility name in Korean and Japanese", async () => {
     const korean = await browser.newPage();
-    await korean.goto(`${origin}/ko/guides/directory-structure/`);
+    await korean.goto(`${origin}/ko/concepts/repository-layout/`);
     await korean.locator('html[data-hydrated="true"]').waitFor();
     await expect(
       korean
@@ -221,7 +229,7 @@ describe("Dotweave built documentation", () => {
     await korean.close();
 
     const japanese = await browser.newPage();
-    await japanese.goto(`${origin}/ja/guides/directory-structure/`);
+    await japanese.goto(`${origin}/ja/concepts/repository-layout/`);
     await japanese.locator('html[data-hydrated="true"]').waitFor();
     await expect(
       japanese

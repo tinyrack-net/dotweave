@@ -1,0 +1,160 @@
+---
+title: 오류 메시지
+description: dotweave가 내보내는 모든 오류를 영역별로 모으고, 발생 조건과 해결 방법을 정리해요.
+section: config
+order: 3
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 오류 읽는 방법
+
+dotweave는 실패를 최대 세 부분으로 출력해요. 메시지, 관련된 파일이나 경로를 알려 주는 상세 줄 몇 개, 그리고 `→`가 앞에 붙은 힌트예요.
+
+```
+Sync target conflicts with an existing tracked entry.
+Requested local path: /home/you/.config/nvim
+Requested repo path: .config/nvim
+Existing entry: /home/you/.vim -> .config/nvim
+→ Change --repo or untrack the conflicting entry first.
+```
+
+모든 명령은 성공하면 `0`, 실패하면 `1`로 종료해요. `dotweave doctor`는 체크가 실패하면 `1`로 종료하고, 경고만 있을 때는 실패로 보지 않아요.
+
+<TRAlert.Root variant="neutral">
+dotweave는 내부 오류 코드를 출력하지 않아요. 아래 코드는 이 페이지를 검색하거나, 이슈에 인용하거나, CLI 소스에서 발생 지점을 찾을 때 쓰려고 함께 적어 뒀어요. 실제로는 메시지로 찾으세요.
+</TRAlert.Root>
+
+## 초기화
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Sync directory is already initialized.` | `INIT_ALREADY_INITIALIZED` | sync 디렉터리에 이미 `manifest.jsonc`가 있어요. 정말 버릴 생각일 때만 `dotweave init --force`를 실행하세요. |
+| `Sync directory already exists and is not empty.` | `SYNC_DIR_NOT_EMPTY` | 디렉터리는 있지만 git 저장소가 아니에요. 비우거나 삭제하거나, `init`에 저장소 소스를 지정하세요. |
+| `Existing repository setup requires an age private key.` | `INIT_AGE_IDENTITY_REQUIRED` | clone한 저장소에 이미 recipient가 있어요. `--key-file <path>`를 넘기거나, 대화형 터미널에서 `init`을 실행해 프롬프트에 키를 붙여 넣으세요. |
+| `Failed to initialize the sync directory.` | `SYNC_INIT_GIT_FAILED` | `git init -b main`이 실패했어요. git이 설치되어 있고 디렉터리에 쓸 수 있는지 확인하세요. |
+| `Failed to clone the sync directory.` | `SYNC_CLONE_FAILED` | `git clone`이 실패했어요. 저장소 소스에 접근할 수 있는지 확인하세요. |
+| `Git is not installed or not on PATH.` | `GIT_EXECUTABLE_NOT_FOUND` | git을 설치하고 `git` 실행 파일을 `PATH`에서 찾을 수 있게 하세요. |
+| `Sync repository is not initialized.` | `SYNC_REPO_INVALID` | sync 디렉터리가 git 작업 트리가 아니에요. `dotweave init`을 실행하세요. |
+
+## 설정 파일
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Sync configuration is invalid.` | `CONFIG_VALIDATION_FAILED` | `manifest.jsonc` 필드가 검증에 실패했어요. 상세 줄이 문제 필드를 알려 줘요. 기대하는 형태는 [manifest.jsonc](/ko/config/manifest/)에서 확인하세요. |
+| `Sync configuration is not valid JSON.` | `CONFIG_INVALID_JSON` | `manifest.jsonc`의 JSON 문법을 고치세요. `//`와 `/* */` 주석은 되지만 뒤에 남은 쉼표는 안 돼요. |
+| `Failed to read sync configuration.` | `CONFIG_READ_FAILED` | `manifest.jsonc`가 없거나 읽을 수 없어요. sync 디렉터리를 아직 만들지 않았다면 `dotweave init`을 실행하세요. |
+| `Global dotweave configuration is invalid.` | `GLOBAL_CONFIG_VALIDATION_FAILED` | `settings.jsonc`의 `version`이 틀리거나 `activeProfile`이 비어 있어요. [settings.jsonc](/ko/config/settings/)를 확인하세요. |
+| `Global dotweave configuration is not valid JSON.` | `GLOBAL_CONFIG_INVALID_JSON` | `settings.jsonc`의 JSON 문법을 고치세요. |
+| `Failed to read global dotweave configuration.` | `GLOBAL_CONFIG_READ_FAILED` | `settings.jsonc`는 있지만 읽을 수 없어요. 파일 권한을 확인하세요. 파일이 없는 건 오류가 아니에요. |
+| `Unsupported dotweave config file.` | `CONFIG_JSON_UNSUPPORTED` | 기대하는 `.jsonc` 파일 옆에 `.json` 파일이 있어요. `.json` 파일을 삭제하거나 이름을 바꾸세요. |
+| `Config file version <n> is newer than this CLI supports (max: <m>).` | `CONFIG_NEWER_VERSION` | 다른 기기가 더 새로운 설정을 썼어요. 이 기기의 dotweave를 업그레이드하세요. |
+| `No migration path found for config version <n> → <n+1>.` | `CONFIG_MIGRATION_NOT_FOUND` | 이 마이그레이션 단계를 아는 릴리스로 dotweave를 업그레이드하세요. |
+| `Failed to migrate config from version <n> to <n+1>.` | `CONFIG_MIGRATION_FAILED` | 마이그레이션이 예외를 던졌어요. 성공하기 전까지 원본 파일은 그대로 남아요. `.v<n>.bak` 백업이 있으면 그걸로 복원하세요. |
+| `Age configuration is missing from manifest.jsonc.` | `AGE_CONFIG_MISSING` | manifest에 `age.recipients`가 없어요. `dotweave init`으로 암호화를 설정하세요. |
+
+## 저장소 형식
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Repository format <n> is newer than this CLI supports (max: <m>).` | `REPO_FORMAT_NEWER` | 더 새로운 dotweave가 저장소를 마이그레이션했어요. 이 기기를 업그레이드하세요. |
+| `Repository format <n> is older than this CLI supports (min: <m>).` | `REPO_FORMAT_TOO_OLD` | 예전 dotweave 릴리스로 저장소를 먼저 앞으로 마이그레이션한 뒤에 다시 업그레이드하세요. |
+| `No repository format migration found for <n> → <n+1>.` | `REPO_FORMAT_MIGRATION_NOT_FOUND` | 이 마이그레이션 단계를 아는 릴리스로 dotweave를 업그레이드하세요. |
+| `Failed to migrate repository format <n> → <n+1>.` | `REPO_FORMAT_MIGRATION_FAILED` | 마이그레이션이 중간에 실패했어요. `dotweave cd`로 저장소를 살펴본 뒤 git으로 알려진 상태로 되돌리세요. |
+
+각 마이그레이션이 무엇을 다시 쓰는지는 [설정과 저장소 형식 업그레이드](/ko/guides/upgrading/)에서 확인하세요.
+
+## 추적 대상
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Target path is required.` | `TARGET_REQUIRED` | 경로를 넘기세요. 예를 들면 `dotweave track ~/.gitconfig`예요. |
+| `Sync target kind is required.` | `TARGET_KIND_REQUIRED` | 경로가 아직 없어요. `--kind file` 또는 `--kind directory`를 넘기세요. |
+| `Sync target kind does not match the path.` | `TARGET_KIND_MISMATCH` | `--kind`가 실제 종류와 달라요. 상세 줄이 실제 종류를 알려 줘요. |
+| `Sync target type is not supported.` | `TARGET_UNSUPPORTED_TYPE` | 추적할 수 있는 건 일반 파일, 심링크, 디렉터리뿐이에요. |
+| `Sync target overlaps the dotweave sync directory.` | `TARGET_OVERLAPS_SYNC_DIR` | sync 디렉터리 밖의 경로를 고르세요. dotweave는 자기 저장소를 미러링할 수 없어요. |
+| `Sync target contains the configured age identity file.` | `TARGET_OVERLAPS_IDENTITY` | `keys.txt`는 절대 추적하지 마세요. 비밀 키는 추적 경로 밖에 두세요. |
+| `Sync target conflicts with an existing tracked entry.` | `TARGET_CONFLICT` | 로컬 경로가 다른 `kind`로 이미 추적 중이거나, 해석된 `repoPath`가 충돌해요. `--repo`를 바꾸거나 기존 항목을 untrack하세요. |
+| `Multiple tracked sync entries match: <target>` | `TARGET_CONFLICT` | 넘긴 축약 경로가 모호해요. 전체 로컬 경로를 쓰세요. |
+| `No tracked sync entry matches: <target>` | 없음 | manifest에 일치하는 항목이 없어요. 추적 중인 경로는 `dotweave status`로 확인하세요. |
+| `Local set target is not inside a tracked directory entry.` | `TARGET_NOT_TRACKED` | 상위 디렉터리를 먼저 추적한 뒤 하위 경로를 조정하세요. |
+| `Repository set target is not inside a tracked directory entry.` | `TARGET_NOT_TRACKED` | 이미 추적 중인 디렉터리 아래에 있는 저장소 경로를 쓰세요. |
+| `Sync set target does not exist.` | `TARGET_NOT_FOUND` | 지정한 로컬 경로가 디스크에 없어요. 존재하는 경로나, 추적 중인 디렉터리 안의 저장소 경로를 쓰세요. |
+| `Sync set target is not a valid local or repository path.` | `INVALID_SET_TARGET` | 절대 경로, 현재 디렉터리 기준 상대 경로, 또는 `.config/tool/file.json` 같은 저장소 경로를 쓰세요. |
+
+## 경로와 artifact
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Sync target must stay inside the configured home root.` | `TARGET_OUTSIDE_ROOT` | 모든 추적 경로는 홈 디렉터리 안으로 해석되어야 해요. |
+| `Sync target resolves to the root directory, which cannot be tracked directly.` | `TARGET_ROOT_DISALLOWED` | 홈 디렉터리 자체가 아니라 그 안의 파일이나 하위 디렉터리를 추적하세요. |
+| `Sync entry local path must stay inside HOME.` | `ENTRY_OUTSIDE_HOME` | manifest 항목이 홈 디렉터리 밖으로 해석돼요. Windows에서는 드라이브 문자가 다를 때도 이 오류가 나와요. |
+| `Sync entry local path cannot be the home directory itself.` | `ENTRY_ROOT_DISALLOWED` | 항목을 파일이나 하위 디렉터리로 바꾸세요. |
+| `Repository path must be a relative POSIX path inside the repository root.` | `INVALID_REPO_PATH` | `.config/tool/settings.json`처럼 `..` 세그먼트와 앞쪽 `/`가 없는 상대 경로를 쓰세요. |
+| `Repository path must not use the reserved suffixes .dotweave.secret or .dotweave.symlink.` | `RESERVED_ARTIFACT_SUFFIX` | 어떤 세그먼트도 예약 접미사로 끝나지 않게 경로 이름을 바꾸세요. |
+| `Multiple entries target the same repository path in manifest.jsonc.` | `DUPLICATE_PATHS` | 각 항목에 고유한 `repoPath`를 주거나 하나를 제거하세요. |
+| `Duplicate local paths in manifest.jsonc.` | `DUPLICATE_PATHS` | 두 항목이 같은 로컬 경로로 해석돼요. 중복을 제거하세요. |
+| `Local paths must not overlap in manifest.jsonc.` | `OVERLAPPING_PATHS` | 두 항목이 부분적으로 겹쳐요. 추적 디렉터리와 그 하위 항목은 괜찮지만 부분 중복은 안 돼요. |
+| `File sync entry resolves to a directory in the repository.` | `FILE_ENTRY_RESOLVES_DIRECTORY` | 저장된 artifact가 `kind`와 달라요. `dotweave push`를 실행하거나 저장소를 고치세요. |
+| `Directory sync entry resolves to a file in the repository.` | `DIRECTORY_ENTRY_RESOLVES_FILE` | 저장된 artifact가 `kind`와 달라요. `dotweave push`를 실행하거나 저장소를 고치세요. |
+| `Directory sync entry is not stored as a directory in the repository.` | `DIRECTORY_ENTRY_NOT_DIRECTORY` | 충돌하는 artifact를 저장소에서 제거한 뒤 다시 push하세요. |
+| `Repository path is not managed by the current sync configuration.` | `UNMANAGED_SYNC_PATH` | `profiles/` 아래에 관리되지 않는 artifact가 있어요. 상위 경로를 추적하거나 artifact를 삭제하세요. |
+| `Repository artifact is stored under the wrong profile directory.` | `REPO_PROFILE_MISMATCH` | artifact의 프로필 디렉터리가 항목의 `profiles`와 달라요. artifact를 옮기거나 삭제한 뒤 다시 push하세요. |
+| `Repository contains an unsupported plain artifact type.` | `UNSUPPORTED_REPO_ENTRY` | `profiles/` 아래에 파일도 심링크도 아닌 것이 있어요. 삭제하세요. |
+
+## 프로필
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Unknown profile '<name>'.` | `UNKNOWN_PROFILE` | `dotweave profile add <name>`으로 등록하거나, 이미 있는 이름을 쓰세요. |
+| `Cannot add the implicit default profile.` | `DEFAULT_PROFILE_IMPLICIT` | `default`는 항상 존재해요. 등록하지 마세요. |
+| `Cannot remove the implicit default profile.` | `DEFAULT_PROFILE_IMPLICIT` | `default`는 제거할 수 없어요. |
+| `Profile '<name>' already exists.` | `PROFILE_ALREADY_EXISTS` | 다른 이름을 고르세요. |
+| `Cannot remove active profile '<name>'.` | `PROFILE_ACTIVE` | `dotweave profile use default`로 먼저 옮기거나, `dotweave profile use`로 선택을 해제하세요. |
+| `Cannot remove profile '<name>' because it is still referenced by <n> sync entries.` | `PROFILE_IN_USE` | 상세 줄이 참조 중인 모든 항목을 알려 줘요. 그 `profiles` 값을 먼저 바꾸거나 비우세요. |
+| `Profile 'default' is implicit and must not be listed in manifest profiles.` | `INVALID_PROFILE_REGISTRY` | `profiles` 배열에서 `default`를 제거하세요. |
+| `Duplicate profile '<name>' in manifest.` | `DUPLICATE_PROFILE` | `profiles` 배열에서 중복 이름을 제거하세요. |
+| `Profile name contains unsupported characters.` | `INVALID_PROFILE_NAME` | 영문자, 숫자, 점, 밑줄, 하이픈만 쓰고 영문자나 숫자로 시작하세요. |
+| `Profile name conflicts with the reserved profile artifact directory.` | `INVALID_PROFILE_NAME` | `profiles`는 예약된 이름이에요. 다른 이름을 고르세요. |
+| `Profile name must not be empty.` | `INVALID_PROFILE_NAME` | `work`처럼 이름을 넘기세요. |
+
+## 시크릿과 age
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Age private key cannot be empty.` | `AGE_IDENTITY_INVALID` | 키 파일이나 프롬프트 입력이 비어 있었어요. `AGE-SECRET-KEY-`로 시작하는 키를 넘기세요. |
+| `Invalid age private key.` | `AGE_IDENTITY_INVALID` | 키를 파싱할 수 없어요. 잘렸거나 공백이 섞이지 않았는지 확인하세요. |
+| `No age identities were found in the configured identity file.` | `AGE_IDENTITY_EMPTY` | `keys.txt`에 빈 줄과 `#` 주석만 있어요. 키를 추가하거나 `dotweave init`으로 생성하세요. |
+| `Failed to read age recipients from the configured identity file.` | `AGE_RECIPIENT_READ_FAILED` | `keys.txt`의 어느 줄이 유효한 age 비밀 키가 아니에요. |
+| `Failed to decrypt a secret artifact.` | `AGE_DECRYPT_FAILED` | 내 identity가 그 artifact의 recipient 중 어느 것과도 맞지 않거나, 데이터가 손상됐어요. |
+| `Failed to decrypt a secret repository artifact.` | `SECRET_ARTIFACT_DECRYPT_FAILED` | 원인은 같고, 특정 artifact 하나에 대해 보고돼요. 상세 줄에 저장소 경로가 나와요. |
+| `Secret sync path is stored as a plain artifact in the repository.` | `SECRET_STORED_PLAIN` | 항목은 `secret`인데 저장된 artifact는 암호화되지 않았어요. `dotweave push`로 다시 암호화하세요. |
+| `Plain sync path is stored as a secret artifact in the repository.` | `PLAIN_STORED_SECRET` | 항목은 `secret`이 아닌데 암호화된 artifact가 있어요. 모드를 다시 `secret`으로 두거나, artifact를 삭제하고 push하세요. |
+| `Secret repository artifacts must be regular files, not symlinks.` | `SECRET_ARTIFACT_SYMLINK` | 심링크를 실제 암호화 파일로 바꾸세요. |
+| `Symlink repository artifacts must be regular metadata files.` | `SYMLINK_ARTIFACT_NOT_FILE` | `.dotweave.symlink` artifact가 일반 파일이 아니에요. 삭제한 뒤 다시 push하세요. |
+| `Secret sync paths must be regular files, not symlinks: <path>` | 없음 | `secret` 모드인 로컬 경로가 심링크예요. 실제 파일을 추적하거나 모드를 바꾸세요. |
+
+## 플래그
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Invalid --<flag> platform value.` | `INVALID_PLATFORM_FLAG` | `--<flag> value` 또는 `--<flag> platform=value` 형태로 쓰고, 플랫폼은 `default`, `win`, `mac`, `linux`, `wsl` 중 하나여야 해요. `--local`은 플랫폼을 반드시 지정해야 해요. |
+| `Duplicate --<flag> platform value.` | `DUPLICATE_PLATFORM_FLAG` | 한 플래그에 같은 플랫폼 키를 두 번 넘겼어요. |
+| `Invalid --<flag> mode '<value>'.` | `INVALID_SYNC_MODE` | `normal`, `secret`, `ignore` 중 하나를 쓰세요. |
+| `Invalid --<flag> permission '<value>'.` | `INVALID_PERMISSION` | `0600`이나 `0755`처럼 네 자리 8진수 문자열을 쓰세요. |
+| `The --repo flag can only be used with a single sync target.` | `REPO_PATH_TARGET_COUNT` | 저장소 경로를 덮어쓸 때는 대상을 하나씩 추적하세요. |
+| `Pull confirmation requires an interactive terminal.` | 없음 | `dotweave pull -y`로 다시 실행하거나, `--dry-run`으로 미리보기만 하세요. |
+
+## 스킬
+
+| 메시지 | 코드 | 해결 방법 |
+| --- | --- | --- |
+| `Skills root must be a directory.` | `SKILL_ROOT_NOT_DIRECTORY` | 스킬 디렉터리를 먼저 만든 뒤 그 경로를 넘기세요. |
+| `Dotweave skill already exists.` | `SKILL_ALREADY_EXISTS` | `--force`를 넘겨 `<directory>/dotweave/SKILL.md`를 덮어쓰세요. |
+
+## 관련 문서
+
+`Duplicate repository artifact was generated.`, `Repository artifact path is invalid.`, `Duplicate sync path generated for <path>`처럼 직접 고칠 수 없는 내부 불변 조건을 알리는 메시지도 있어요. 이런 메시지는 버그를 뜻해요. 실행한 명령과 함께 [이슈 트래커](https://github.com/tinyrack-net/dotweave/issues)에 알려 주세요.
+
+진단 순서는 [동기화 문제 해결하기](/ko/guides/troubleshooting/), 대부분의 문제를 명령 실행 전에 찾아 주는 체크는 [`dotweave doctor`](/ko/reference/doctor/)에서 확인하세요.

@@ -1,0 +1,52 @@
+---
+title: "dotweave skill"
+description: Install Dotweave's bundled portable agent skill into a coding agent's skills directory.
+section: reference
+order: 10
+---
+
+## Synopsis
+
+```bash
+dotweave skill install [--dry-run] [--force] <directory>
+```
+
+Give a coding agent accurate instructions for driving Dotweave instead of letting it guess at commands, flags, and sync direction.
+
+## skill install
+
+| Argument | Type and default | Purpose |
+| --- | --- | --- |
+| `directory` | `string`, required | Skills root directory to install into. |
+
+| Flag | Type and default | Purpose |
+| --- | --- | --- |
+| `--dry-run` | boolean, `false` | Report the install target without writing files. Also accepts `--no-dry-run`. |
+| `--force` | boolean, `false` | Overwrite an existing dotweave skill. Also accepts `--no-force`. |
+
+```bash
+dotweave skill install ~/.claude/skills
+```
+
+```
+✔ Installed dotweave skill
+  target: /home/you/.claude/skills/dotweave/SKILL.md
+```
+
+## Behavior
+
+`skill install` writes a single file, `<directory>/dotweave/SKILL.md`, from a skill bundled into the binary. It creates the `dotweave` subdirectory under the root you pass.
+
+The `<directory>` you pass must already exist and be a directory. `skill install` does not create the skills root itself.
+
+The reported action is one of `Installed dotweave skill`, `Overwrote dotweave skill`, `Would install dotweave skill`, or `Would overwrite dotweave skill`, followed by a `target: <path>` line naming the file. The two `Would` forms come from `--dry-run`, which writes nothing.
+
+This is the one command that needs neither git nor a sync directory, so you can run it before `dotweave init`.
+
+## Errors
+
+`skill install` fails with `Skills root must be a directory.` when the path you pass does not exist or is not a directory, and with `Dotweave skill already exists.` when `<directory>/dotweave/SKILL.md` is already present. The second message hints at `--force`, which overwrites the file. Read [Error messages](/en/config/errors/#skills) for both codes and their fixes.
+
+## Related commands
+
+Read [Give an agent the Dotweave skill](/en/guides/agent-skill/) for where each agent looks for skills, or [What Dotweave is](/en/intro/) for the model the skill describes.

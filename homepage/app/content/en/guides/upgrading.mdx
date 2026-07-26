@@ -1,0 +1,47 @@
+---
+title: Upgrade config and repository formats
+description: What Dotweave rewrites when it migrates manifest.jsonc, settings.jsonc, or the on-disk artifact format.
+section: guides
+order: 5
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## Manifest and settings migrations
+
+Dotweave migrates a config file when it reads it. There is no separate upgrade command: the first command that opens an older `manifest.jsonc` or `settings.jsonc` brings the file forward, one version step at a time.
+
+Before rewriting, Dotweave writes a backup next to the original file, named `<filename>.v<originalVersion>.bak`. Migrating a version 7 manifest therefore leaves `manifest.jsonc.v7.bak`, and a version 2 settings file leaves `settings.jsonc.v2.bak`. The rewrite itself is atomic, and it runs only after the migrated result passes semantic validation, so an invalid migration is never persisted.
+
+`manifest.jsonc` is at version `8`, and version `7` is accepted and migrated. `settings.jsonc` is at version `3`, and version `2` is accepted and migrated.
+
+The manifest step from 7 to 8 hoists profile names into a registry. Profile names used to live only on individual entries; the migration collects them into a top-level `profiles` array, sorted, with `default` left out because that profile is implicit. The settings step from 2 to 3 drops a legacy `age` section.
+
+A rewrite reformats the file from the parsed data, so hand-written comments and your original key order do not survive it. Copy anything you want to keep out of the `.bak` file afterwards.
+
+## Repository format 0 to 1
+
+The repository format is separate from the manifest version. It versions how artifacts are laid out on disk rather than how the manifest is structured, and it is recorded as `repositoryFormat` in `manifest.jsonc`. The current format is `1`; an absent field means format `0`.
+
+Format 0 stored a tracked symlink as a real symlink under `profiles/`. Format 1 stores it as a regular `<name>.dotweave.symlink` metadata file holding the POSIX link target, which travels between platforms through git. The migration walks everything under `profiles/` and converts each physical symlink it finds. It is idempotent: once no physical symlinks remain, running it again does nothing.
+
+Unlike a config migration, this one touches the filesystem, and it runs during a non-dry-run `dotweave push` only. `dotweave push --dry-run` skips it. `dotweave track` and `dotweave untrack` write the existing format marker back rather than claiming an upgrade they did not perform. One real `dotweave push` is therefore the way to migrate a repository forward.
+
+<TRAlert.Root variant="warning">
+Commit the sync directory and leave it clean before the first `push` on a new Dotweave version. A format migration rewrites files under `profiles/`, and a clean tree keeps that rewrite reviewable as a single git diff.
+</TRAlert.Root>
+
+## When a repository is too new or too old
+
+Dotweave checks the repository format on every config read, so a command fails immediately instead of half-reading a repository it does not understand.
+
+`Repository format <n> is newer than this CLI supports` means another machine already migrated the repository. Upgrade Dotweave on this machine; Dotweave does not downgrade a repository.
+
+The opposite case is a repository below the oldest format this CLI still supports. Run an older Dotweave release, do one `dotweave push` there to migrate the repository forward, then upgrade again. No released format sits below the current floor, so this failure cannot happen today; it exists for the release that eventually drops format 0.
+
+## Implementation and reference
+
+The `version`, `repositoryFormat`, and `profiles` fields are documented with their types and defaults in [manifest.jsonc](/en/config/manifest/), and the global fields in [settings.jsonc](/en/config/settings/). The artifact layout that the format migration rewrites is described in [Directory and repository layout](/en/concepts/repository-layout/).
+
+Read [Error messages](/en/config/errors/#repository-format) for the exact text of every migration failure, or [Troubleshoot a broken sync](/en/guides/troubleshooting/) when a command still fails after an upgrade.

@@ -1,0 +1,50 @@
+---
+title: settings.jsonc
+description: どの同期プロファイルが有効かを記録する、マシンごとの設定ファイルです。
+section: config
+order: 1
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 場所とバージョン
+
+`settings.jsonc` は dotweave ホームディレクトリの直下、`keys.txt` と同期ディレクトリ `repository` の隣にあります。同期ディレクトリの中にはないため、コミットされることはありません。
+
+現在のバージョンは `3` です。バージョン `2` のファイルは dotweave がその場でマイグレーションし、事前に `settings.jsonc.v2.bak` バックアップを書き出します。それ以外のバージョンではコマンドが失敗します。
+
+`settings.jsonc` が存在しないことはエラーではありません。有効なプロファイルがない状態として扱い、暗黙の `default` プロファイルを使います。
+
+形式は JSONC なので `//` と `/* */` のコメントを書けます。隣に `settings.json` がある場合は読み込まずに拒否します。
+
+## フィールド
+
+| フィールド | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `version` | `3`、必須 | スキーマのバージョンです。マイグレーション後は必ず `3` になります。 |
+| `activeProfile` | `string`、任意 | このマシンが使うプロファイル名です。前後の空白は取り除かれ、指定する場合は空にできません。省略すると `default` プロファイルを使います。 |
+
+`activeProfile` には `manifest.jsonc` に登録済みのプロファイル名、または文字列 `default` を指定します。dotweave はこのファイルを読む時点ではなく、同期設定を読み込む時点で参照を検証します。
+
+## 例
+
+```jsonc
+{
+  // このノート PC は work プロファイルを同期します。
+  "activeProfile": "work",
+  "version": 3
+}
+```
+
+<TRAlert.Root variant="info">
+dotweave が `activeProfile` を書き込むのは `dotweave profile use` だけです。引数なしで `dotweave profile use` を実行するとフィールドが削除されます。
+</TRAlert.Root>
+
+## エラー
+
+ファイルを解析できない場合、`version` が誤っている場合、`activeProfile` が空の場合は、どのファイルにも触れる前にコマンドが停止します。正確なメッセージと対処は[エラーメッセージ](/ja/config/errors/)の設定ファイルの節を参照してください。
+
+## 関連ページ
+
+有効なプロファイルが何を変えるかは[プロファイル](/ja/concepts/profiles/)、このファイルを書き込むコマンドは [`dotweave profile`](/ja/reference/profile/) を参照してください。

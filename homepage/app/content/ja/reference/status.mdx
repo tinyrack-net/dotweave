@@ -1,44 +1,76 @@
 ---
 title: "dotweave status"
-description: "pushとpullで変更される内容をプレビューします。"
+description: 現在の sync 設定で push と pull が生む変更を、何も書き込まずに報告します。
 section: reference
-order: 4
+order: 5
 ---
 
-import { TRAlert } from "@tinyrack/ui/components/alert";
-
-
-現在のsync設定におけるpushとpullの変更予定を表示します。
-
-trackされたローカルファイルとsyncディレクトリを比較し、`push` でリポジトリに書き込まれる内容と、`pull` でローカルに書き戻される内容を表示します。
-
-## Usage
+## 使い方
 
 ```bash
-dotweave status [flags]
+dotweave status [--profile <profile>]
 ```
 
-## Flags
+両方向の計画を組み立てて報告します。`status` は `push` と `pull` が適用するのと同じ比較を、読み取り専用で見る画面です。
 
-| Flag               | Description                          |
-| ------------------ | ------------------------------------ |
-| `--profile <name>` | 特定のprofileレイヤーを使用します。        |
+## フラグ
 
-## Examples
+| フラグ | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `--profile` | `string`、なし | このコマンドに限り、`settings.jsonc` のアクティブなプロファイルの代わりに指定したプロファイル 1 つを使います。 |
 
-syncステータスの全体を表示する:
+## 動作
+
+`status` は何も書き込みません。そのため、いつ実行しても安全です。
+
+まずトラッキング項目数、recipient 数、アクティブなプロファイルを含むヘッダーを表示します。続いて `Push changes (repository)` の下に `Add (n)`、`Modify (n)`、`Delete (n)` の節を、その後に `Pull changes (local)` の下に `Changed (n)`、`Remove (n)` の節を表示します。各リストは 10 件までで、その後に `... and N more` を表示します。片方の方向に作業がない場合は、節の代わりに `No push changes` または `No pull changes` を表示します。
 
 ```bash
 dotweave status
 ```
 
-特定のprofileのステータスを表示する:
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-```bash
-dotweave status --profile work
+Push changes (repository)
+
+Add (4)
+  + .config/nvim
+  + .config/nvim/init.lua
+  + .gitconfig
+  + .ssh/config
+
+Pull changes (local)
+
+Remove (4)
+  - /home/you/.config/nvim
+  - /home/you/.config/nvim/init.lua
+  - /home/you/.gitconfig
+  - /home/you/.ssh/config
 ```
 
-<TRAlert.Root variant="neutral">
-`status` は `manifest.jsonc` を読み込み、ファイルの内容を比較します。`git status` は実行**しません** — dotweaveレベルの差分のみ表示します。
-</TRAlert.Root>
+この例は、まだ一度も push していない初回の状態です。両方向を合わせて読んでください。`push` は artifact を 4 件追加し、`pull` はトラッキング中のローカルファイルをすべて削除します。リポジトリに書き戻す内容がまだないからです。この非対称さが、`pull` の前に `status` を実行する具体的な理由です。
 
+両方向が一致すると、報告は 2 行に縮みます。
+
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
+
+Push changes (repository)
+  No push changes
+
+Pull changes (local)
+  No pull changes
+```
+
+`status` は開始時に manifest を検証するので、手で編集した `manifest.jsonc` を確かめる最も軽い方法にもなります。
+
+## エラー
+
+`status` は、同期ディレクトリが git のワークツリーでない場合、`manifest.jsonc` が存在しない・読み取れない・検証に失敗する場合に失敗します。保存された artifact がトラッキング項目と食い違う場合、および手元の identity で secret artifact を復号できない場合にも失敗します。push 側の比較が平文を必要とするからです。各メッセージと対処は[エラーメッセージ](/ja/config/errors/)の設定ファイルの節を参照してください。
+
+## 関連コマンド
+
+リポジトリ方向を適用するには [`dotweave push`](/ja/reference/push/)、ローカル方向を適用するには [`dotweave pull`](/ja/reference/pull/) を参照してください。

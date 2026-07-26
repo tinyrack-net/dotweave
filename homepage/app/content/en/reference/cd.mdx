@@ -1,24 +1,44 @@
 ---
 title: "dotweave cd"
-description: "Open a shell in the sync directory."
+description: Launch a child shell rooted at the sync directory so you can run git yourself.
 section: reference
-order: 6
+order: 8
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
-Launch a shell in the sync directory.
-
-Like `chezmoi cd`, this opens a new child shell rooted at the local sync directory instead of changing the current directory of your existing shell. Exit the shell to return to your previous session.
-
-## Usage
+## Synopsis
 
 ```bash
 dotweave cd
 ```
 
-<TRAlert.Root variant="success">
-Use this to run git commands (`commit`, `push`, `pull`) directly inside the sync directory.
+Open a shell session inside the sync directory, where the git repository lives.
+
+## Behavior
+
+`cd` resolves the sync directory, creates it when it does not exist, and spawns a child shell rooted there with stdio inherited from your terminal. It cannot change the working directory of the shell you ran it from; a process never can. Exit the child shell to return to where you were.
+
+The shell it starts comes from the environment. On Windows it uses `%COMSPEC%` and falls back to `cmd.exe`. On every other platform it uses `$SHELL` and falls back to `/bin/sh`.
+
+This is the intended way to run git against the sync directory, because `push` and `pull` write artifacts only and never invoke git themselves. Nothing reaches your remote until you commit and push it.
+
+```bash
+dotweave cd
+git add -A
+git commit -m "Update dotfiles"
+git push
+```
+
+<TRAlert.Root variant="info">
+`dotweave cd` exits with code `1` whenever the child shell exits non-zero or dies from a signal. The child's own exit code is not propagated, so do not use it in a script that branches on the shell's status.
 </TRAlert.Root>
 
+## Errors
+
+When the shell cannot be spawned at all, `cd` reports `Failed to launch shell.` with the hint to set `COMSPEC` on Windows, or `SHELL` elsewhere, to a valid shell executable. When the child shell exits non-zero it reports `Shell exited with code <n>.`, and when a signal kills it, `Shell exited due to signal <SIGNAME>.` None of these carry an error code. Read [Error messages](/en/config/errors/#how-to-read-an-error) for the shape of a reported failure.
+
+## Related commands
+
+Read [How syncing works](/en/concepts/how-it-works/) for why git stays in your hands, or [dotweave push](/en/reference/push/) for the step that writes the artifacts you are about to commit.

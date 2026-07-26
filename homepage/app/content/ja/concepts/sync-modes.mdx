@@ -1,0 +1,84 @@
+---
+title: 同期モード
+description: normal、secret、ignore が push で保存される内容と pull で復元される内容をどう変えるかを説明します。
+section: concepts
+order: 2
+---
+
+import { TRAlert } from "@tinyrack/ui/components/alert";
+
+
+## 対象ごとにモードを選ぶ
+
+トラッキング項目には同期モードが 1 つ付き、その値が `push` で同期ディレクトリに保存される内容と、`pull` でホームディレクトリへ書き戻される内容を決めます。モードは `normal`、`secret`、`ignore` の 3 つです。`mode` を指定しない項目は `normal` になります。
+
+`mode` は `default` と任意の `win`、`mac`、`linux`、`wsl` のオーバーライドからなるプラットフォーム値なので、1 つの項目が OS ごとに違う動きをできます。WSL では `wsl`、次に `linux`、最後に `default` の順で解決します。
+
+| モード | push が保存するもの | 暗号化 | pull が復元するか |
+| --- | --- | --- | --- |
+| `normal` | ファイルをバイトそのまま | しない | 復元します |
+| `secret` | `.dotweave.secret` サフィックス付きの age 暗号文 | する | 復号してから復元します |
+| `ignore` | 何も保存しません | — | 復元しません |
+
+あとでモードを変えるには、同じ対象を新しい `--mode` で再度トラッキングしてください。再トラッキングでは渡したフィールドだけが更新され、残りはそのまま保たれるので、項目の `repoPath`、`permission`、`profiles` は維持されます。モードだけを編集する専用コマンドはありません。
+
+## normal
+
+`normal` のファイルは `profiles/<profile>/<repoPath>` へそのままコピーされます。変換は行われないため、artifact の git diff は元のファイルの diff と同じように読めます。
+
+公開しても問題のないファイルに使ってください。シェルの起動ファイル、エディタ設定、`git` の設定、`starship.toml` のようなツール設定が該当します。
+
+```bash
+dotweave track ~/.gitconfig
+```
+
+`normal` が既定値なので、上のコマンドに `--mode` は要りません。`--mode normal` を渡しても結果は同じで、別のモードだった項目を戻すときに役立ちます。
+
+## secret
+
+`secret` のファイルは `manifest.jsonc` に記載されたすべての recipient 向けに暗号化され、`.dotweave.secret` サフィックスを付けて保存されます。保存される artifact は ASCII armor 形式の age 暗号文なので、git がバイナリとして扱わずに diff や転送を処理できるテキストです。
+
+資格情報に使ってください。SSH の設定と鍵、API トークン、実際の値が入った `.env` ファイル、クラウドの資格情報ファイルが該当します。
+
+```bash
+dotweave track ~/.ssh/config --mode secret
+```
+
+`pull` は `keys.txt` の identity で artifact を復号してからファイルを書き込みます。identity がどの recipient とも一致しないマシンでは、そのファイルを復元できません。
+
+`secret` のパスは通常のファイルである必要があります。シンボリックリンクを `secret` に指定すると、暗号化する平文が存在しないため `Secret sync paths must be regular files, not symlinks` というエラーになります。
+
+<TRAlert.Root variant="warning">
+暗号化されるのはファイルの内容だけです。ファイル名とパスはリポジトリでそのまま見えるため、`.ssh/config.dotweave.secret` という名前だけで SSH 設定をトラッキングしていることが分かります。機密性のあるパスを隠す目的で `secret` に頼らないでください。
+</TRAlert.Root>
+
+## ignore
+
+`ignore` の項目は `manifest.jsonc` に残りますが、両方向でスキップされます。ローカルスナップショットはそのパスを読まず、`pull` も書き込みません。
+
+```bash
+dotweave track ~/.config/my-tool/cache --mode ignore
+```
+
+記録は残したまま同期だけ止めたい項目に使ってください。トラッキング中のディレクトリ内で生成されるキャッシュ、マシン固有のファイル、しばらく無効にしたい項目が該当します。
+
+`push` と `status` では、無視された項目が単独で所有するリポジトリの artifact が取り除かれます。そのため `ignore` に変えると、次の push で保存済みの内容がなくなります。ただし `ignore` がプラットフォーム別のオーバーライドにすぎず、ほかのプラットフォームが同じリポジトリパスを `normal` または `secret` として所有している場合、その artifact は保護されます。
+
+## 入れ子のパスがモードを継承するしくみ
+
+ディレクトリをトラッキングしたあとにその中のファイルもトラッキングすると、パスが重なる項目が 2 つできます。dotweave は項目を `repoPath` の長さが短い順に並べ、各項目の親として `kind` が `directory` である最も近い上位項目を選ぶことで、この重なりを整理します。
+
+`mode` を明示していない項目は親の `mode` を受け取ります。`mode`、`permission`、`profiles` はそれぞれ独立に継承されるので、モードは継承しつつ permission だけを指定できます。モードを明示した項目は、親が何であってもその値を保ちます。
+
+```bash
+dotweave track ~/.config/my-tool
+dotweave track ~/.config/my-tool/credentials.json --mode secret
+```
+
+`~/.config/my-tool` 配下はそのまま保存され、`credentials.json` だけが暗号化されます。入れ子の項目は上位ディレクトリの走査対象から自分を外すため、同じファイルが `normal` モードでもう一度保存されることはありません。
+
+## 実装とリファレンス
+
+モードは manifest の項目ごとに宣言され、設定の読み込み時にプラットフォーム別へ解決されます。モードの一覧は `packages/cli/lib/src/config/constants.dart`、プラットフォーム解決と継承は `config/sync_schema.dart`、artifact の所有権と整理は `services/repo_artifacts.dart` にあります。
+
+recipient と identity を用意する手順は [age でシークレットを暗号化する](/ja/concepts/secrets/)、項目のほかのフィールドと並んだ `mode` フィールドは [manifest.jsonc](/ja/config/manifest/) を参照してください。

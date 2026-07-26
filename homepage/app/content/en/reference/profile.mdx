@@ -1,48 +1,82 @@
 ---
 title: "dotweave profile"
-description: "Manage sync profiles."
+description: Add, list, remove, and select the sync profiles registered in the manifest.
 section: reference
-order: 7
+order: 6
 ---
 
-Manage active and assigned sync profiles.
+import { TRAlert } from "@tinyrack/ui/components/alert";
 
-Inspect configured profiles or update which profile dotweave should use by default.
 
-## Subcommands
+## Synopsis
 
-### `dotweave profile list`
+```bash
+dotweave profile add <profile>
+dotweave profile list
+dotweave profile remove <profile>
+dotweave profile use [<profile>]
+```
 
-Show configured and active profiles.
+`profile` groups four subcommands over the profile registry in `manifest.jsonc` and the active profile in `settings.jsonc`. No subcommand takes a flag other than `--help`.
+
+## profile add
+
+Register a non-default profile in `manifest.jsonc` so tracked entries can be assigned to it. The registry is kept sorted.
+
+```bash
+dotweave profile add work
+```
+
+```
+✔ Added profile work
+```
+
+`add` rejects `default`, because that profile is implicit. It also rejects a name that is already registered and an invalid name. A profile name must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, must not start with `.`, must not be `.` or `..`, and must not be the reserved name `profiles`. Read [Error messages](/en/config/errors/#profiles) for each message and its fix.
+
+## profile list
+
+Print the implicit `default` profile, every registered profile, and a marker on the active one.
 
 ```bash
 dotweave profile list
 ```
 
-### `dotweave profile use [name]`
-
-Set or clear the active profile. When called without a name, the active profile is cleared.
-
-```bash
-dotweave profile use [name]
+```
+~ Profiles
+  - default
+  - work (active)
 ```
 
-## Examples
+When the active profile is not registered in the manifest, `list` still prints the registry and adds a warning naming that profile.
 
-List all configured profiles:
+## profile remove
+
+Unregister a profile from `manifest.jsonc`.
 
 ```bash
-dotweave profile list
+dotweave profile remove work
 ```
 
-Activate the work profile:
+`remove` rejects `default` and an unknown name. It also refuses to remove the profile that is currently active, and refuses while any tracked entry still lists the profile. In that last case the error detail lines name every referencing entry. Clear or reassign those entries with [`dotweave track`](/en/reference/track/) first, then remove the profile.
+
+## profile use
+
+Write `activeProfile` into `settings.jsonc` in the dotweave home directory. That file sits outside the sync directory and is never committed, so each machine chooses its profile independently.
 
 ```bash
 dotweave profile use work
 ```
 
-Clear the active profile:
-
-```bash
-dotweave profile use
 ```
+✔ Active profile set to work
+```
+
+Omit the argument to clear the active profile. The profile must already be registered, and the sync directory must be a git repository. `--profile` on `push`, `pull`, and `status` overrides the active profile for a single command.
+
+<TRAlert.Root variant="warning">
+An entry assigned to a profile other than the active one is invisible to `status`, `push`, and `pull`. Check the active profile before concluding that an entry stopped syncing.
+</TRAlert.Root>
+
+## Related commands
+
+Read [Profiles](/en/concepts/profiles/) for how profile selection filters entries, or [Keep several devices in sync](/en/guides/multi-device-workflow/) to give each machine a different profile.

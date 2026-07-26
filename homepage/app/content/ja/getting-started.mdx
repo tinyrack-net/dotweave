@@ -1,157 +1,106 @@
 ---
-title: はじめに
-description: dotweaveをインストールして、最初の同期を設定しましょう。
+title: 最初の同期を設定する
+description: 同期ディレクトリを初期化し、最初のファイルをトラッキングして push し、git でリポジトリを公開します。
 section: overview
-order: 2
+order: 3
 ---
 
 import { TRAlert } from "@tinyrack/ui/components/alert";
-import { TRSteps } from "@tinyrack/ui/components/steps";
-import { TRTabs } from "@tinyrack/ui/components/tabs";
 
 
-## インストール
+何もない状態から、公開された同期リポジトリまで進めます。最後まで進めると、トラッキング中の設定ファイルが git リポジトリにミラーされ、別のマシンから clone できます。`dotweave` CLI がインストールされていて、`PATH` に `git` があることが前提です。
 
-<TRTabs.Root defaultValue="windows">
-<TRTabs.List aria-label="Installation method">
-<TRTabs.Tab value="windows">Windows</TRTabs.Tab>
-<TRTabs.Tab value="macos-linux">macOS / Linux</TRTabs.Tab>
-<TRTabs.Indicator />
-</TRTabs.List>
-<TRTabs.Panel value="windows">
-
-```powershell
-winget install tinyrack.dotweave
-```
-
-</TRTabs.Panel>
-<TRTabs.Panel value="macos-linux">
-
-```bash
-brew install tinyrack-net/tap/dotweave
-```
-
-</TRTabs.Panel>
-</TRTabs.Root>
-
----
-
-## 新規セットアップ
-
-dotweaveを初めて使う場合は、以下の手順で新しいsyncディレクトリを作成します。
-
-<TRSteps.Root>
-<TRSteps.Item>
-
-**初期化**
-
-シークレット暗号化用のageキーを含む新しいsyncディレクトリを作成します。
+## 1. 同期ディレクトリを初期化する
 
 ```bash
 dotweave init
 ```
 
-これにより、dotweaveのアプリデータディレクトリにGitリポジトリとageのidentityが設定されます。
+```
+· Initializing sync directory...
+✔ Sync directory initialized
+  git: initialized new repository
+  age: generated a new local identity
+  0 entries · 1 recipients
+```
 
-</TRSteps.Item>
-<TRSteps.Item>
+dotweave ホームディレクトリの下に git リポジトリを作り、シークレットの暗号化に使う age identity を `keys.txt` に生成します。
 
-**ファイルをトラッキング**
+## 2. 最初のファイルをトラッキングする
 
-同期したいファイルをdotweaveに登録します。例えば：
+トラッキングは、パスを `manifest.jsonc` に登録する操作です。この時点ではまだ何もコピーされません。
 
 ```bash
-dotweave track ~/.zshrc
-dotweave track ~/.config/starship.toml
+dotweave track ~/.gitconfig
 dotweave track ~/.config/nvim
 ```
 
-SSHキーなどの機密ファイルにはsecretモードを使います：
-
-```bash
-dotweave track --mode secret ~/.ssh/config
+```
+✔ Started tracking .gitconfig
+  kind  file
+  path  /home/you/.gitconfig
+  repo  .gitconfig
+  mode  normal
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
-
-**syncディレクトリにpush**
-
-トラッキング中のファイルをsyncディレクトリにコピーします：
+認証情報を含むファイルには `--mode secret` を付けてください。リポジトリに届く前に内容が暗号化されます。
 
 ```bash
+dotweave track ~/.ssh/config --mode secret --permission 0600
+```
+
+## 3. 同期ディレクトリへ push する
+
+まず何が起きるかを確認し、そのうえで適用します。
+
+```bash
+dotweave status
 dotweave push
 ```
 
-</TRSteps.Item>
-<TRSteps.Item>
+```
+· Pushing changes...
+✔ Push complete
+  plain: 2
+  encrypted: 1
+  symlinks: 0
+  dirs: 1
+  0 stale artifacts removed
+```
 
-**Gitでcommit & push**
+## 4. git で公開する
 
-syncディレクトリを開いてリモートにpushします：
+`push` はファイルを書いただけです。コミットと公開は、自分で実行する別の手順です。
 
 ```bash
 dotweave cd
 git add -A && git commit -m "Initial sync"
 git remote add origin <your-repo-url>
 git push -u origin main
+exit
 ```
 
-</TRSteps.Item>
-</TRSteps.Root>
+`dotweave cd` は同期ディレクトリをルートとする子シェルを開きます。`exit` を入力すると元の場所に戻ります。
 
-<TRAlert.Root variant="success">
-  セットアップが完了したら、[ディレクトリ構造](/ja/guides/directory-structure/)ガイドで、dotweaveが設定ファイルと同期データをどこに保存するかを確認してみてください。
+<TRAlert.Root variant="warning">
+いま dotweave ホームディレクトリの `keys.txt` を安全な場所にバックアップしてください。このファイルはコミットも同期もされません。これがないと、別のマシンで暗号化されたファイルを読めません。
 </TRAlert.Root>
 
----
+## 結果を確認する
 
-## 既存のsyncディレクトリに接続する
+`dotweave status` をもう一度実行します。両方向とも変更がない状態になります。
 
-新しいマシンで、既存のsyncディレクトリをcloneします：
+```
+· Checking sync status...
+~ Sync status — 3 entries, 1 recipients, profile: default
 
-<TRSteps.Root>
-<TRSteps.Item>
+Push changes (repository)
+  No push changes
 
-**cloneして初期化**
-
-```bash
-dotweave init <your-repo-url>
+Pull changes (local)
+  No pull changes
 ```
 
-リポジトリがdotweaveのアプリデータディレクトリ内の`repository/`にcloneされます。既存のsyncリポジトリに接続する場合は、シークレットファイルの復号に使ったageプライベートキーを指定してください：
+`status` にまだ push の変更が出る場合は、`dotweave push` を実行し直して報告内容を読んでください。トラッキング対象のパスが見つからない場合は、`dotweave doctor` がどのパスかを示します。
 
-```bash
-dotweave init <your-repo-url> --key-file ~/dotweave.agekey
-```
-
-</TRSteps.Item>
-<TRSteps.Item>
-
-**ファイルをpull**
-
-トラッキング中のすべてのファイルをローカルパスに復元します：
-
-```bash
-dotweave pull
-```
-
-</TRSteps.Item>
-</TRSteps.Root>
-
-<TRAlert.Root variant="info">
-  syncディレクトリに暗号化されたシークレットが含まれている場合、すべてのマシンで同じageプライベートキーが必要です。詳しくは[シークレットファイルの同期](/ja/guides/syncing-secrets/)をご覧ください。
-</TRAlert.Root>
-
----
-
-## 次のステップ
-
-セットアップが完了したら、各ガイドを読んでみましょう：
-
-- [ディレクトリ構造](/ja/guides/directory-structure/) — dotweaveがファイルを保存する場所を理解する
-- [ファイルのトラッキング](/ja/guides/tracking-files/) — トラッキングオプションの詳細
-- [同期モード](/ja/guides/sync-modes/) — normal、secret、ignoreモード
-- [シークレットファイルの同期](/ja/guides/syncing-secrets/) — ageで機密ファイルを暗号化する
-
-
+この設定を別の場所で復元するには[2 台目のデバイスを設定する](/ja/second-device/)へ、`push` が何を書き込んだかを見るには[ディレクトリとリポジトリの構造](/ja/concepts/repository-layout/)を参照してください。
