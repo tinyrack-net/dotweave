@@ -1006,7 +1006,7 @@ bool hasReservedSyncArtifactSuffixSegment(String value) {
       );
 }
 
-String deriveRepoPathFromLocalPath(
+String _deriveRepoPathFromLocalPath(
   PlatformStringValue localPath,
   String homeDirectory,
 ) {
@@ -1104,7 +1104,7 @@ void _validatePathOverlaps(
   }
 }
 
-void validateResolvedSyncConfigEntries(List<ResolvedSyncConfigEntry> entries) {
+void _validateResolvedSyncConfigEntries(List<ResolvedSyncConfigEntry> entries) {
   _validatePathOverlaps(entries, 'repoPath', 'Repository');
   _validatePathOverlaps(entries, 'localPath', 'Local');
 }
@@ -1444,7 +1444,7 @@ ResolvedSyncConfig parseSyncConfig(
             ? null
             : _normalizeConfiguredRepoPath(entry.repoPath!);
         final repoPath = configuredRepoPath == null
-            ? deriveRepoPathFromLocalPath(entry.localPath, homeDirectory)
+            ? _deriveRepoPathFromLocalPath(entry.localPath, homeDirectory)
             : resolvePlatformValue(configuredRepoPath, platformKey);
 
         final entryProfiles = entry.profiles;
@@ -1483,7 +1483,7 @@ ResolvedSyncConfig parseSyncConfig(
       }(),
   ];
 
-  validateResolvedSyncConfigEntries(rawEntries);
+  _validateResolvedSyncConfigEntries(rawEntries);
 
   final entries = _applyEntryInheritance(rawEntries, platformKey);
   _validateEntryProfileReferences(entries, profiles);

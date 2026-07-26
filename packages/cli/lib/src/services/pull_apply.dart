@@ -270,7 +270,10 @@ String _resolveStagingParentDirectory(String targetPath) {
     try {
       // Mirrors node:fs `realpathSync.native(parentDirectory)`.
       return Directory(parentDirectory).resolveSymbolicLinksSync();
-    } catch (_) {
+    } on FileSystemException {
+      // The directory may not exist yet, or may not be resolvable (a broken
+      // link, a permission boundary). The unresolved path is still a usable
+      // staging parent, so fall back rather than fail the whole pull.
       return parentDirectory;
     }
   }();
@@ -374,7 +377,7 @@ Future<void> _ensureMaterializedDirectoryPath(
   }
 }
 
-Future<void> collectLocalLeafKeys(
+Future<void> _collectLocalLeafKeys(
   String targetPath,
   String repoPathPrefix,
   Set<String> keys,
@@ -422,7 +425,7 @@ Future<void> collectLocalLeafKeys(
     if (childStats.isDirectory) {
       // `childStats` was just fetched above for this exact path; thread it
       // through so the recursive call doesn't stat the same path again.
-      await collectLocalLeafKeys(
+      await _collectLocalLeafKeys(
         absolutePath,
         repoPathPrefix,
         keys,
@@ -539,7 +542,7 @@ Future<int> countDeletedLocalNodes(
       ? await getFollowedPathStats(entry.localPath)
       : await getPathStats(entry.localPath);
 
-  await collectLocalLeafKeys(
+  await _collectLocalLeafKeys(
     entry.localPath,
     entry.repoPath,
     effectiveExistingKeys,

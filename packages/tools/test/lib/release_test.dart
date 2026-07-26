@@ -12,7 +12,10 @@ class FakeReleaseTarget implements ReleaseTarget {
   final String path;
 
   final String version;
-  final Object? readError;
+
+  /// Typed rather than `Object?` so the rethrow below is a legal `throw`; the
+  /// only value any test injects is a `FormatException`.
+  final Exception? readError;
   final List<String> writtenVersions = [];
 
   @override

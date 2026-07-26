@@ -121,7 +121,7 @@ class InitDependencies {
 const String _gitAttributesFileName = '.gitattributes';
 const String _gitAttributesContents = '* -text\n';
 
-DotweaveError createMissingRepositoryAgeKeyError() {
+DotweaveError _createMissingRepositoryAgeKeyError() {
   return DotweaveError(
     'Existing repository setup requires an age private key.',
     code: 'INIT_AGE_IDENTITY_REQUIRED',
@@ -205,7 +205,7 @@ Future<AgeIdentityPlan> planAgeIdentity({
   if (plan.importingRepository &&
       plan.providedKey == null &&
       trimmedAnswer == '') {
-    throw createMissingRepositoryAgeKeyError();
+    throw _createMissingRepositoryAgeKeyError();
   }
 
   return (
@@ -222,7 +222,7 @@ Future<AgeIdentityPlan> planAgeIdentity({
   );
 }
 
-DotweaveError createAlreadyInitializedError(String syncDirectory) {
+DotweaveError _createAlreadyInitializedError(String syncDirectory) {
   return DotweaveError(
     'Sync directory is already initialized.',
     code: 'INIT_ALREADY_INITIALIZED',
@@ -400,11 +400,11 @@ Future<InitResult> initializeSyncDirectory(
   if (importingRepository &&
       request.ageIdentity == null &&
       !(await pathExists(identityFile))) {
-    throw createMissingRepositoryAgeKeyError();
+    throw _createMissingRepositoryAgeKeyError();
   }
 
   if (configExists) {
-    throw createAlreadyInitializedError(syncDirectory);
+    throw _createAlreadyInitializedError(syncDirectory);
   }
 
   await Directory(p.dirname(syncDirectory)).create(recursive: true);

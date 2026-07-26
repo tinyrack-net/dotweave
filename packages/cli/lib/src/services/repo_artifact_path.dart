@@ -56,21 +56,6 @@ String? stripSecretArtifactSuffix(String relativePath) {
   );
 }
 
-bool isSymlinkArtifactPath(String relativePath) {
-  return relativePath.endsWith(AppConstants.sync.symlinkArtifactSuffix);
-}
-
-String? stripSymlinkArtifactSuffix(String relativePath) {
-  if (!isSymlinkArtifactPath(relativePath)) {
-    return null;
-  }
-
-  return relativePath.substring(
-    0,
-    relativePath.length - AppConstants.sync.symlinkArtifactSuffix.length,
-  );
-}
-
 void assertStorageSafeRepoPath(String repoPath) {
   if (!hasReservedSyncArtifactSuffixSegment(repoPath)) {
     return;
