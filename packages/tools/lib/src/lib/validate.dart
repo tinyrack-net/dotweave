@@ -174,9 +174,7 @@ class _ValidationPaths {
         'format',
         '--output=none',
         '--set-exit-if-changed',
-        'packages/age',
         'packages/cli',
-        'packages/tinyrack_cli',
         'packages/tools',
       ],
       workingDirectory: repoRoot,
@@ -197,9 +195,7 @@ class _ValidationPaths {
   );
 
   List<ValidationTask> get dartTests => [
-    _dartTest('CLI tests', 'cli', const ['-x', 'interop']),
-    _dartTest('Age tests', 'age', const ['-x', 'interop']),
-    _dartTest('tinyrack_cli tests', 'tinyrack_cli', const []),
+    _dartTest('CLI tests', 'cli', const []),
     _dartTest('Tools tests', 'tools', const []),
   ];
 

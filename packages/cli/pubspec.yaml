@@ -11,11 +11,11 @@ executables:
   dotweave: dotweave
 
 dependencies:
+  cliweave: ^0.1.0
   cryptography: ^2.7.0
-  dotweave_age: ^0.1.0
+  dartage: ^0.1.0
   ffi: ^2.1.0
   path: ^1.9.0
-  tinyrack_cli: ^0.1.0
   win32: ^5.5.0
 
 dev_dependencies:

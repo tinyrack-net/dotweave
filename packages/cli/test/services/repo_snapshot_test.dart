@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dartage/dartage.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
@@ -11,7 +12,6 @@ import 'package:dotweave/src/util/crypto.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/file_mode.dart';
 import 'package:dotweave/src/util/posix_chmod.dart';
-import 'package:dotweave_age/dotweave_age.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

@@ -5,6 +5,7 @@
 // skill, status, track, untrack) so help output and completions list routes
 // in the same order as the TS CLI.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/cd.dart';
 import 'package:dotweave/src/cli/doctor.dart';
 import 'package:dotweave/src/cli/init.dart';
@@ -15,7 +16,6 @@ import 'package:dotweave/src/cli/skill/index.dart';
 import 'package:dotweave/src/cli/status.dart';
 import 'package:dotweave/src/cli/track.dart';
 import 'package:dotweave/src/cli/untrack.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Map<String, RoutingTarget> rootCommandRoutes = {
   'cd': cdCommand,

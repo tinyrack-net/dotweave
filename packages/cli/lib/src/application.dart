@@ -8,13 +8,13 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
+import 'package:cliweave/cliweave.dart';
+import 'package:cliweave/terminal.dart';
 import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:dotweave/src/cli/index.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/version.dart';
-import 'package:tinyrack_cli/terminal.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 /// Mirror of `stringifyThrownValue`.
 String _stringifyThrownValue(Object? error) {

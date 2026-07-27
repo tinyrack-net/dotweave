@@ -57,6 +57,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  cliweave:
+    dependency: transitive
+    description:
+      name: cliweave
+      sha256: cdc6d6cc2dc038c50dd88ecde867bc705dc07443890587b913c1592b09e338ed
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   collection:
     dependency: transitive
     description:
@@ -97,6 +105,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.9.0"
+  dartage:
+    dependency: transitive
+    description:
+      name: dartage
+      sha256: cfc74042af33510a7395d7bed60eb0d4f18dbf39174e8324df5f8404f1c701e9
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   ffi:
     dependency: transitive
     description:

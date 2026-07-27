@@ -1,7 +1,7 @@
 import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:test/test.dart';
 
-// The script generators live in `tinyrack_cli` and are tested there against an
+// The script generators live in `cliweave` and are tested there against an
 // arbitrary executable name. What is dotweave's own is the binding: that the
 // scripts are generated for `dotweave __complete` and not something else. The
 // shells actually running these scripts are exercised in

@@ -3,7 +3,7 @@
 // The TS `NoFlags` helper type has no Dart equivalent; commands without flags
 // simply pass an empty `flags` map to `CommandParameters`.
 
-import 'package:tinyrack_cli/tinyrack_cli.dart';
+import 'package:cliweave/cliweave.dart';
 
 const ParsedFlag profileFlag = ParsedFlag(
   brief:

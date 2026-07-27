@@ -37,9 +37,9 @@ const Map<String, Set<String>> _allowedDependencies = {
 
 /// Layers that must stay free of direct process/filesystem access.
 ///
-/// Empty since the age implementation moved to `packages/age`, where the rule
-/// is now enforced by the package boundary itself. Kept because the check is
-/// the natural home for the next such invariant.
+/// Empty since the age implementation lives in the external `dartage` package,
+/// where the rule is enforced by the package boundary itself. Kept because the
+/// check is the natural home for the next such invariant.
 const Set<String> _layersWithoutDartIo = <String>{};
 
 Iterable<File> _sourceFiles(String directory) sync* {

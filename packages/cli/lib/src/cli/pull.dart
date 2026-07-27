@@ -2,13 +2,13 @@
 
 import 'dart:io' as io;
 
+import 'package:cliweave/cliweave.dart';
+import 'package:cliweave/terminal.dart';
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/services/pull.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/prompt.dart';
-import 'package:tinyrack_cli/terminal.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 void _logPullPlanChanges(
   CliLogger logger,
