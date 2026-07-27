@@ -42,12 +42,8 @@ jobs:
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-      - name: Install dependencies
-        run: dart pub get
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed packages/age packages/cli packages/tinyrack_cli packages/tools
-      - name: Analyze
-        run: dart analyze --fatal-infos
+      - name: Validate Dart static checks
+        run: dart run packages/tools/bin/cli.dart validate dart-static
 
   dart-test:
     name: Dart Test (${{ matrix.os }})
@@ -69,25 +65,9 @@ jobs:
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-      - name: Install dependencies
-        run: dart pub get
-      - name: Build e2e binary
-        run: dart tool/build_e2e.dart
-        working-directory: packages/cli
-      - name: Run cli tests
-        # interop needs the Node toolchain; it runs in dart-interop.
-        run: dart test -x interop
-        working-directory: packages/cli
-      - name: Run age tests
-        # interop needs the Node toolchain; it runs in dart-interop.
-        run: dart test -x interop
-        working-directory: packages/age
-      - name: Run tinyrack_cli tests
-        run: dart test
-        working-directory: packages/tinyrack_cli
-      - name: Run tools tests
-        run: dart test
-        working-directory: packages/tools
+      - name: Validate Dart tests
+        # Interop needs the Node toolchain; it remains in dart-interop.
+        run: dart run packages/tools/bin/cli.dart validate dart-tests
 
   dart-interop:
     name: Dart Interop (${{ matrix.os }})
@@ -126,14 +106,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup
-      - name: Typecheck
-        run: pnpm run typecheck
-        working-directory: homepage
-      - name: Run homepage tests
-        run: pnpm run test
-        working-directory: homepage
-      - name: Build homepage
-        run: pnpm run build
+      - name: Validate homepage
+        run: pnpm run validate
         working-directory: homepage
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

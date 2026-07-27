@@ -33,4 +33,10 @@ void main() {
   test('fails for smoke without --executable-path', () async {
     expect(await runTools(const ['smoke']), 1);
   });
+
+  test('fails cleanly for unsupported validation targets', () async {
+    for (final target in ['unknown', 'all', 'homepage']) {
+      expect(await runTools(['validate', target]), 1);
+    }
+  });
 }

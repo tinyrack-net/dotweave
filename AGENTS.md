@@ -16,6 +16,18 @@ When writing, rewriting, translating, or reviewing public Dotweave documentation
 ## Mandatory Validation Loop
 You MUST execute a validation loop for every change to ensure system integrity.
 
+The Dart workspace and homepage have independent validation entry points:
+
+- **All Dart checks**: `dart run packages/tools/bin/cli.dart validate`
+- **Dart static checks**: `dart run packages/tools/bin/cli.dart validate dart-static`
+- **Dart tests**: `dart run packages/tools/bin/cli.dart validate dart-tests`
+- **Homepage**: run `pnpm run validate` from `homepage/`
+
+The Dart commands prepare Dart dependencies before starting validation,
+preserve each Dart test suite's default concurrency, and run independent checks
+in parallel. Homepage dependency installation remains independent.
+The individual commands below remain useful when diagnosing a specific failure.
+
 For Dart packages (run from `packages/age`, `packages/cli`, `packages/tinyrack_cli`, and/or `packages/tools`, whichever you changed):
 - **Format**: `dart format .`
 - **Analyze**: `dart analyze --fatal-infos`
