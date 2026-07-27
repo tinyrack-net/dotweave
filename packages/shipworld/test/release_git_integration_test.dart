@@ -25,9 +25,17 @@ void main() {
       await _run('chmod', ['700', gnupg], temporary.path);
       final environment = {...Platform.environment, 'GNUPGHOME': gnupg};
       await _run(
+        'gpgconf',
+        ['--homedir', gnupg, '--launch', 'gpg-agent'],
+        temporary.path,
+        environment: environment,
+      );
+      await _run(
         'gpg',
         [
           '--batch',
+          '--pinentry-mode',
+          'loopback',
           '--passphrase',
           '',
           '--quick-generate-key',

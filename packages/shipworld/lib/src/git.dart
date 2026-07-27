@@ -48,6 +48,8 @@ final class IoGitClient implements GitClient {
       );
     }
 
-    return (result.stdout as String).trim();
+    // Git's porcelain formats use leading spaces as structural data. Remove
+    // only trailing line endings so callers can parse those formats safely.
+    return (result.stdout as String).trimRight();
   }
 }
