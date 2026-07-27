@@ -70,12 +70,7 @@ void main() {
 
       expect(
         started.map((task) => task.name),
-        containsAll([
-          'CLI tests',
-          'Age tests',
-          'tinyrack_cli tests',
-          'Tools tests',
-        ]),
+        containsAll(['CLI tests', 'Tools tests']),
       );
 
       for (final blocker in blockers.values) {

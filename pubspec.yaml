@@ -3,7 +3,5 @@ publish_to: none
 environment:
   sdk: ^3.12.0
 workspace:
-  - packages/age
   - packages/cli
-  - packages/tinyrack_cli
   - packages/tools

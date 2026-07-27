@@ -1,8 +1,7 @@
 include: ../../analysis_options.yaml
 
-# Same ratchet as packages/age, packages/cli, and packages/tinyrack_cli. This
-# was the last package without one, which is what kept these rules from moving
-# to the workspace root.
+# Same ratchet as packages/cli. This was the last package without one, which is
+# what kept these rules from moving to the workspace root.
 linter:
   rules:
     - only_throw_errors

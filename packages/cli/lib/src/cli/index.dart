@@ -1,9 +1,9 @@
 // Dart port of `packages/cli/src/cli/index.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:dotweave/src/cli/root_commands.dart';
 import 'package:dotweave/src/config/constants.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 RouteMap buildRootRoute() {
   final (:autocompleteRoute, :completeCommand) = buildAutocompleteRoute();

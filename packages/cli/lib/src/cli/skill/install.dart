@@ -1,8 +1,8 @@
 // Dart port of `packages/cli/src/cli/skill/install.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/services/skill_install.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 String _formatInstallMessage(String action) {
   switch (action) {

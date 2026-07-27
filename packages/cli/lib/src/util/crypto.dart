@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dotweave_age/dotweave_age.dart';
+import 'package:dartage/dartage.dart';
 import 'package:path/path.dart' as p;
 
 import 'error.dart';

@@ -1,8 +1,0 @@
-{
-  "name": "age-interop-harness",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "age-encryption": "^0.3.0"
-  }
-}

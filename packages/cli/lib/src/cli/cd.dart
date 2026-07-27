@@ -1,8 +1,8 @@
 // Dart port of `packages/cli/src/cli/cd.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/services/shell.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Command cdCommand = buildCommand(
   docs: const CommandDocs(

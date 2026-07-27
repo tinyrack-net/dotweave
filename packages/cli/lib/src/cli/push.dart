@@ -1,9 +1,9 @@
 // Dart port of `packages/cli/src/cli/push.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/services/push.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 final Command pushCommand = buildCommand(
   docs: const CommandDocs(

@@ -1,9 +1,9 @@
 // Dart port of `packages/cli/src/cli/init.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/services/init.dart';
 import 'package:dotweave/src/util/prompt.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 String _formatGitSummary(InitResult result) {
   switch (result.gitAction) {

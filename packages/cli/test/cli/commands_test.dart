@@ -20,6 +20,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/cd.dart';
 import 'package:dotweave/src/cli/doctor.dart';
 import 'package:dotweave/src/cli/init.dart';
@@ -43,7 +44,6 @@ import 'package:dotweave/src/services/track.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 import '../helpers/capture_stream.dart';
 import '../helpers/sync_fixture.dart';

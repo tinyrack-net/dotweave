@@ -66,38 +66,7 @@ jobs:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
       - name: Validate Dart tests
-        # Interop needs the Node toolchain; it remains in dart-interop.
         run: dart run packages/tools/bin/cli.dart validate dart-tests
-
-  dart-interop:
-    name: Dart Interop (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-2025
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-      # Installs the standalone interop harness (the npm age-encryption
-      # reference implementation the age interop tests drive via node).
-      - uses: ./.github/actions/setup
-        with:
-          working-directory: packages/age/test/interop
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.12.2
-      - uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-      - name: Install Dart dependencies
-        run: dart pub get
-      - name: Run age interop tests
-        run: dart test -t interop
-        working-directory: packages/age
 
   homepage:
     name: Homepage
@@ -385,7 +354,6 @@ jobs:
       - lint
       - dart-analyze
       - dart-test
-      - dart-interop
       - homepage
       - autocomplete-shell-smoke
       - build-and-package

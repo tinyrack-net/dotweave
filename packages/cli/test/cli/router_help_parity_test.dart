@@ -1,6 +1,6 @@
 // Byte-exact help rendering for dotweave's own configured command tree.
 //
-// The framework's parity tests live in `packages/tinyrack_cli`; these three
+// The framework's parity tests live in `cliweave`; these three
 // assert the composed result -- what a user actually sees for
 // `dotweave push --help` and friends -- so they stay with the application
 // whose commands, briefs, and flag set produce that output. They are the

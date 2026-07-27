@@ -1,7 +1,7 @@
 // Dart port of `packages/cli/src/cli/autocomplete.ts`.
 
+import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/config/constants.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
 
 /// dotweave's binding of the framework's shell-script generators. The scripts
 /// themselves are generic; only the executable name and the hidden subcommand

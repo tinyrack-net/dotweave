@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`), its CLI framework (`packages/tinyrack_cli`), the age encryption implementation (`packages/age`), and internal tooling (`packages/tools`); TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/age`, `packages/cli`, `packages/tinyrack_cli`, and `packages/tools`); the homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`), with the published `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/cli` and `packages/tools`); reusable Dart libraries are consumed from pub.dev. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -28,14 +28,13 @@ preserve each Dart test suite's default concurrency, and run independent checks
 in parallel. Homepage dependency installation remains independent.
 The individual commands below remain useful when diagnosing a specific failure.
 
-For Dart packages (run from `packages/age`, `packages/cli`, `packages/tinyrack_cli`, and/or `packages/tools`, whichever you changed):
+For Dart packages (run from `packages/cli` and/or `packages/tools`, whichever you changed):
 - **Format**: `dart format .`
 - **Analyze**: `dart analyze --fatal-infos`
 - **Test**: `dart test`
 
-`packages/age` and `packages/cli` tag their Node/PTY-dependent suites, so
-`dart test -x interop` is the offline run; the `interop` tests need
-`pnpm install` in `packages/age/test/interop` first.
+`packages/cli` tags its PTY-dependent shell suite, which is skipped
+automatically on unsupported platforms.
 
 For the homepage (run from `homepage/`):
 - **Build**: `pnpm run build`
@@ -49,10 +48,8 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
-- `packages/tinyrack_cli`: The CLI framework — command routing, argument scanning, help rendering, exit codes, completion proposals, and the bash/zsh/fish/PowerShell completion-script generators (`tinyrack_cli.dart`), plus the logger, spinner, and colour theme (`terminal.dart`). A Dart implementation of the `@stricli/core` model.
-- `packages/age`: Pure-Dart age v1 encryption (X25519 recipients), consumed by the CLI through the `dotweave_age` barrel.
-
-`tinyrack_cli` and `age` are **reusable packages that happen to live here**. Keep every dotweave type out of them; anything they need from the environment is taken as a parameter (see `EnvLookup`). Both are publish-ready apart from a deliberate `publish_to: none` — releasing means deleting that line, so treat their READMEs, CHANGELOGs, and public API as user-facing.
+- `cliweave`: Published CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
+- `dartage`: Published pure-Dart age v1 encryption dependency (X25519 recipients).
 - `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`, pub workspace member).
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `packages/cli/pubspec.yaml` at build time).
 
@@ -94,7 +91,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
   - `config/`: Configuration schemas and migrations (`config/migrations/`).
   - `util/`: Low-level utilities.
 
-  Command routing and terminal output come from `package:tinyrack_cli`, not from here.
+  Command routing and terminal output come from `package:cliweave`, not from here.
 - **Layering:** Enforced by `test/architecture_test.dart`, which fails the build on an upward or disallowed import. Change the table there deliberately rather than working around it.
 - **Commands:** Follow the existing command-routing style in `lib/src/cli` (root commands are defined in `lib/src/cli/root_commands.dart`). Log via `loggerFor(context)` so output is bound to the run context and stays testable in-process; never call `createCliLogger()` with no arguments from a command.
 - **Testing:**

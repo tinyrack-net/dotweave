@@ -1,5 +1,5 @@
-import 'package:tinyrack_cli/terminal.dart';
-import 'package:tinyrack_cli/tinyrack_cli.dart';
+import 'package:cliweave/cliweave.dart';
+import 'package:cliweave/terminal.dart';
 
 /// Builds a logger bound to the streams of the command's own [context].
 ///

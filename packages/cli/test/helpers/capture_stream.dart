@@ -1,7 +1,7 @@
 // Test stream capturing CLI output; the seam replacing the TS tests' spies
 // on `process.stdout.write` / `process.stderr.write`.
 
-import 'package:tinyrack_cli/terminal.dart';
+import 'package:cliweave/terminal.dart';
 
 class CaptureStream implements WriteStream {
   final StringBuffer _buffer = StringBuffer();
