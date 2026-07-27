@@ -1,0 +1,45 @@
+schema: 1
+remote: origin
+batch-commit: "release: {targets}"
+
+targets:
+  dotweave:
+    kind: cli-application
+    root: packages/cli
+    version:
+      source: pubspec.yaml
+      synchronized:
+        - type: dart-constant
+          path: lib/src/util/version.g.dart
+    tag: "v{version}"
+    commit: "release: v{version}"
+    branch: main
+    payload:
+      kind: executable
+      launcher: dotweave
+    product:
+      name: dotweave
+      display-name: dotweave
+      description: Git-backed configuration synchronization tool for dotfiles
+      executable: dotweave
+      homepage: https://dotweave.tinyrack.net
+      repository: tinyrack-net/dotweave
+    windows:
+      application-id: dotweave
+      executable: dotweave.exe
+      background-color: "#102A43"
+      identity:
+        name-env: MSIX_IDENTITY_NAME
+        publisher-env: MSIX_PUBLISHER
+        publisher-display-name-env: MSIX_PUBLISHER_DISPLAY_NAME
+        display-name-env: MSIX_DISPLAY_NAME
+    macos:
+      entitlements: entitlements.plist
+    linux:
+      icon: ../../homepage/public/favicon.svg
+      categories:
+        - Utility
+      terminal: true
+    homebrew:
+      formula-class: Dotweave
+      artifact-prefix: dotweave

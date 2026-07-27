@@ -1,0 +1,40 @@
+schema: 1
+remote: origin
+batch-commit: "release: {targets}"
+
+targets:
+  fixture:
+    kind: flutter-application
+    root: .
+    version:
+      source: pubspec.yaml
+    tag: "fixture-v{version}"
+    commit: "release: fixture {version}"
+    branch: main
+    payload:
+      kind: directory
+      launcher: shipworld_fixture
+    product:
+      name: shipworld-fixture
+      display-name: Shipworld Fixture
+      description: Shipworld Flutter desktop integration fixture
+      executable: shipworld_fixture
+      homepage: https://example.invalid/shipworld
+      repository: example/shipworld-fixture
+    windows:
+      application-id: ShipworldFixture
+      executable: shipworld_fixture.exe
+      identity:
+        name-env: SHIPWORLD_MSIX_NAME
+        publisher-env: SHIPWORLD_MSIX_PUBLISHER
+        publisher-display-name-env: SHIPWORLD_MSIX_PUBLISHER_NAME
+    macos:
+      entitlements: entitlements.plist
+    linux:
+      icon: icon.svg
+      categories:
+        - Utility
+      terminal: false
+    homebrew:
+      formula-class: ShipworldFixture
+      artifact-prefix: shipworld-fixture

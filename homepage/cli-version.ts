@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 
-// The CLI version's source of truth is the Dart package's pubspec (bumped by
-// `dart run bin/cli.dart release` in packages/tools together with
-// version.g.dart).
+// The CLI version's source of truth is the Dart package's pubspec. Shipworld
+// updates it together with version.g.dart during release preparation.
 const pubspec = readFileSync(
   new URL("../packages/cli/pubspec.yaml", import.meta.url),
   "utf8",

@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and internal tooling (`packages/tools`), with the published `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/cli` and `packages/tools`); reusable Dart libraries are consumed from pub.dev. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and repository tooling (`packages/cli/tool`), with the published `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` listing `packages/cli` and `packages/shipworld`); published reusable Dart libraries are consumed from pub.dev, while `shipworld` is an unpublished monorepo experiment for shared release and desktop-packaging tooling. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -18,9 +18,9 @@ You MUST execute a validation loop for every change to ensure system integrity.
 
 The Dart workspace and homepage have independent validation entry points:
 
-- **All Dart checks**: `dart run packages/tools/bin/cli.dart validate`
-- **Dart static checks**: `dart run packages/tools/bin/cli.dart validate dart-static`
-- **Dart tests**: `dart run packages/tools/bin/cli.dart validate dart-tests`
+- **All Dart checks**: `dart run packages/cli/tool/validate.dart`
+- **Dart static checks**: `dart run packages/cli/tool/validate.dart dart-static`
+- **Dart tests**: `dart run packages/cli/tool/validate.dart dart-tests`
 - **Homepage**: run `pnpm run validate` from `homepage/`
 
 The Dart commands prepare Dart dependencies before starting validation,
@@ -28,7 +28,7 @@ preserve each Dart test suite's default concurrency, and run independent checks
 in parallel. Homepage dependency installation remains independent.
 The individual commands below remain useful when diagnosing a specific failure.
 
-For Dart packages (run from `packages/cli` and/or `packages/tools`, whichever you changed):
+For Dart packages (run from `packages/cli` and/or `packages/shipworld`, whichever you changed):
 - **Format**: `dart format .`
 - **Analyze**: `dart analyze --fatal-infos`
 - **Test**: `dart test`
@@ -48,9 +48,10 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
+- `packages/shipworld`: Unpublished reusable release, signing, and desktop-packaging library/CLI under monorepo evaluation.
 - `cliweave`: Published CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
 - `dartage`: Published pure-Dart age v1 encryption dependency (X25519 recipients).
-- `packages/tools`: Internal Dart tooling (release/automation commands via `bin/cli.dart`, pub workspace member).
+- `packages/cli/tool`: Repository-only validation, compiled-binary smoke checks, benchmarks, and e2e build helpers. Release and packaging operations call `shipworld` directly.
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `packages/cli/pubspec.yaml` at build time).
 
 ---
@@ -64,10 +65,6 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - **Analyze:** `dart analyze --fatal-infos`
 - **Format:** `dart format .`
 - **Native Binary Build:** `dart compile exe bin/dotweave.dart`
-
-### Tools Package (`packages/tools`)
-- **Run a Tool Command:** `dart run bin/cli.dart <cmd>`
-- **Validate:** `dart format .`, `dart analyze --fatal-infos`, `dart test`
 
 ### Homepage (`homepage/`)
 - **Install Dependencies:** `pnpm install` (run from `homepage/`)
