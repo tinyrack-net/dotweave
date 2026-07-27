@@ -1,8 +1,8 @@
 include: ../../analysis_options.yaml
 
 # Package-local ratchet. Rules land here first so the CLI can tighten
-# independently of packages/tools; promote to the workspace root once both
-# packages are clean.
+# independently; promote them to the workspace root when every package is
+# clean.
 #
 # Deliberately NOT enabled yet, with the phase that unblocks each:
 # - avoid_positional_boolean_parameters (17 violations): the offenders are

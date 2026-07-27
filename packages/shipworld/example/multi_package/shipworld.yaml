@@ -1,0 +1,23 @@
+schema: 1
+remote: origin
+batch-commit: "release: {targets}"
+
+targets:
+  cliweave:
+    kind: pub-package
+    root: packages/cliweave
+    version:
+      source: pubspec.yaml
+    changelog: CHANGELOG.md
+    tag: "cliweave-v{version}"
+    commit: "release: cliweave {version}"
+    branch: main
+  dartage:
+    kind: pub-package
+    root: packages/dartage
+    version:
+      source: pubspec.yaml
+    changelog: CHANGELOG.md
+    tag: "dartage-v{version}"
+    commit: "release: dartage {version}"
+    branch: main
