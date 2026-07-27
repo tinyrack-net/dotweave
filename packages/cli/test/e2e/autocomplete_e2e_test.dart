@@ -686,6 +686,25 @@ void main() {
     );
 
     test(
+      'isolates concurrent fish completion state',
+      () async {
+        _requireSelectedShellAvailability('fish', isFishAvailable);
+
+        final results = await Future.wait([
+          for (var invocation = 0; invocation < 8; invocation++)
+            _runFishCompletion('dotweave pr'),
+        ]);
+
+        for (final result in results) {
+          expect(result.exitCode, 0);
+          expect(_completionNames(result.stdout), contains('profile'));
+          expect(_cleanShellStderr(result.stderr), '');
+        }
+      },
+      skip: _skipForShell('fish', isFishAvailable),
+    );
+
+    test(
       'populates fish path completions for track targets',
       () async {
         _requireSelectedShellAvailability('fish', isFishAvailable);

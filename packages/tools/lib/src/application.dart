@@ -6,6 +6,7 @@ import 'commands/msix.dart';
 import 'commands/release.dart';
 import 'commands/sign.dart';
 import 'commands/smoke.dart';
+import 'commands/validate.dart';
 import 'commands/verify.dart';
 import 'lib/error.dart';
 
@@ -32,7 +33,9 @@ COMMANDS
   appimage build --executable-path <path> --output-path <path> --arch <arch>
       Build AppImage for Linux
   homebrew generate --version <v> --artifacts-dir <dir>
-      Generate Homebrew formulas''';
+      Generate Homebrew formulas
+  validate [dart-static|dart-tests]
+      Run Dart workspace validation with dependency-aware parallelism''';
 
 /// Runs the dotweave-tools CLI and returns the process exit code.
 Future<int> runTools(List<String> args) async {
@@ -65,6 +68,8 @@ Future<int> runTools(List<String> args) async {
         return await runAppimageCommand(rest);
       case 'homebrew':
         return await runHomebrewCommand(rest);
+      case 'validate':
+        return await runValidateCommand(rest);
       default:
         stderr.writeln('Unknown command: $command');
         stderr.writeln(_usage);
