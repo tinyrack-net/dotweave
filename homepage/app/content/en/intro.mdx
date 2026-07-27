@@ -8,11 +8,17 @@ order: 1
 import { TRAlert } from "@tinyrack/ui/components/alert";
 
 
+## What Dotweave is
+
+Dotweave is a command line tool that syncs your dotfiles with git. Pick the config files you want out of your home directory — `~/.zshrc`, `~/.gitconfig`, and so on — and every machine you work on can have the same setup.
+
+There are three commands to learn. `dotweave track` registers a path for syncing, `dotweave push` puts the current contents of your home directory into the sync directory, and `dotweave pull` takes them back out on another machine. Files you cannot commit as they are, such as an SSH key, go in secret mode and are stored as age ciphertext.
+
+The sync directory is a git repository. Committing it and pushing it to a remote is ordinary git work, done the way you already do it.
+
 ## Home is the source of truth
 
-Dotweave mirrors configuration files from your home directory into a git repository, and back again on another machine. Your local files are what matters; the repository is a derived copy.
-
-That is the opposite of how symlink and template based managers work. `stow` replaces files in your home directory with symlinks into a repository. `chezmoi` keeps the canonical copy in its own store and asks you to edit through it. Both make the repository authoritative, which means your editor, your tools, and your muscle memory have to accommodate the tool.
+Your local files are what matters; the repository is a derived copy. That is the opposite of how symlink and template based managers work. `stow` replaces files in your home directory with symlinks into a repository. `chezmoi` keeps the canonical copy in its own store and asks you to edit through it. Both make the repository authoritative, which means your editor, your tools, and your muscle memory have to accommodate the tool.
 
 With Dotweave you edit `~/.zshrc` in your editor, with no wrapper command and no symlink. When you want to publish the change, you run `dotweave push` and then commit with git.
 
