@@ -20,8 +20,18 @@ void main() {
       addTearDown(() => temporary.delete(recursive: true));
       final remote = p.join(temporary.path, 'remote.git');
       final work = p.join(temporary.path, 'work');
-      final gnupg = p.join(temporary.path, 'gnupg');
-      await Directory(gnupg).create();
+      // macOS limits Unix-domain socket paths to 104 bytes. Its system temp
+      // directory is long enough that gpg-agent cannot create its socket
+      // beneath the main fixture, so keep the isolated GPG home under /tmp.
+      final gnupgDirectory = Platform.isMacOS
+          ? await Directory('/tmp').createTemp('shipworld-gpg-')
+          : await Directory(
+              p.join(temporary.path, 'gnupg'),
+            ).create(recursive: true);
+      final gnupg = gnupgDirectory.path;
+      if (Platform.isMacOS) {
+        addTearDown(() => gnupgDirectory.delete(recursive: true));
+      }
       await _run('chmod', ['700', gnupg], temporary.path);
       final environment = {...Platform.environment, 'GNUPGHOME': gnupg};
       await _run(
