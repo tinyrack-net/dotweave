@@ -79,6 +79,6 @@ dotweave track ~/.config/my-tool/credentials.json --mode secret
 
 ## 구현과 참고
 
-모드는 manifest의 항목마다 선언되고, 설정을 읽는 시점에 플랫폼별로 해석돼요. 모드 목록은 `packages/cli/lib/src/config/constants.dart`, 플랫폼 해석과 상속은 `config/sync_schema.dart`, artifact 소유권과 정리는 `services/repo_artifacts.dart`에 있어요.
+모드는 manifest의 항목마다 선언되고, 설정을 읽는 시점에 플랫폼별로 해석돼요. 모드 목록은 `lib/src/config/constants.dart`, 플랫폼 해석과 상속은 `config/sync_schema.dart`, artifact 소유권과 정리는 `services/repo_artifacts.dart`에 있어요.
 
 recipient와 identity를 준비하는 방법은 [age로 시크릿 암호화하기](/ko/concepts/secrets/), 항목의 다른 필드와 함께 놓인 `mode` 필드는 [manifest.jsonc](/ko/config/manifest/)에서 확인하세요.

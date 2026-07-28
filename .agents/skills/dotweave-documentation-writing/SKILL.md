@@ -11,12 +11,12 @@ contracts instead of introducing a second documentation system.
 
 ## Establish the Facts
 
-- Read the Dart implementation in `packages/cli` before writing. The CLI source
+- Read the Dart implementation in `lib/` before writing. The CLI source
   is the only authority for commands, flags, defaults, file layout, and error
   codes. Do not use existing prose, CLI help text, or a previous revision of a
   page as the source of truth.
-- Command and flag facts live in `packages/cli/lib/src/cli/**`. Config field
-  facts live in `packages/cli/lib/src/config/sync_schema.dart`,
+- Command and flag facts live in `lib/src/cli/**`. Config field
+  facts live in `lib/src/config/sync_schema.dart`,
   `config/global_config.dart`, and `config/constants.dart`. Path resolution
   lives in `config/xdg.dart` and `config/platform.dart`. Repository layout lives
   in `services/repo_artifacts.dart` and `services/repository_ignore.dart`. Error
@@ -202,7 +202,7 @@ The documentation is one system, not a set of independent pages.
 
 - Every command must run as written against the current CLI. Verify flag names
   and defaults with `dart run bin/dotweave.dart <command> --help` from
-  `packages/cli`, then confirm the behavior in the source.
+  the repo root, then confirm the behavior in the source.
 - Keep examples minimal but complete and copy-ready. Avoid combining unrelated
   concepts in one example.
 - Every code fence carries a language tag: `bash`, `powershell`, `fish`, `json`,

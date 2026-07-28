@@ -5,7 +5,7 @@ import { extname, join, normalize } from "node:path";
 import { type Browser, chromium } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-// The CLI version comes from packages/cli/pubspec.yaml so the rendered
+// The CLI version comes from pubspec.yaml so the rendered
 // "Dotweave v<version>" badge assertion tracks releases automatically.
 import { cliVersion } from "../cli-version.ts";
 

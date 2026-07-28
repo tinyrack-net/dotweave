@@ -1,0 +1,37 @@
+// Dart port of `src/cli/profile/list.ts`.
+
+import 'package:cliweave/cliweave.dart';
+import 'package:dotweave/src/cli/command_logger.dart';
+import 'package:dotweave/src/services/profile.dart';
+
+final Command<ApplicationContext> profileListCommand = buildCommand(
+  docs: const CommandDocs(
+    brief: 'Show configured and active sync profiles',
+    fullDescription:
+        'List the implicit default profile and manifest-registered profiles, and show which profile is active through ~/.config/dotweave/settings.jsonc.',
+  ),
+  func: (context, flags, args) async {
+    final logger = loggerFor(context);
+
+    final result = await listProfiles();
+
+    logger.info('Profiles');
+
+    final profiles = [...result.availableProfiles];
+    logger.list(
+      profiles
+          .map((name) => name == result.activeProfile ? '$name (active)' : name)
+          .toList(),
+      highlightLast: false,
+    );
+
+    final activeProfileWarning = result.activeProfileWarning;
+    if (activeProfileWarning != null) {
+      logger.warn(activeProfileWarning);
+    }
+  },
+  parameters: CommandParameters(
+    flags: FlagSet<NoFlags, ApplicationContext>.none(),
+    positional: PositionalSet.none(),
+  ),
+);
