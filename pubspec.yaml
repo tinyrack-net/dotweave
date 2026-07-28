@@ -5,12 +5,8 @@ environment:
 workspace:
   - packages/cli
 
-# shipworld now lives in the tinyrack-net/dart-packages monorepo. It is
-# consumed here as an unpublished git dependency so `dart run shipworld:shipworld`
-# resolves from the repository root (where CI invokes it against shipworld.yaml).
+# shipworld lives in the tinyrack-net/dart-packages monorepo and is published to
+# pub.dev. It is a dependency of the workspace root so `dart run shipworld:shipworld`
+# resolves here (where CI invokes it against shipworld.yaml).
 dependencies:
-  shipworld:
-    git:
-      url: https://github.com/tinyrack-net/dart-packages.git
-      path: packages/shipworld
-      ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
+  shipworld: ^0.1.2

@@ -4,7 +4,7 @@
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
 - **Main Technologies:** Dart (>=3.12) for the CLI (`packages/cli`) and repository tooling (`packages/cli/tool`), with the published `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` lists only `packages/cli`); the published `cliweave` and `dartage` libraries are consumed from pub.dev, and `shipworld` (the release and desktop-packaging tooling) is consumed as an unpublished git dependency from the `tinyrack-net/dart-packages` monorepo. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Architecture:** The repo root is a Dart pub workspace (`pubspec.yaml` lists only `packages/cli`); the published `cliweave`, `dartage`, and `shipworld` libraries (all from the `tinyrack-net/dart-packages` monorepo) are consumed from pub.dev, with `shipworld` providing the release and desktop-packaging tooling. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -48,7 +48,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Workspace Structure
 - `packages/cli`: The core CLI tool (Dart, pub workspace member).
-- `shipworld`: Unpublished reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo and consumed here as a git dependency (invoked with `dart run shipworld:shipworld`).
+- `shipworld`: Published reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo and consumed here from pub.dev (invoked with `dart run shipworld:shipworld`).
 - `cliweave`: Published CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
 - `dartage`: Published pure-Dart age v1 encryption dependency (X25519 recipients).
 - `packages/cli/tool`: Repository-only validation, compiled-binary smoke checks, benchmarks, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`.

@@ -109,10 +109,10 @@ packages:
     dependency: transitive
     description:
       name: dartage
-      sha256: cfc74042af33510a7395d7bed60eb0d4f18dbf39174e8324df5f8404f1c701e9
+      sha256: e66a5de142dd2ef9045c05a2de968b0959ed5b2124852c5b727bf10bb911bbad
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.0"
   ffi:
     dependency: transitive
     description:
@@ -233,6 +233,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  pointycastle:
+    dependency: transitive
+    description:
+      name: pointycastle
+      sha256: "92aa3841d083cc4b0f4709b5c74fd6409a3e6ba833ffc7dc6a8fee096366acf5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   pool:
     dependency: transitive
     description:
@@ -249,6 +257,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.2"
+  pqcrypto:
+    dependency: transitive
+    description:
+      name: pqcrypto
+      sha256: "5d9f39be1c4ecbb6158ef560279a050a4bfd47020034c922ab52a86d5220bc4f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   pub_semver:
     dependency: transitive
     description:
@@ -292,12 +308,11 @@ packages:
   shipworld:
     dependency: "direct main"
     description:
-      path: "packages/shipworld"
-      ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
-      resolved-ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
-      url: "https://github.com/tinyrack-net/dart-packages.git"
-    source: git
-    version: "0.1.0"
+      name: shipworld
+      sha256: "87e3bb7f8924c330f054d9fff99303efb76399b3afc2fdb47aa73f62c47948b2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   source_map_stack_trace:
     dependency: transitive
     description:
