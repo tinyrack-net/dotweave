@@ -22,19 +22,19 @@ String _formatAgeSummary(InitResult result) {
       : 'using existing identity';
 }
 
-final Command initCommand = buildCommand(
+final Command<ApplicationContext> initCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Initialize the git-backed sync directory',
     fullDescription:
         'Create or connect the local dotweave repository under your dotweave app-data directory, then store the sync settings used by later pull and push operations. If local sync repository data already exists, init fails unless --force is provided. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.',
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
-    final force = flags['force'] as bool? ?? false;
-    final repository = positional[0] as String?;
+    final force = flags.force ?? false;
+    final repository = args;
 
     final plan = await planAgeIdentity(
-      keyFile: flags['keyFile'] as String?,
+      keyFile: flags.keyFile,
       repository: repository,
       force: force,
     );
@@ -83,29 +83,31 @@ final Command initCommand = buildCommand(
     logger.log(
       '  ${result.entryCount} entries · ${result.recipientCount} recipients',
     );
-    return null;
   },
-  parameters: const CommandParameters(
-    flags: {
-      'force': BooleanFlag(
-        brief:
-            'Replace existing local sync repository, identity, and settings before initializing',
-        optional: true,
-      ),
-      'keyFile': ParsedFlag(
-        brief: 'Read an age private key from a file',
-        optional: true,
-        parse: stringParser,
-        placeholder: 'path',
-      ),
-    },
-    positional: TuplePositionalParameters([
-      PositionalParameter(
+  parameters: CommandParameters(
+    flags:
+        FlagSet.one(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'force',
+                brief:
+                    'Replace existing local sync repository, identity, and settings before initializing',
+              ),
+            )
+            .and(
+              ParsedFlag.optional<String, ApplicationContext>(
+                name: 'keyFile',
+                brief: 'Read an age private key from a file',
+                parse: stringParser,
+                placeholder: 'path',
+              ),
+            )
+            .map((v) => (force: v.$1, keyFile: v.$2)),
+    positional: PositionalSet.one(
+      Positional.optional<String, ApplicationContext>(
         brief: 'Remote URL or local git repository path to clone',
-        optional: true,
         parse: stringParser,
         placeholder: 'repository',
       ),
-    ]),
+    ),
   ),
 );

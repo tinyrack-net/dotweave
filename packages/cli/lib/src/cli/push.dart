@@ -5,13 +5,13 @@ import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/services/push.dart';
 
-final Command pushCommand = buildCommand(
+final Command<ApplicationContext> pushCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Mirror local config into the git-backed sync directory',
     fullDescription:
         'Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository.',
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
 
     final spin = logger.spinner('Pushing changes...');
@@ -20,10 +20,7 @@ final Command pushCommand = buildCommand(
 
     try {
       result = await pushChanges(
-        PushRequest(
-          dryRun: flags['dryRun'] as bool? ?? false,
-          profile: flags['profile'] as String?,
-        ),
+        PushRequest(dryRun: flags.dryRun ?? false, profile: flags.profile),
       );
     } catch (error) {
       spin.stop();
@@ -46,15 +43,14 @@ final Command pushCommand = buildCommand(
     logger.log(
       '  ${result.deletedArtifactCount} stale artifacts $removalAction',
     );
-    return null;
   },
-  parameters: const CommandParameters(
-    flags: {
-      'dryRun': BooleanFlag(
+  parameters: CommandParameters(
+    flags: FlagSet.one(
+      BooleanFlag.optional<ApplicationContext>(
+        name: 'dryRun',
         brief: 'Preview repository updates only',
-        optional: true,
       ),
-      'profile': profileFlag,
-    },
+    ).and(profileFlag).map((v) => (dryRun: v.$1, profile: v.$2)),
+    positional: PositionalSet.none(),
   ),
 );

@@ -1,14 +1,14 @@
 // Dart port of `packages/cli/src/cli/shared-flags.ts`.
 //
-// The TS `NoFlags` helper type has no Dart equivalent; commands without flags
-// simply pass an empty `flags` map to `CommandParameters`.
+// Commands without flags pass `FlagSet.none()` to `CommandParameters`.
 
 import 'package:cliweave/cliweave.dart';
 
-const ParsedFlag profileFlag = ParsedFlag(
+final FlagBinding<String?, ApplicationContext>
+profileFlag = ParsedFlag.optional<String, ApplicationContext>(
+  name: 'profile',
   brief:
       "Use a registered profile layer for this command (add non-default profiles with 'dotweave profile add')",
-  optional: true,
   parse: stringParser,
   placeholder: 'profile',
 );

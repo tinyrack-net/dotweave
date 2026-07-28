@@ -68,147 +68,6 @@ jobs:
       - name: Validate Dart tests
         run: dart run packages/cli/tool/validate.dart dart-tests
 
-  shipworld-quality:
-    name: Shipworld Package Quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 3.12.2
-      - run: dart pub get
-      - run: dart pub global activate pana 0.23.14
-      - run: dart run packages/shipworld/tool/validate_standalone.dart
-      - run: dart doc
-        working-directory: packages/shipworld
-      - run: dart pub publish --dry-run
-        working-directory: packages/shipworld
-
-  shipworld-flutter-payload:
-    name: Shipworld Flutter Payload (${{ matrix.platform }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            platform: linux
-            payload: build/linux/x64/release/bundle
-            launcher: shipworld_fixture
-          - os: macos-26
-            platform: macos
-            payload: build/macos/Build/Products/Release/shipworld_fixture.app
-            launcher: Contents/MacOS/shipworld_fixture
-          - os: windows-2025
-            platform: windows
-            payload: build/windows/x64/runner/Release
-            launcher: shipworld_fixture.exe
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Install Linux desktop build dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-      - name: Generate platform runner
-        run: flutter create --platforms=${{ matrix.platform }}
-          --project-name=shipworld_fixture .
-        working-directory: packages/shipworld/test/fixtures/flutter_app
-      - name: Build Flutter desktop fixture
-        run: flutter build ${{ matrix.platform }} --release
-        working-directory: packages/shipworld/test/fixtures/flutter_app
-      - name: Resolve Dart workspace dependencies
-        run: dart pub get
-      - name: Verify built directory payload
-        run: dart run packages/shipworld/tool/verify_payload.dart
-          "${{ github.workspace }}/packages/shipworld/test/fixtures/flutter_app/${{ matrix.payload }}"
-          "${{ matrix.launcher }}"
-      - name: Build Windows x64 and arm64 MSIX packages
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        env:
-          SHIPWORLD_MSIX_NAME: shipworld.fixture
-          SHIPWORLD_MSIX_PUBLISHER: CN=Shipworld
-          SHIPWORLD_MSIX_PUBLISHER_NAME: Shipworld
-        run: |
-          $config = "packages/shipworld/test/fixtures/flutter_app/shipworld.yaml"
-          $input = "packages/shipworld/test/fixtures/flutter_app/${{ matrix.payload }}"
-          dart run packages/shipworld/bin/shipworld.dart package windows msix fixture `
-            --config $config --input $input --launcher shipworld_fixture.exe `
-            --arch x64 --output dist/shipworld-fixture-x64.msix `
-            --package-root .shipworld/msix/x64
-          dart run packages/shipworld/bin/shipworld.dart package windows msix fixture `
-            --config $config --input $input --launcher shipworld_fixture.exe `
-            --arch arm64 --output dist/shipworld-fixture-arm64.msix `
-            --package-root .shipworld/msix/arm64
-          dart run packages/shipworld/bin/shipworld.dart package windows bundle fixture `
-            --config $config --package-dir dist `
-            --output dist/shipworld-fixture.msixbundle `
-            --working-directory .shipworld/msix/bundle
-          tar -tf packages/shipworld/test/fixtures/flutter_app/dist/shipworld-fixture-x64.msix |
-            Select-String AppxManifest.xml
-      - name: Sign and archive the macOS application
-        if: matrix.platform == 'macos'
-        run: |
-          config=packages/shipworld/test/fixtures/flutter_app/shipworld.yaml
-          input=packages/shipworld/test/fixtures/flutter_app/${{ matrix.payload }}
-          output=packages/shipworld/test/fixtures/flutter_app/dist/ShipworldFixture.zip
-          mkdir -p "$(dirname "$output")"
-          dart run packages/shipworld/bin/shipworld.dart package macos sign fixture \
-            --config "$config" --input "$input" --app-bundle --skip-notarize
-          dart run packages/shipworld/bin/shipworld.dart package macos archive fixture \
-            --config "$config" --input "$input" --output "$output"
-          codesign --verify --deep --strict "$input"
-          unzip -l "$output" | grep shipworld_fixture.app
-      - name: Install verified appimagetool for the Flutter fixture
-        if: matrix.platform == 'linux'
-        run: |
-          curl --fail --location --output appimagetool \
-            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
-          echo "a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0  appimagetool" |
-            sha256sum --check -
-          chmod +x appimagetool
-      - name: Build and inspect the Flutter AppImage
-        if: matrix.platform == 'linux'
-        run: |
-          config=packages/shipworld/test/fixtures/flutter_app/shipworld.yaml
-          input=packages/shipworld/test/fixtures/flutter_app/${{ matrix.payload }}
-          dart run packages/shipworld/bin/shipworld.dart package linux appimage fixture \
-            --config "$config" --input "$input" --launcher shipworld_fixture \
-            --output dist/ShipworldFixture.AppImage --arch x86_64 \
-            --tool "${{ github.workspace }}/appimagetool"
-          artifact=packages/shipworld/test/fixtures/flutter_app/dist/ShipworldFixture.AppImage
-          test -x "$artifact"
-          "$artifact" --appimage-extract >/dev/null
-          test -x squashfs-root/usr/bin/shipworld_fixture
-      - name: Validate Formula and Cask rendering
-        if: matrix.platform == 'linux'
-        run: |
-          fixture=packages/shipworld/test/fixtures/flutter_app
-          mkdir -p "$fixture/formula-artifacts"
-          for name in shipworld-fixture-macos-arm64 shipworld-fixture-macos-x64 \
-            shipworld-fixture-linux-arm64 shipworld-fixture-linux-x64; do
-            printf '%s\n' "$name" > "$fixture/formula-artifacts/$name"
-          done
-          printf 'archive\n' > "$fixture/ShipworldFixture.zip"
-          dart run packages/shipworld/bin/shipworld.dart package homebrew formula fixture \
-            --config "$fixture/shipworld.yaml" \
-            --artifacts-dir "$fixture/formula-artifacts" \
-            --output "$fixture/shipworld-fixture.rb"
-          dart run packages/shipworld/bin/shipworld.dart package homebrew cask fixture \
-            --config "$fixture/shipworld.yaml" \
-            --archive "$fixture/ShipworldFixture.zip" \
-            --url https://example.invalid/ShipworldFixture.zip \
-            --output "$fixture/shipworld-fixture-cask.rb"
-          ruby -c "$fixture/shipworld-fixture.rb"
-          ruby -c "$fixture/shipworld-fixture-cask.rb"
-
   homepage:
     name: Homepage
     runs-on: ubuntu-latest
@@ -344,7 +203,7 @@ jobs:
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
         run: |
-          dart run packages/shipworld/bin/shipworld.dart package macos sign dotweave \
+          dart run shipworld:shipworld package macos sign dotweave \
             --config shipworld.yaml \
             --input packages/cli/${{ matrix.asset }} \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
@@ -360,7 +219,7 @@ jobs:
           MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
-        run: dart run packages/shipworld/bin/shipworld.dart package windows msix
+        run: dart run shipworld:shipworld package windows msix
           dotweave --config shipworld.yaml --arch ${{ matrix.msixarch }}
           --input packages/cli/${{ matrix.asset }}
           --output packages/cli/dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
@@ -430,7 +289,7 @@ jobs:
           path: packages/cli/dist/pkg
       - name: Bundle Windows MSIX packages
         shell: powershell
-        run: dart run packages/shipworld/bin/shipworld.dart package windows
+        run: dart run shipworld:shipworld package windows
           bundle dotweave --config shipworld.yaml
           --package-dir packages/cli/dist/pkg
           --output packages/cli/dist/pkg/dotweave-windows.msixbundle
@@ -493,7 +352,7 @@ jobs:
       - name: Build AppImage
         env:
           APPIMAGETOOL_PATH: ${{ github.workspace }}/appimagetool
-        run: dart run packages/shipworld/bin/shipworld.dart package linux
+        run: dart run shipworld:shipworld package linux
           appimage dotweave --config shipworld.yaml
           --input release-bin/${{ matrix.artifact }}
           --output ${{ matrix.artifact }}.AppImage
@@ -534,7 +393,7 @@ jobs:
         run: dart pub get
 
       - name: Verify tag matches package version
-        run: dart run packages/shipworld/bin/shipworld.dart release verify
+        run: dart run shipworld:shipworld release verify
           dotweave --config shipworld.yaml
 
       - name: Create GitHub Release
@@ -565,7 +424,7 @@ jobs:
       - name: Generate Homebrew Formula
         run: |
           version="${GITHUB_REF_NAME#v}"
-          dart run packages/shipworld/bin/shipworld.dart package homebrew formula \
+          dart run shipworld:shipworld package homebrew formula \
             dotweave --config shipworld.yaml \
             --artifacts-dir "${{ github.workspace }}/release-assets" \
             --output "release-assets/dotweave.rb" \

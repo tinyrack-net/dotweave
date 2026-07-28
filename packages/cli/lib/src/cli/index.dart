@@ -5,7 +5,7 @@ import 'package:dotweave/src/cli/autocomplete.dart';
 import 'package:dotweave/src/cli/root_commands.dart';
 import 'package:dotweave/src/config/constants.dart';
 
-RouteMap buildRootRoute() {
+RouteMap<ApplicationContext> buildRootRoute() {
   final (:autocompleteRoute, :completeCommand) = buildAutocompleteRoute();
 
   return buildRouteMap(

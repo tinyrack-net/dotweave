@@ -1,8 +1,7 @@
 // Dart port of `packages/cli/src/cli/track.ts`.
 //
-// The TS `normalizeFlagValues` helper defends against stricli handing a bare
-// string for a variadic flag; the Dart router always yields `List<Object?>`
-// for parsed variadic flags, so the helper reduces to a cast here.
+// Variadic flags decode to `List<String>` (empty when the flag is absent),
+// which the platform-flag parsers treat the same as a null value.
 
 import 'dart:io' as io;
 
@@ -14,23 +13,19 @@ import 'package:dotweave/src/services/path_completion.dart';
 import 'package:dotweave/src/services/track.dart';
 import 'package:dotweave/src/util/error.dart';
 
-List<String>? _normalizeFlagValues(Object? values) {
-  return (values as List<Object?>?)?.cast<String>();
-}
-
-final Command trackCommand = buildCommand(
+final Command<ApplicationContext> trackCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Track local files or directories for syncing',
     fullDescription:
         'Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If a target is already tracked, specified manifest fields are updated and unspecified fields are preserved.',
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
-    final profiles = [...?_normalizeFlagValues(flags['profile'])];
+    final profiles = [...flags.profile];
     final cwd = io.Directory.current.path;
-    final targets = positional.cast<String>();
+    final targets = args;
 
-    if (flags['repo'] != null && targets.length != 1) {
+    if (flags.repo.isNotEmpty && targets.length != 1) {
       throw DotweaveError(
         'The --repo flag can only be used with a single sync target.',
         code: 'REPO_PATH_TARGET_COUNT',
@@ -38,28 +33,22 @@ final Command trackCommand = buildCommand(
       );
     }
 
-    final mode = parsePlatformModeFlags(
-      'mode',
-      _normalizeFlagValues(flags['mode']),
-    );
+    final mode = parsePlatformModeFlags('mode', flags.mode);
     final fallbackMode = mode?.defaultValue ?? AppConstants.sync.modes[0];
-    final repoPath = parsePlatformStringFlags(
-      'repo',
-      _normalizeFlagValues(flags['repo']),
-    );
+    final repoPath = parsePlatformStringFlags('repo', flags.repo);
     final localPathOverrides = parsePlatformStringOverrideFlags(
       'local',
-      _normalizeFlagValues(flags['local']),
+      flags.local,
     );
     final permission = parsePlatformPermissionFlags(
       'permission',
-      _normalizeFlagValues(flags['permission']),
+      flags.permission,
     );
 
     for (final target in targets) {
       final outcome = await trackOrSetMode(
         TrackRequest(
-          kind: flags['kind'] as String?,
+          kind: flags.kind,
           localPathOverrides: localPathOverrides,
           mode: mode,
           permission: permission,
@@ -113,59 +102,77 @@ final Command trackCommand = buildCommand(
           }
       }
     }
-    return null;
   },
-  parameters: const CommandParameters(
-    flags: {
-      'kind': EnumFlag(
-        brief: 'Target kind to use when the path does not exist yet',
-        optional: true,
-        values: ['file', 'directory'],
-      ),
-      'mode': ParsedFlag(
-        brief: 'Sync mode for the tracked targets',
-        optional: true,
-        parse: stringParser,
-        placeholder: 'mode|platform=mode',
-        variadic: true,
-      ),
-      'permission': ParsedFlag(
-        brief: 'File permission to restore, as a 4-character octal value',
-        optional: true,
-        parse: stringParser,
-        placeholder: 'octal|platform=octal',
-        variadic: true,
-      ),
-      'profile': ParsedFlag(
-        brief:
-            "Restrict syncing to registered profiles (add non-default profiles with 'dotweave profile add')",
-        optional: true,
-        parse: stringParser,
-        placeholder: 'profile',
-        variadic: true,
-      ),
-      'local': ParsedFlag(
-        brief: 'Platform-specific local path override',
-        optional: true,
-        parse: stringParser,
-        placeholder: 'platform=path',
-        variadic: true,
-      ),
-      'repo': ParsedFlag(
-        brief: 'Repository-relative path under the profile namespace',
-        optional: true,
-        parse: stringParser,
-        placeholder: 'path|platform=path',
-        variadic: true,
-      ),
-    },
-    positional: ArrayPositionalParameters(
-      parameter: PositionalParameter(
+  parameters: CommandParameters(
+    flags:
+        FlagSet.one(
+              EnumFlag.optional<String, ApplicationContext>(
+                name: 'kind',
+                brief: 'Target kind to use when the path does not exist yet',
+                values: const {'file': 'file', 'directory': 'directory'},
+              ),
+            )
+            .and(
+              ParsedFlag.variadic<String, ApplicationContext>(
+                name: 'mode',
+                brief: 'Sync mode for the tracked targets',
+                parse: stringParser,
+                placeholder: 'mode|platform=mode',
+              ),
+            )
+            .and(
+              ParsedFlag.variadic<String, ApplicationContext>(
+                name: 'permission',
+                brief:
+                    'File permission to restore, as a 4-character octal value',
+                parse: stringParser,
+                placeholder: 'octal|platform=octal',
+              ),
+            )
+            .and(
+              ParsedFlag.variadic<String, ApplicationContext>(
+                name: 'profile',
+                brief:
+                    "Restrict syncing to registered profiles (add non-default profiles with 'dotweave profile add')",
+                parse: stringParser,
+                placeholder: 'profile',
+              ),
+            )
+            .and(
+              ParsedFlag.variadic<String, ApplicationContext>(
+                name: 'local',
+                brief: 'Platform-specific local path override',
+                parse: stringParser,
+                placeholder: 'platform=path',
+              ),
+            )
+            .and(
+              ParsedFlag.variadic<String, ApplicationContext>(
+                name: 'repo',
+                brief: 'Repository-relative path under the profile namespace',
+                parse: stringParser,
+                placeholder: 'path|platform=path',
+              ),
+            )
+            .map((v) {
+              final (((((kind, mode), permission), profile), local), repo) = v;
+              return (
+                kind: kind,
+                mode: mode,
+                permission: permission,
+                profile: profile,
+                local: local,
+                repo: repo,
+              );
+            }),
+    positional: PositionalSet.array(
+      Positional.required<String, ApplicationContext>(
         brief:
             'Local files or directories under your home directory to track, including cwd-relative paths or repository paths inside tracked directories',
         parse: stringParser,
         placeholder: 'target',
-        proposeCompletions: proposePathCompletions,
+        proposeCompletions: (context, partial) =>
+            proposePathCompletions(partial),
       ),
       minimum: 1,
     ),

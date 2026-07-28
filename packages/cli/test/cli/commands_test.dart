@@ -142,10 +142,46 @@ class _CommandRun {
   List<String> get stdoutLines => const LineSplitter().convert(stdout);
 }
 
-/// Mirror of the TS `runCommand` helper: loads the command function through
-/// `command.loader()` and invokes it with the given flags/positional values.
+String _kebabCase(String name) => name.replaceAllMapped(
+  RegExp('[A-Z]'),
+  (match) => '-${match[0]!.toLowerCase()}',
+);
+
+/// Renders a flag map into CLI argument tokens. Booleans become presence
+/// flags, lists expand into repeated occurrences (variadic flags), and other
+/// values become `--flag value` pairs. `null`/`false` entries are omitted.
+List<String> _flagTokens(Map<String, Object?> flags) {
+  final tokens = <String>[];
+  flags.forEach((name, value) {
+    if (value == null || value == false) {
+      return;
+    }
+    final flag = '--${_kebabCase(name)}';
+    if (value == true) {
+      tokens.add(flag);
+    } else if (value is List) {
+      for (final entry in value) {
+        tokens
+          ..add(flag)
+          ..add('$entry');
+      }
+    } else {
+      tokens
+        ..add(flag)
+        ..add('$value');
+    }
+  });
+  return tokens;
+}
+
+/// Runs a single command through the router with the given flag/positional
+/// values (the TS `runCommand` helper). cliweave 0.2.0 no longer exposes a
+/// command's raw loader, so the values are rendered into argument tokens and
+/// executed via `run`; a handler-thrown error is captured through the
+/// application's error hooks so it can still be surfaced for `rejects`-style
+/// assertions, matching the previous direct-invocation behavior.
 Future<_CommandRun> _runCommand(
-  Command command,
+  Command<ApplicationContext> command,
   Map<String, Object?> flags,
   List<Object?> positional, {
   bool stdinIsTTY = true,
@@ -154,7 +190,7 @@ Future<_CommandRun> _runCommand(
   final capturedStdout = _RecordingStdout();
   final capturedStderr = _RecordingStdout();
   final stdinStub = _StubStdin(hasTerminal: stdinIsTTY, lines: stdinLines);
-  // Commands now log through `context.process`, so their output is readable
+  // Commands log through `context.process`, so their output is readable
   // straight off these streams. The `IOOverrides` capture below stays for
   // anything that still writes to the process streams directly (prompts, and
   // any service that bypasses the logger).
@@ -162,18 +198,67 @@ Future<_CommandRun> _runCommand(
   final contextStderr = CaptureStream();
   Object? thrown;
 
+  // Capture the thrown value and suppress the framework's rendered error text
+  // so `stderr` reflects only what the command itself wrote (as before).
+  ApplicationText captureErrors(String locale) {
+    String capture(Object error) {
+      thrown = error;
+      return '';
+    }
+
+    return textEn.copyWith(
+      commandErrorResult: (error, ansiColor) => capture(error),
+      exceptionWhileRunningCommand: (error, ansiColor) => capture(error),
+      exceptionWhileLoadingCommandContext: (error, ansiColor) => capture(error),
+      exceptionWhileLoadingCommandFunction: (error, ansiColor) =>
+          capture(error),
+    );
+  }
+
+  final application = buildApplication(
+    buildRouteMap(
+      docs: const RouteMapDocs(brief: 'Command under test'),
+      routes: {'__test': command},
+    ),
+    ApplicationConfiguration(
+      name: 'test',
+      localization: LocalizationConfiguration(
+        defaultLocale: 'en',
+        loadText: captureErrors,
+      ),
+      scanner: const ScannerConfiguration(
+        caseStyle: ScannerCaseStyle.allowKebabForCamel,
+        allowArgumentEscapeSequence: true,
+      ),
+      determineExitCode: (error) {
+        thrown ??= error;
+        return 1;
+      },
+    ),
+  );
+
+  final positionalTokens = [
+    for (final value in positional)
+      if (value != null) '$value',
+  ];
+  final arguments = [
+    '__test',
+    ..._flagTokens(flags),
+    if (positionalTokens.isNotEmpty) '--',
+    ...positionalTokens,
+  ];
+
   await io.IOOverrides.runZoned(
     () async {
-      final func = await command.loader();
-      final context = RunContext(
-        process: RunProcess(stdout: contextStdout, stderr: contextStderr),
+      await run(
+        application,
+        arguments,
+        RunContext.direct(
+          ApplicationContext(
+            process: RunProcess(stdout: contextStdout, stderr: contextStderr),
+          ),
+        ),
       );
-
-      try {
-        await func(context, flags, positional);
-      } catch (error) {
-        thrown = error;
-      }
     },
     stdout: () => capturedStdout,
     stderr: () => capturedStderr,
@@ -191,6 +276,39 @@ Future<_CommandRun> _runCommand(
     stderr: stripAnsi(contextStderr.text + capturedStderr.text),
     error: thrown,
   );
+}
+
+/// Captures a command's rendered `--help` output, used by the flag-surface
+/// assertions that previously introspected `command.parameters.flags`.
+Future<String> _helpText(Command<ApplicationContext> command) async {
+  final helpStdout = CaptureStream();
+  final application = buildApplication(
+    buildRouteMap(
+      docs: const RouteMapDocs(brief: 'Command under test'),
+      routes: {'__test': command},
+    ),
+    const ApplicationConfiguration(
+      name: 'test',
+      scanner: ScannerConfiguration(
+        caseStyle: ScannerCaseStyle.allowKebabForCamel,
+      ),
+      documentation: DocumentationConfiguration(
+        caseStyle: DisplayCaseStyle.convertCamelToKebab,
+      ),
+    ),
+  );
+
+  await run(
+    application,
+    const ['__test', '--help'],
+    RunContext.direct(
+      ApplicationContext(
+        process: RunProcess(stdout: helpStdout, stderr: helpStdout),
+      ),
+    ),
+  );
+
+  return stripAnsi(helpStdout.text);
 }
 
 // ---------------------------------------------------------------------------
@@ -304,20 +422,6 @@ DotweaveError _dotweaveError(Object? error) {
   expect(error, isA<DotweaveError>());
 
   return error as DotweaveError;
-}
-
-Object? _describeFlag(Flag flag) {
-  return switch (flag) {
-    BooleanFlag() => {'kind': 'boolean', 'brief': flag.brief},
-    CounterFlag() => {'kind': 'counter', 'brief': flag.brief},
-    EnumFlag() => {'kind': 'enum', 'brief': flag.brief, 'values': flag.values},
-    ParsedFlag() => {
-      'kind': 'parsed',
-      'brief': flag.brief,
-      if (flag.placeholder != null) 'placeholder': flag.placeholder,
-      'variadic': flag.variadic,
-    },
-  };
 }
 
 void main() {
@@ -544,51 +648,58 @@ void main() {
       },
     );
 
-    test('exposes only force and key-file flags for init credentials', () {
-      expect(initCommand.parameters.flags.keys.toList()..sort(), [
-        'force',
-        'keyFile',
-      ]);
-    });
+    test(
+      'exposes only force and key-file flags for init credentials',
+      () async {
+        // cliweave 0.2.0 does not expose `command.parameters`; assert the flag
+        // surface through the rendered help text instead.
+        final help = await _helpText(initCommand);
+
+        expect(help, contains('--force'));
+        expect(help, contains('--key-file'));
+        expect(help, isNot(contains('--profile')));
+      },
+    );
 
     test('exposes kind, local, repo, mode, permission, and profile flags for '
-        'track', () {
-      expect(trackCommand.parameters.flags.keys.toList()..sort(), [
-        'kind',
-        'local',
-        'mode',
-        'permission',
-        'profile',
-        'repo',
-      ]);
+        'track', () async {
+      final help = await _helpText(trackCommand);
+
+      for (final flag in const [
+        '--kind',
+        '--local',
+        '--mode',
+        '--permission',
+        '--profile',
+        '--repo',
+      ]) {
+        expect(help, contains(flag), reason: flag);
+      }
     });
 
-    test('does not expose missing target shortcut flags for track', () {
-      final flagKeys = trackCommand.parameters.flags.keys.toList();
+    test('does not expose missing target shortcut flags for track', () async {
+      final help = await _helpText(trackCommand);
 
-      expect(flagKeys, isNot(contains('missingOk')));
-      expect(flagKeys, isNot(contains('missing-ok')));
+      expect(help, isNot(contains('missingOk')));
+      expect(help, isNot(contains('missing-ok')));
     });
 
-    test('documents track platform flag grammar without removed shortcuts', () {
-      // The TS test JSON.stringifies the flag definitions; the Dart flags are
-      // not JSON-encodable objects, so an equivalent JSON description (brief,
-      // placeholder, values) is built for the same text assertions.
-      final flagText = jsonEncode({
-        for (final entry in trackCommand.parameters.flags.entries)
-          entry.key: _describeFlag(entry.value),
-      });
+    test(
+      'documents track platform flag grammar without removed shortcuts',
+      () async {
+        final help = await _helpText(trackCommand);
 
-      expect(flagText, contains('path|platform=path'));
-      expect(flagText, contains('mode|platform=mode'));
-      expect(flagText, contains('octal|platform=octal'));
-      expect(
-        RegExp(
-          r'--repo-path|--secret|--normal|--ignore|--missing-ok',
-        ).hasMatch(flagText),
-        isFalse,
-      );
-    });
+        expect(help, contains('path|platform=path'));
+        expect(help, contains('mode|platform=mode'));
+        expect(help, contains('octal|platform=octal'));
+        expect(
+          RegExp(
+            r'--repo-path|--secret|--normal|--ignore|--missing-ok',
+          ).hasMatch(help),
+          isFalse,
+        );
+      },
+    );
 
     test('tracks new targets and formats track output', () async {
       final workspace = await _setUpWorkspace();

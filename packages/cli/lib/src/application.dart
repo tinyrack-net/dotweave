@@ -85,7 +85,9 @@ ApplicationText _buildDotweaveText(CliLogger errorLogger) {
   );
 }
 
-Application _buildApplication(ApplicationText dotweaveText) {
+Application<ApplicationContext> _buildApplication(
+  ApplicationText dotweaveText,
+) {
   return buildApplication(
     buildRootRoute(),
     ApplicationConfiguration(
@@ -127,7 +129,11 @@ Future<int> runCli(
 
   final process = RunProcess(stdout: stdoutStream, stderr: stderrStream);
 
-  await run(application, inputs, RunContext(process: process));
+  await run(
+    application,
+    inputs,
+    RunContext.direct(ApplicationContext(process: process)),
+  );
 
   return process.exitCode ?? 0;
 }

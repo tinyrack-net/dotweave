@@ -17,19 +17,19 @@ String _formatInstallMessage(String action) {
   }
 }
 
-final Command skillInstallCommand = buildCommand(
+final Command<ApplicationContext> skillInstallCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Install the bundled dotweave agent skill',
     fullDescription:
         "Install Dotweave's bundled portable agent skill into the specified skills directory.",
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
     final result = await installDotweaveSkill(
       SkillInstallRequest(
-        directory: positional[0] as String,
-        dryRun: flags['dryRun'] as bool? ?? false,
-        force: flags['force'] as bool? ?? false,
+        directory: args,
+        dryRun: flags.dryRun ?? false,
+        force: flags.force ?? false,
       ),
     );
     final message = _formatInstallMessage(result.action);
@@ -41,25 +41,28 @@ final Command skillInstallCommand = buildCommand(
     }
 
     logger.kv('target', result.targetPath);
-    return null;
   },
-  parameters: const CommandParameters(
-    flags: {
-      'dryRun': BooleanFlag(
-        brief: 'Report the install target without writing files',
-        optional: true,
-      ),
-      'force': BooleanFlag(
-        brief: 'Overwrite an existing dotweave skill',
-        optional: true,
-      ),
-    },
-    positional: TuplePositionalParameters([
-      PositionalParameter(
+  parameters: CommandParameters(
+    flags:
+        FlagSet.one(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'dryRun',
+                brief: 'Report the install target without writing files',
+              ),
+            )
+            .and(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'force',
+                brief: 'Overwrite an existing dotweave skill',
+              ),
+            )
+            .map((v) => (dryRun: v.$1, force: v.$2)),
+    positional: PositionalSet.one(
+      Positional.required<String, ApplicationContext>(
         brief: 'Skills root directory',
         parse: stringParser,
         placeholder: 'directory',
       ),
-    ]),
+    ),
   ),
 );

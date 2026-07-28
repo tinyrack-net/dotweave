@@ -26,14 +26,14 @@ void _logPullPlanChanges(
   }
 }
 
-final Command pullCommand = buildCommand(
+final Command<ApplicationContext> pullCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Apply the git-backed sync directory to local config paths',
     fullDescription:
         'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally.',
   ),
-  func: (context, flags, positional) async {
-    final dryRun = flags['dryRun'] as bool? ?? false;
+  func: (context, flags, args) async {
+    final dryRun = flags.dryRun ?? false;
     final logger = loggerFor(context);
 
     final spin = logger.spinner('Preparing pull...');
@@ -41,7 +41,7 @@ final Command pullCommand = buildCommand(
 
     try {
       prepared = await preparePull(
-        PullRequest(dryRun: dryRun, profile: flags['profile'] as String?),
+        PullRequest(dryRun: dryRun, profile: flags.profile),
       );
     } catch (error) {
       spin.stop();
@@ -54,7 +54,7 @@ final Command pullCommand = buildCommand(
 
     if (plan.updatedLocalPaths.isEmpty && plan.deletedLocalPaths.isEmpty) {
       logger.info('Already up to date');
-      return null;
+      return;
     }
 
     logger.info('Planned pull changes');
@@ -75,7 +75,7 @@ final Command pullCommand = buildCommand(
 
     if (dryRun) {
       logger.info('Pull preview (dry run)');
-    } else if (flags['yes'] as bool? ?? false) {
+    } else if (flags.yes ?? false) {
       await applyUnderSpinner();
     } else {
       // Mirror of the TS `process.stdin.isTTY ?? false` check.
@@ -90,7 +90,7 @@ final Command pullCommand = buildCommand(
 
       if (answer.trim().toLowerCase() != 'y') {
         logger.info('Skipped pull changes');
-        return null;
+        return;
       }
 
       await applyUnderSpinner();
@@ -107,21 +107,26 @@ final Command pullCommand = buildCommand(
       'removed',
       '${plan.deletedLocalPaths.length} paths $removeAction',
     );
-    return null;
+    return;
   },
-  parameters: const CommandParameters(
-    flags: {
-      'dryRun': BooleanFlag(
-        brief: 'Preview local file updates only',
-        optional: true,
-      ),
-      'profile': profileFlag,
-      'yes': BooleanFlag(
-        brief: 'Apply pull changes without prompting',
-        optional: true,
-        withNegated: false,
-      ),
-    },
+  parameters: CommandParameters(
+    flags:
+        FlagSet.one(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'dryRun',
+                brief: 'Preview local file updates only',
+              ),
+            )
+            .and(profileFlag)
+            .and(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'yes',
+                brief: 'Apply pull changes without prompting',
+                withNegated: false,
+              ),
+            )
+            .map((v) => (dryRun: v.$1.$1, profile: v.$1.$2, yes: v.$2)),
+    positional: PositionalSet.none(),
     aliases: {'y': 'yes'},
   ),
 );
