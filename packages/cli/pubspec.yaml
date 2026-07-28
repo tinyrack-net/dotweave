@@ -11,7 +11,7 @@ executables:
   dotweave: dotweave
 
 dependencies:
-  cliweave: ^0.2.0
+  cliweave: ^0.2.1
   cryptography: ^2.7.0
   dartage: ^0.1.0
   ffi: ^2.1.0

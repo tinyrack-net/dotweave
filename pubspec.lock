@@ -61,10 +61,10 @@ packages:
     dependency: transitive
     description:
       name: cliweave
-      sha256: b0b3cd7f72ebdbfec8da667d9481a69b6db81488622062bb7bfac85d3b899bd8
+      sha256: "62bb155bd9214bbf7680c3f50546185ec4045eea396e174f5aa29bf2a0a1b10f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.1"
   collection:
     dependency: transitive
     description:
