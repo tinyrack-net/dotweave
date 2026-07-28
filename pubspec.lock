@@ -293,8 +293,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/shipworld"
-      ref: "11207acb631ccf50ef95e306a4985a7f4ca1c415"
-      resolved-ref: "11207acb631ccf50ef95e306a4985a7f4ca1c415"
+      ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
+      resolved-ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
     version: "0.1.0"
