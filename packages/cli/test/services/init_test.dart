@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dartage/dartage.dart';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/init.dart';
+import 'package:dotweave/src/util/crypto.dart';
 import 'package:dotweave/src/util/env.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/git.dart';

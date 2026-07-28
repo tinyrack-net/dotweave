@@ -10,6 +10,13 @@ import 'string.dart';
 /// A validated age identity paired with its derived recipient.
 typedef AgeKeyPair = ({String identity, String recipient});
 
+/// Generates a fresh age identity, encoded as an `AGE-SECRET-KEY-1...` string.
+String generateIdentity() => X25519Identity.generate().encoded;
+
+/// Derives the `age1...` recipient string for an `AGE-SECRET-KEY-1...` identity.
+Future<String> identityToRecipient(String identity) async =>
+    (await X25519Identity.parse(identity).recipient()).encoded;
+
 /// Validates and normalizes a single age identity for dotweave use.
 Future<AgeKeyPair> resolveAgeIdentity(String identity) async {
   final normalizedIdentity = identity.trim();
@@ -119,15 +126,13 @@ Future<String> encryptSecretFile(
   Uint8List contents,
   List<String> recipients,
 ) async {
-  final encrypter = AgeEncrypter();
-
-  for (final recipient in recipients) {
-    encrypter.addRecipient(recipient);
-  }
+  final encrypter = AgeEncrypter(
+    recipients: recipients.map(parseAgeRecipient).toList(),
+  );
 
   final ciphertext = await encrypter.encrypt(contents);
 
-  return armorEncode(ciphertext);
+  return AgeArmor.encode(ciphertext);
 }
 
 /// Decrypts an armored secret artifact with identities from the configured
@@ -136,15 +141,13 @@ Future<Uint8List> decryptSecretFile(
   String armoredCiphertext,
   String identityFile,
 ) async {
-  final decrypter = AgeDecrypter();
   final identities = await readAgeIdentityLines(identityFile);
-
-  for (final identity in identities) {
-    decrypter.addIdentity(identity);
-  }
+  final decrypter = AgeDecrypter(
+    identities: identities.map(parseAgeIdentity).toList(),
+  );
 
   try {
-    return await decrypter.decrypt(armorDecode(armoredCiphertext));
+    return await decrypter.decrypt(AgeArmor.decode(armoredCiphertext));
   } on Object catch (error) {
     throw wrapUnknownError(
       'Failed to decrypt a secret artifact.',
