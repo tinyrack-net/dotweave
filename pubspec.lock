@@ -61,10 +61,10 @@ packages:
     dependency: transitive
     description:
       name: cliweave
-      sha256: "8114ce4705ac1af3a8bd4a05aa1cf16c935d4a9df6de3242a80d52fb9a598666"
+      sha256: b0b3cd7f72ebdbfec8da667d9481a69b6db81488622062bb7bfac85d3b899bd8
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.1"
+    version: "0.2.0"
   collection:
     dependency: transitive
     description:
@@ -289,6 +289,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  shipworld:
+    dependency: "direct main"
+    description:
+      path: "packages/shipworld"
+      ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
+      resolved-ref: c5526aa0f39359f957c4aceeb8253eff4731d7e6
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
+    version: "0.1.0"
   source_map_stack_trace:
     dependency: transitive
     description:

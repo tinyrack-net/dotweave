@@ -106,20 +106,20 @@ void _logPullChanges(CliLogger logger, PullChanges changes) {
   }
 }
 
-final Command statusCommand = buildCommand(
+final Command<ApplicationContext> statusCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Show planned push and pull changes for the current sync config',
     fullDescription:
         'Compare the tracked local files with the sync directory and report what push would write to the repository and what pull would write back locally.',
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
 
     final spin = logger.spinner('Checking sync status...');
     StatusResult result;
 
     try {
-      result = await getStatus(profile: flags['profile'] as String?);
+      result = await getStatus(profile: flags);
     } catch (error) {
       spin.stop();
       rethrow;
@@ -136,7 +136,9 @@ final Command statusCommand = buildCommand(
 
     logger.section('Pull changes (local)');
     _logPullChanges(logger, result.pull.changes);
-    return null;
   },
-  parameters: const CommandParameters(flags: {'profile': profileFlag}),
+  parameters: CommandParameters(
+    flags: FlagSet.one(profileFlag),
+    positional: PositionalSet.none(),
+  ),
 );

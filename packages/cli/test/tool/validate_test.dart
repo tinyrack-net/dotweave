@@ -42,7 +42,7 @@ void main() {
       expect(events, containsAll(['start:Dart format', 'start:Dart analyze']));
     });
 
-    test('starts both package tests in the same parallel stage', () async {
+    test('starts the CLI test stage after preparation', () async {
       final started = <ValidationTask>[];
       final blockers = <String, Completer<ValidationTaskResult>>{};
 
@@ -66,11 +66,12 @@ void main() {
       _complete(blockers.remove('CLI e2e binary')!, 0);
       await Future<void>.delayed(Duration.zero);
 
+      expect(started.map((task) => task.name), containsAll(['CLI tests']));
+      expect(started.map((task) => task.name), isNot(contains('Tools tests')));
       expect(
         started.map((task) => task.name),
-        containsAll(['CLI tests', 'Shipworld tests']),
+        isNot(contains('Shipworld tests')),
       );
-      expect(started.map((task) => task.name), isNot(contains('Tools tests')));
 
       for (final blocker in blockers.values) {
         _complete(blocker, 0);

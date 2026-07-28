@@ -11,61 +11,58 @@ final CompletionScripts completionScripts = CompletionScripts(
   completeSubcommand: AppConstants.autocomplete.completeSubcommand,
 );
 
-Application? _application;
+Application<ApplicationContext>? _application;
 
-void setApplication(Application app) {
+void setApplication(Application<ApplicationContext> app) {
   _application = app;
 }
 
-Command _buildAutocompleteScriptCommand(String shell, String script) {
+Command<ApplicationContext> _buildAutocompleteScriptCommand(
+  String shell,
+  String script,
+) {
   return buildCommand(
     docs: CommandDocs(
       brief: 'Print $shell autocomplete script',
       fullDescription:
           'Emit a $shell autocomplete script for use with `eval "\$(dotweave autocomplete $shell)"`.',
     ),
-    func: (context, flags, positional) {
+    func: (context, flags, args) {
       context.process.stdout.write(script);
-      return null;
     },
-    parameters: const CommandParameters(),
+    parameters: CommandParameters(
+      flags: FlagSet<NoFlags, ApplicationContext>.none(),
+      positional: PositionalSet.none(),
+    ),
   );
 }
 
-final Command _bashAutocompleteCommand = _buildAutocompleteScriptCommand(
-  'bash',
-  completionScripts.bash,
-);
-final Command _zshAutocompleteCommand = _buildAutocompleteScriptCommand(
-  'zsh',
-  completionScripts.zsh,
-);
-final Command _fishAutocompleteCommand = _buildAutocompleteScriptCommand(
-  'fish',
-  completionScripts.fish,
-);
-final Command _powershellAutocompleteCommand = _buildAutocompleteScriptCommand(
-  'powershell',
-  completionScripts.powershell,
-);
+final Command<ApplicationContext> _bashAutocompleteCommand =
+    _buildAutocompleteScriptCommand('bash', completionScripts.bash);
+final Command<ApplicationContext> _zshAutocompleteCommand =
+    _buildAutocompleteScriptCommand('zsh', completionScripts.zsh);
+final Command<ApplicationContext> _fishAutocompleteCommand =
+    _buildAutocompleteScriptCommand('fish', completionScripts.fish);
+final Command<ApplicationContext> _powershellAutocompleteCommand =
+    _buildAutocompleteScriptCommand('powershell', completionScripts.powershell);
 
-final Command _completeCommand = buildCommand(
+final Command<ApplicationContext> _completeCommand = buildCommand(
   docs: const CommandDocs(brief: 'Internal completion command'),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final application = _application;
 
     if (application == null) {
-      return null;
+      return;
     }
 
     final completions = await proposeCompletions(
       application,
-      completionScripts.resolveCompletionInputs(positional.cast<String>()),
-      context,
+      completionScripts.resolveCompletionInputs(args),
+      RunContext.direct(context),
     );
 
     if (completions.isEmpty) {
-      return null;
+      return;
     }
 
     final lines = completions
@@ -76,21 +73,24 @@ final Command _completeCommand = buildCommand(
         .join('\n');
 
     context.process.stdout.write('$lines\n');
-    return null;
   },
-  parameters: const CommandParameters(
-    positional: ArrayPositionalParameters(
-      minimum: 0,
-      parameter: PositionalParameter(
+  parameters: CommandParameters(
+    flags: FlagSet<NoFlags, ApplicationContext>.none(),
+    positional: PositionalSet.array(
+      Positional.required<String, ApplicationContext>(
         brief: 'Completion input token',
         parse: stringParser,
         placeholder: 'input',
       ),
+      minimum: 0,
     ),
   ),
 );
 
-({RouteMap autocompleteRoute, Command completeCommand})
+({
+  RouteMap<ApplicationContext> autocompleteRoute,
+  Command<ApplicationContext> completeCommand,
+})
 buildAutocompleteRoute() {
   return (
     autocompleteRoute: buildRouteMap(

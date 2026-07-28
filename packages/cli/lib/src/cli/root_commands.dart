@@ -17,7 +17,7 @@ import 'package:dotweave/src/cli/status.dart';
 import 'package:dotweave/src/cli/track.dart';
 import 'package:dotweave/src/cli/untrack.dart';
 
-final Map<String, RoutingTarget> rootCommandRoutes = {
+final Map<String, RoutingTarget<ApplicationContext>> rootCommandRoutes = {
   'cd': cdCommand,
   'doctor': doctorCommand,
   'init': initCommand,

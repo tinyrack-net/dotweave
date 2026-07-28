@@ -166,7 +166,6 @@ final class _ValidationPaths {
         '--output=none',
         '--set-exit-if-changed',
         'packages/cli',
-        'packages/shipworld',
       ],
       workingDirectory: repoRoot,
     ),
@@ -185,10 +184,7 @@ final class _ValidationPaths {
     workingDirectory: cliRoot,
   );
 
-  List<ValidationTask> get dartTests => [
-    _dartTest('CLI tests', 'cli'),
-    _dartTest('Shipworld tests', 'shipworld'),
-  ];
+  List<ValidationTask> get dartTests => [_dartTest('CLI tests', 'cli')];
 
   ValidationTask _dartTest(String name, String packageName) {
     return ValidationTask(

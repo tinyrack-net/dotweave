@@ -13,7 +13,7 @@ import 'package:cliweave/terminal.dart';
 /// capture streams into it for tests); the commands just ignored them. Routing
 /// through the context closes that gap without adding a dotweave-specific
 /// field to the vendored stricli port in `cli/router.dart`.
-CliLogger loggerFor(RunContext context) {
+CliLogger loggerFor(CommandContext context) {
   return createCliLogger(
     stdout: context.process.stdout,
     stderr: context.process.stderr,

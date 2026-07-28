@@ -6,7 +6,7 @@ import 'package:dotweave/src/cli/profile/list.dart';
 import 'package:dotweave/src/cli/profile/remove.dart';
 import 'package:dotweave/src/cli/profile/use.dart';
 
-final RouteMap profileRoute = buildRouteMap(
+final RouteMap<ApplicationContext> profileRoute = buildRouteMap(
   docs: const RouteMapDocs(
     brief: 'Manage active and assigned sync profiles',
     fullDescription:

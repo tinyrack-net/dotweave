@@ -40,14 +40,14 @@ class _DoctorIssuesError extends DotweaveError implements CommandExitCode {
   int get exitCode => 1;
 }
 
-final Command doctorCommand = buildCommand(
+final Command<ApplicationContext> doctorCommand = buildCommand(
   docs: const CommandDocs(
     brief:
         'Check sync directory, config, age identity, and tracked local paths',
     fullDescription:
         'Run health checks for the local sync setup, including repository availability, config validity, age identity configuration, and whether tracked local paths still exist where dotweave expects them.',
   ),
-  func: (context, flags, positional) async {
+  func: (context, flags, args) async {
     final logger = loggerFor(context);
 
     final spin = logger.spinner('Running checks...');
@@ -98,7 +98,9 @@ final Command doctorCommand = buildCommand(
     if (result.hasFailures) {
       throw _DoctorIssuesError('Doctor found issues.');
     }
-    return null;
   },
-  parameters: const CommandParameters(flags: {}),
+  parameters: CommandParameters(
+    flags: FlagSet<NoFlags, ApplicationContext>.none(),
+    positional: PositionalSet.none(),
+  ),
 );
