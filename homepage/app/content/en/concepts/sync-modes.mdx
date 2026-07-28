@@ -79,6 +79,6 @@ Everything under `~/.config/my-tool` is stored verbatim, and `credentials.json` 
 
 ## Implementation and reference
 
-Modes are declared per entry in the manifest and resolved per platform at load time. The mode list lives in `packages/cli/lib/src/config/constants.dart`, platform resolution and inheritance in `config/sync_schema.dart`, and artifact ownership and pruning in `services/repo_artifacts.dart`.
+Modes are declared per entry in the manifest and resolved per platform at load time. The mode list lives in `lib/src/config/constants.dart`, platform resolution and inheritance in `config/sync_schema.dart`, and artifact ownership and pruning in `services/repo_artifacts.dart`.
 
 Read [Encrypting secrets with age](/en/concepts/secrets/) for how recipients and identities are set up, or [manifest.jsonc](/en/config/manifest/) for the `mode` field beside the rest of an entry.

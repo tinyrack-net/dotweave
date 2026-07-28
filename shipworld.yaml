@@ -5,7 +5,7 @@ batch-commit: "release: {targets}"
 targets:
   dotweave:
     kind: cli-application
-    root: packages/cli
+    root: .
     version:
       source: pubspec.yaml
       synchronized:
@@ -36,7 +36,7 @@ targets:
     macos:
       entitlements: entitlements.plist
     linux:
-      icon: ../../homepage/public/favicon.svg
+      icon: homepage/public/favicon.svg
       categories:
         - Utility
       terminal: true

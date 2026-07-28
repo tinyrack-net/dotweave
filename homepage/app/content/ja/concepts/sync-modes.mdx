@@ -79,6 +79,6 @@ dotweave track ~/.config/my-tool/credentials.json --mode secret
 
 ## 実装とリファレンス
 
-モードは manifest の項目ごとに宣言され、設定の読み込み時にプラットフォーム別へ解決されます。モードの一覧は `packages/cli/lib/src/config/constants.dart`、プラットフォーム解決と継承は `config/sync_schema.dart`、artifact の所有権と整理は `services/repo_artifacts.dart` にあります。
+モードは manifest の項目ごとに宣言され、設定の読み込み時にプラットフォーム別へ解決されます。モードの一覧は `lib/src/config/constants.dart`、プラットフォーム解決と継承は `config/sync_schema.dart`、artifact の所有権と整理は `services/repo_artifacts.dart` にあります。
 
 recipient と identity を用意する手順は [age でシークレットを暗号化する](/ja/concepts/secrets/)、項目のほかのフィールドと並んだ `mode` フィールドは [manifest.jsonc](/ja/config/manifest/) を参照してください。

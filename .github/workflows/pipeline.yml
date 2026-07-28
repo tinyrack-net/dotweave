@@ -43,7 +43,7 @@ jobs:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
       - name: Validate Dart static checks
-        run: dart run packages/cli/tool/validate.dart dart-static
+        run: dart run tool/validate.dart dart-static
 
   dart-test:
     name: Dart Test (${{ matrix.os }})
@@ -66,7 +66,7 @@ jobs:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
       - name: Validate Dart tests
-        run: dart run packages/cli/tool/validate.dart dart-tests
+        run: dart run tool/validate.dart dart-tests
 
   homepage:
     name: Homepage
@@ -135,13 +135,11 @@ jobs:
         run: dart pub get
       - name: Build e2e binary
         run: dart tool/build_e2e.dart
-        working-directory: packages/cli
       - name: Run autocomplete shell smoke tests
         env:
           DOTWEAVE_AUTOCOMPLETE_SHELL: ${{ matrix.shell }}
         run: dart test test/e2e/autocomplete_e2e_test.dart
           test/e2e/autocomplete_pty_e2e_test.dart
-        working-directory: packages/cli
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})
@@ -190,7 +188,6 @@ jobs:
 
       - name: Compile executable
         run: dart compile exe bin/dotweave.dart -o ${{ matrix.asset }}
-        working-directory: packages/cli
 
       - name: Sign binary (macOS)
         if: startsWith(matrix.target, 'macos') && (github.ref ==
@@ -205,12 +202,12 @@ jobs:
         run: |
           dart run shipworld:shipworld package macos sign dotweave \
             --config shipworld.yaml \
-            --input packages/cli/${{ matrix.asset }} \
+            --input ${{ matrix.asset }} \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
 
       - name: Smoke test binary
-        run: dart run packages/cli/tool/smoke.dart --executable-path
-          packages/cli/${{ matrix.asset }}
+        run: dart run tool/smoke.dart --executable-path
+          ${{ matrix.asset }}
 
       - name: Build MSIX package (Windows)
         if: matrix.msixarch && startsWith(github.ref, 'refs/tags/v')
@@ -221,9 +218,9 @@ jobs:
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: dart run shipworld:shipworld package windows msix
           dotweave --config shipworld.yaml --arch ${{ matrix.msixarch }}
-          --input packages/cli/${{ matrix.asset }}
-          --output packages/cli/dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
-          --package-root packages/cli/dist/msix/${{ matrix.msixarch }}
+          --input ${{ matrix.asset }}
+          --output dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
+          --package-root dist/msix/${{ matrix.msixarch }}
 
       - name: Smoke test MSIX alias (Windows x64)
         if: matrix.msixarch == 'x64' && startsWith(github.ref, 'refs/tags/v')
@@ -235,7 +232,7 @@ jobs:
           if ($existing) {
             Remove-AppxPackage -Package $existing.PackageFullName
           }
-          Add-AppxPackage -Register (Resolve-Path "packages/cli/dist/msix/x64/AppxManifest.xml")
+          Add-AppxPackage -Register (Resolve-Path "dist/msix/x64/AppxManifest.xml")
           try {
             dotweave.exe --version
           } finally {
@@ -249,7 +246,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}
-          path: packages/cli/${{ matrix.asset }}
+          path: ${{ matrix.asset }}
           if-no-files-found: error
 
       - name: Upload MSIX (Windows)
@@ -257,7 +254,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dotweave-win32-${{ matrix.msixarch }}-msix
-          path: packages/cli/dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
+          path: dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
           if-no-files-found: error
 
   bundle-msix:
@@ -281,24 +278,24 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: dotweave-win32-x64-msix
-          path: packages/cli/dist/pkg
+          path: dist/pkg
       - name: Download Windows arm64 MSIX
         uses: actions/download-artifact@v8
         with:
           name: dotweave-win32-arm64-msix
-          path: packages/cli/dist/pkg
+          path: dist/pkg
       - name: Bundle Windows MSIX packages
         shell: powershell
         run: dart run shipworld:shipworld package windows
           bundle dotweave --config shipworld.yaml
-          --package-dir packages/cli/dist/pkg
-          --output packages/cli/dist/pkg/dotweave-windows.msixbundle
-          --working-directory packages/cli/dist/msix/bundle
+          --package-dir dist/pkg
+          --output dist/pkg/dotweave-windows.msixbundle
+          --working-directory dist/msix/bundle
       - name: Upload Windows MSIX bundle
         uses: actions/upload-artifact@v7
         with:
           name: dotweave-windows-msixbundle
-          path: packages/cli/dist/pkg/dotweave-windows.msixbundle
+          path: dist/pkg/dotweave-windows.msixbundle
           if-no-files-found: error
 
   build-appimage:

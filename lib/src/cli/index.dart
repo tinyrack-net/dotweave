@@ -1,0 +1,24 @@
+// Dart port of `src/cli/index.ts`.
+
+import 'package:cliweave/cliweave.dart';
+import 'package:dotweave/src/cli/autocomplete.dart';
+import 'package:dotweave/src/cli/root_commands.dart';
+import 'package:dotweave/src/config/constants.dart';
+
+RouteMap<ApplicationContext> buildRootRoute() {
+  final (:autocompleteRoute, :completeCommand) = buildAutocompleteRoute();
+
+  return buildRouteMap(
+    docs: RouteMapDocs(
+      brief: 'A personal CLI tool for git-backed configuration sync.',
+      fullDescription:
+          'Manage tracked configuration files under your home directory, mirror them into a git-backed sync directory, and restore them later on other devices.',
+      hideRoute: {AppConstants.autocomplete.completeSubcommand: true},
+    ),
+    routes: {
+      AppConstants.autocomplete.completeSubcommand: completeCommand,
+      'autocomplete': autocompleteRoute,
+      ...rootCommandRoutes,
+    },
+  );
+}

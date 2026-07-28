@@ -58,7 +58,7 @@ packages:
     source: hosted
     version: "0.2.0"
   cliweave:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: cliweave
       sha256: "62bb155bd9214bbf7680c3f50546185ec4045eea396e174f5aa29bf2a0a1b10f"
@@ -98,7 +98,7 @@ packages:
     source: hosted
     version: "3.0.7"
   cryptography:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: cryptography
       sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
@@ -106,7 +106,7 @@ packages:
     source: hosted
     version: "2.9.0"
   dartage:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: dartage
       sha256: e66a5de142dd2ef9045c05a2de968b0959ed5b2124852c5b727bf10bb911bbad
@@ -114,7 +114,7 @@ packages:
     source: hosted
     version: "0.2.0"
   ffi:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: ffi
       sha256: "6d7fd89431262d8f3125e81b50d3847a091d846eafcd4fdb88dd06f36d705a45"
@@ -170,7 +170,7 @@ packages:
     source: hosted
     version: "1.0.5"
   lints:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: lints
       sha256: "12f842a479589fea194fe5c5a3095abc7be0c1f2ddfa9a0e76aed1dbd26a87df"
@@ -226,7 +226,7 @@ packages:
     source: hosted
     version: "3.0.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
@@ -306,7 +306,7 @@ packages:
     source: hosted
     version: "3.0.0"
   shipworld:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: shipworld
       sha256: "87e3bb7f8924c330f054d9fff99303efb76399b3afc2fdb47aa73f62c47948b2"
@@ -370,7 +370,7 @@ packages:
     source: hosted
     version: "1.2.2"
   test:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: test
       sha256: "0d5ba5602ec3baa28c8ce365e1efc5575969c765f45c554a3e167dc7945b9c30"
@@ -450,7 +450,7 @@ packages:
     source: hosted
     version: "1.2.1"
   win32:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: win32
       sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
