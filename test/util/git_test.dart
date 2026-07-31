@@ -64,6 +64,33 @@ GitExecFileException _createGitError(
   return GitExecFileException(message, stderr: stderr, stdout: stdout);
 }
 
+/// Pins a committer identity and disables signing on [repository] so the
+/// production commit helpers (which run git with the inherited environment,
+/// not [_gitTestEnvironment]) succeed regardless of the host git config.
+Future<void> _configureGitIdentity(String repository) async {
+  await _runGit(['-C', repository, 'config', 'user.email', 'test@example.com']);
+  await _runGit(['-C', repository, 'config', 'user.name', 'Test User']);
+  await _runGit(['-C', repository, 'config', 'commit.gpgsign', 'false']);
+}
+
+/// Creates a bare repository seeded with one commit on `main`, returning its
+/// path. Clones of it track `origin/main` with an upstream configured, so the
+/// production `git push`/`git pull` (which take no ref args) work.
+Future<String> _createSeededBareRemote(String workspace) async {
+  final barePath = p.join(workspace, 'origin.git');
+  final seedPath = p.join(workspace, 'seed');
+
+  await _runGit(['init', '--bare', '-b', 'main', barePath]);
+  await _runGit(['clone', barePath, seedPath]);
+  await _configureGitIdentity(seedPath);
+  await File(p.join(seedPath, 'seed.txt')).writeAsString('seed\n');
+  await _runGit(['-C', seedPath, 'add', '-A']);
+  await _runGit(['-C', seedPath, 'commit', '-m', 'seed']);
+  await _runGit(['-C', seedPath, 'push', '-u', 'origin', 'main']);
+
+  return barePath;
+}
+
 ProcessException _createEnoentError() {
   return const ProcessException('git', ['status'], 'spawn git ENOENT', 2);
 }
@@ -464,6 +491,69 @@ void main() {
       );
     });
 
+    group('runInteractiveGitCommandWithDependencies', () {
+      test('forwards the args and cwd to the interactive runner', () async {
+        List<String>? seenArgs;
+        String? seenCwd;
+
+        await runInteractiveGitCommandWithDependencies(
+          ['clone', 'source', 'target'],
+          const GitCommandOptions(cwd: '/work'),
+          InteractiveGitCommandDependencies(
+            runInteractive: (args, {cwd}) async {
+              seenArgs = args;
+              seenCwd = cwd;
+
+              return 0;
+            },
+          ),
+        );
+
+        expect(seenArgs, ['clone', 'source', 'target']);
+        expect(seenCwd, '/work');
+      });
+
+      test('maps a non-zero exit code to a git command failure', () async {
+        await expectLater(
+          runInteractiveGitCommandWithDependencies(
+            ['clone', 'source', 'target'],
+            null,
+            InteractiveGitCommandDependencies(
+              runInteractive: (args, {cwd}) async => 128,
+            ),
+          ),
+          throwsA(
+            isA<DotweaveError>()
+                .having((error) => error.code, 'code', 'GIT_COMMAND_FAILED')
+                .having(
+                  (error) => error.message,
+                  'message',
+                  contains('git exited with code 128.'),
+                ),
+          ),
+        );
+      });
+
+      test('reports a missing git executable from the runner', () async {
+        await expectLater(
+          runInteractiveGitCommandWithDependencies(
+            ['clone', 'source', 'target'],
+            null,
+            InteractiveGitCommandDependencies(
+              runInteractive: (args, {cwd}) async => throw _createEnoentError(),
+            ),
+          ),
+          throwsA(
+            isA<DotweaveError>().having(
+              (error) => error.code,
+              'code',
+              'GIT_EXECUTABLE_NOT_FOUND',
+            ),
+          ),
+        );
+      });
+    });
+
     test('initializes a repository with a main branch', () async {
       final workspace = await _createWorkspace();
       final repositoryPath = p.join(workspace, 'sync');
@@ -537,5 +627,140 @@ void main() {
         );
       },
     );
+
+    group('git remote helpers', () {
+      test(
+        'hasGitRemote is false for a locally initialized repository',
+        () async {
+          final workspace = await _createWorkspace();
+          final repositoryPath = p.join(workspace, 'local');
+
+          await initializeRepository(repositoryPath);
+
+          expect(await hasGitRemote(repositoryPath), isFalse);
+        },
+      );
+
+      test('hasGitRemote is true for a cloned repository', () async {
+        final workspace = await _createWorkspace();
+        final barePath = await _createSeededBareRemote(workspace);
+        final clonePath = p.join(workspace, 'clone');
+
+        await _runGit(['clone', barePath, clonePath]);
+
+        expect(await hasGitRemote(clonePath), isTrue);
+      });
+
+      test(
+        'commitAllChanges commits a dirty tree and no-ops a clean one',
+        () async {
+          final workspace = await _createWorkspace();
+          final repositoryPath = p.join(workspace, 'local');
+
+          await initializeRepository(repositoryPath);
+          await _configureGitIdentity(repositoryPath);
+          await File(
+            p.join(repositoryPath, 'tracked.txt'),
+          ).writeAsString('hi\n');
+
+          expect(
+            await commitAllChanges(repositoryPath, 'first commit'),
+            isTrue,
+          );
+
+          final log = await _runGit(['-C', repositoryPath, 'log', '--oneline']);
+          expect(log.stdout, contains('first commit'));
+
+          // Nothing changed since the commit: a clean tree is a no-op.
+          expect(
+            await commitAllChanges(repositoryPath, 'second commit'),
+            isFalse,
+          );
+        },
+      );
+
+      test('pushToRemote publishes commits to the origin', () async {
+        final workspace = await _createWorkspace();
+        final barePath = await _createSeededBareRemote(workspace);
+        final clonePath = p.join(workspace, 'clone');
+
+        await _runGit(['clone', barePath, clonePath]);
+        await _configureGitIdentity(clonePath);
+        await File(p.join(clonePath, 'pushed.txt')).writeAsString('data\n');
+
+        await commitAllChanges(clonePath, 'add pushed file');
+        await pushToRemote(clonePath);
+
+        final remoteLog = await _runGit([
+          '-C',
+          barePath,
+          'log',
+          '--oneline',
+          'main',
+        ]);
+        expect(remoteLog.stdout, contains('add pushed file'));
+      });
+
+      test(
+        'pushToRemote publishes the first commit to an empty remote',
+        () async {
+          // Exercises the `push -u origin HEAD` form: a clone of an empty bare
+          // has no upstream configured, so a bare `git push` would fail here.
+          final workspace = await _createWorkspace();
+          final barePath = p.join(workspace, 'empty.git');
+          final clonePath = p.join(workspace, 'clone');
+
+          await _runGit(['init', '--bare', '-b', 'main', barePath]);
+          await _runGit(['clone', barePath, clonePath]);
+          await _configureGitIdentity(clonePath);
+          await File(p.join(clonePath, 'first.txt')).writeAsString('first\n');
+
+          await commitAllChanges(clonePath, 'first commit');
+          await pushToRemote(clonePath);
+
+          final remoteLog = await _runGit([
+            '-C',
+            barePath,
+            'log',
+            '--oneline',
+            '--all',
+          ]);
+          expect(remoteLog.stdout, contains('first commit'));
+        },
+      );
+
+      test(
+        'pullFromRemote applies commits published by another clone',
+        () async {
+          final workspace = await _createWorkspace();
+          final barePath = await _createSeededBareRemote(workspace);
+          final producerPath = p.join(workspace, 'producer');
+          final consumerPath = p.join(workspace, 'consumer');
+
+          await _runGit(['clone', barePath, producerPath]);
+          await _runGit(['clone', barePath, consumerPath]);
+          await _configureGitIdentity(producerPath);
+          await File(
+            p.join(producerPath, 'shared.txt'),
+          ).writeAsString('shared\n');
+          await commitAllChanges(producerPath, 'producer commit');
+          await pushToRemote(producerPath);
+
+          await pullFromRemote(consumerPath);
+
+          final consumerLog = await _runGit([
+            '-C',
+            consumerPath,
+            'log',
+            '--oneline',
+          ]);
+          expect(consumerLog.stdout, contains('producer commit'));
+          expect(
+            await File(p.join(consumerPath, 'shared.txt')).exists(),
+            isTrue,
+          );
+        },
+      );
+    });
   });
 }

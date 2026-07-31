@@ -6,6 +6,7 @@ import 'package:dotweave/src/services/local_snapshot.dart';
 import 'package:dotweave/src/services/pull.dart';
 import 'package:dotweave/src/services/pull_apply.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/path_util.dart';
 import 'package:test/test.dart';
 
@@ -513,6 +514,80 @@ void main() {
 
       expect(overlapped, isFalse);
       expect(applyEntryMaterializationCallCount, 3);
+    });
+  });
+
+  group('pull --with-git', () {
+    PullDependencies gitDeps({
+      required List<String> pulled,
+      required bool hasRemote,
+    }) {
+      return PullDependencies(
+        buildPullCounts: zeroPullCounts,
+        buildRepositorySnapshot: (syncDirectory, config) async => {},
+        hasGitRemote: (directory) async => hasRemote,
+        pullFromRemote: (directory) async => pulled.add(directory),
+        loadSyncConfig: (syncDirectory, {profile}) async => LoadedSyncConfig(
+          effectiveConfig: createTestConfig(),
+          fullConfig: const ResolvedSyncConfig(entries: [], version: 7),
+        ),
+        requireGitRepository: (syncDirectory) async {},
+        resolveSyncPaths: () => const SyncPaths(
+          configPath: '/tmp/dotweave/dotweave.jsonc',
+          globalConfigPath: '/tmp/dotweave/global.json',
+          homeDirectory: '/tmp/home',
+          syncDirectory: '/tmp/dotweave',
+        ),
+      );
+    }
+
+    test('pulls from the remote before snapshotting when enabled', () async {
+      final pulled = <String>[];
+
+      await preparePull(
+        const PullRequest(dryRun: false, withGit: true),
+        gitDeps(pulled: pulled, hasRemote: true),
+      );
+
+      expect(pulled, ['/tmp/dotweave']);
+    });
+
+    test('does not touch the remote when the flag is off', () async {
+      final pulled = <String>[];
+
+      await preparePull(
+        const PullRequest(dryRun: false),
+        gitDeps(pulled: pulled, hasRemote: true),
+      );
+
+      expect(pulled, isEmpty);
+    });
+
+    test('skips the remote pull on a dry run', () async {
+      final pulled = <String>[];
+
+      await preparePull(
+        const PullRequest(dryRun: true, withGit: true),
+        gitDeps(pulled: pulled, hasRemote: true),
+      );
+
+      expect(pulled, isEmpty);
+    });
+
+    test('fails when no remote is configured', () async {
+      await expectLater(
+        preparePull(
+          const PullRequest(dryRun: false, withGit: true),
+          gitDeps(pulled: [], hasRemote: false),
+        ),
+        throwsA(
+          isA<DotweaveError>().having(
+            (error) => error.code,
+            'code',
+            'SYNC_PULL_NO_REMOTE',
+          ),
+        ),
+      );
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:dotweave/src/services/repository_ignore.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/util/collation.dart';
 import 'package:dotweave/src/util/concurrency.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/filesystem.dart';
 import 'package:dotweave/src/util/git.dart';
 import 'package:dotweave/src/util/perf_trace.dart';
@@ -15,12 +16,27 @@ import 'package:path/path.dart' as p;
 // Mirror of `services/push.ts`: local snapshot -> repository artifact planning
 // and the push orchestration that writes the plan to the sync repository.
 
-/// Mirror of the TS `PushRequest` readonly object.
+/// Commit message used when `--with-git` commits without an explicit `-m`.
+const String _defaultPushCommitMessage = 'dotweave: sync configuration';
+
+/// Mirror of the TS `PushRequest` readonly object, extended with the opt-in
+/// git-remote controls (`--with-git` / `-m`) that have no TS counterpart.
 class PushRequest {
-  const PushRequest({required this.dryRun, this.profile});
+  const PushRequest({
+    required this.dryRun,
+    this.profile,
+    this.withGit = false,
+    this.commitMessage,
+  });
 
   final bool dryRun;
   final String? profile;
+
+  /// When true, commit the written artifacts and push them to the git remote.
+  final bool withGit;
+
+  /// Overrides [_defaultPushCommitMessage] for the `--with-git` commit.
+  final String? commitMessage;
 }
 
 /// Mirror of the TS `PushResult` readonly object.
@@ -364,6 +380,25 @@ Future<PushResult> pushChanges(PushRequest request) async {
     );
 
     await writeArtifactsToDirectory(syncDirectory, plan.artifacts, config.age);
+
+    if (request.withGit) {
+      if (!await hasGitRemote(syncDirectory)) {
+        throw DotweaveError(
+          'No git remote is configured for the sync directory.',
+          code: 'SYNC_PUSH_NO_REMOTE',
+          details: ['Sync directory: $syncDirectory'],
+          hint:
+              'Clone a remote with "dotweave init <url>", or add one with '
+              '"git remote add origin <url>", before using --with-git.',
+        );
+      }
+
+      await commitAllChanges(
+        syncDirectory,
+        request.commitMessage ?? _defaultPushCommitMessage,
+      );
+      await pushToRemote(syncDirectory);
+    }
   }
 
   return buildPushResultFromPlan(plan, request.dryRun);

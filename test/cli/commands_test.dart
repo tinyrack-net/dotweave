@@ -512,8 +512,10 @@ void main() {
 
         expect(run.error, isNull);
         expect(run.stdout, isNot(contains('Enter the age private key')));
-        // Spinner succeed("Sync directory initialized").
-        expect(run.stdout, contains('✔ Sync directory initialized'));
+        // Cloning skips the spinner so git can own the terminal for
+        // interactive auth: a plain status line, then the completion notice.
+        expect(run.stdout, contains('Cloning repository...'));
+        expect(run.stdout, contains('Sync directory initialized'));
         // The trimmed key-file contents became the identity.
         expect(
           await io.File(workspace.identityFile).readAsString(),
@@ -1190,6 +1192,206 @@ void main() {
       expect(run.stdout, contains('Pushing changes...'));
       expect(run.stdout, isNot(contains('Push complete')));
       expect(run.stdout, isNot(contains('✔')));
+    });
+
+    test('push --with-git commits and pushes to the origin', () async {
+      // Set up a sync directory cloned from a bare remote so `origin` exists.
+      final workspace = await _setUpWorkspace(initialize: false);
+      final source = await _createSourceRepository(workspace);
+      await _runCommand(initCommand, {}, [source]);
+
+      // Pin a committer identity so the production commit (which runs git with
+      // the inherited environment) succeeds regardless of the host config.
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'user.email',
+        'test@example.com',
+      ]);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'user.name',
+        'Test User',
+      ]);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'commit.gpgsign',
+        'false',
+      ]);
+
+      await _writeHomeFile(workspace, '.config/app.toml', 'from-home\n');
+      await trackTarget(
+        TrackRequest(
+          mode: const TrackModeValue('normal'),
+          target: workspace.homePath('.config/app.toml'),
+        ),
+        workspace.home,
+      );
+
+      // Default commit message.
+      final run = await _runCommand(pushCommand, {'withGit': true}, []);
+      expect(run.error, isNull);
+      expect(run.stdout, contains('Synced to git remote'));
+
+      final firstLog = await runGit([
+        '-C',
+        source,
+        'log',
+        '--oneline',
+        '--all',
+      ]);
+      expect(firstLog.stdout, contains('dotweave: sync configuration'));
+
+      // A subsequent push with an explicit -m message.
+      await _writeHomeFile(workspace, '.config/app.toml', 'changed\n');
+      final second = await _runCommand(pushCommand, {
+        'withGit': true,
+        'message': 'custom sync message',
+      }, []);
+      expect(second.error, isNull);
+
+      final secondLog = await runGit([
+        '-C',
+        source,
+        'log',
+        '--oneline',
+        '--all',
+      ]);
+      expect(secondLog.stdout, contains('custom sync message'));
+    });
+
+    test('push --with-git fails when no git remote is configured', () async {
+      // A locally initialized sync directory has no remote.
+      final workspace = await _setUpWorkspace();
+      await _writeHomeFile(workspace, '.config/app.toml', 'from-home\n');
+      await trackTarget(
+        TrackRequest(
+          mode: const TrackModeValue('normal'),
+          target: workspace.homePath('.config/app.toml'),
+        ),
+        workspace.home,
+      );
+
+      final run = await _runCommand(pushCommand, {'withGit': true}, []);
+
+      expect(_dotweaveError(run.error).code, 'SYNC_PUSH_NO_REMOTE');
+      expect(run.stdout, isNot(contains('Synced to git remote')));
+    });
+
+    test(
+      'push --with-git --dry-run skips git and never touches a remote',
+      () async {
+        // No remote here: a dry run must not reach the remote check, so it must
+        // not raise SYNC_PUSH_NO_REMOTE, and it must not write or commit.
+        final workspace = await _setUpWorkspace();
+        await _writeHomeFile(workspace, '.config/app.toml', 'from-home\n');
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            target: workspace.homePath('.config/app.toml'),
+          ),
+          workspace.home,
+        );
+
+        final run = await _runCommand(pushCommand, {
+          'withGit': true,
+          'dryRun': true,
+        }, []);
+
+        expect(run.error, isNull);
+        expect(run.stdout, contains('Push preview (dry run)'));
+        expect(run.stdout, isNot(contains('Synced to git remote')));
+        // The artifact was not written...
+        expect(
+          await io.File(
+            workspace.artifactPath('default', '.config/app.toml'),
+          ).exists(),
+          isFalse,
+        );
+        // ...and no commit was created in the freshly initialized sync repo.
+        final commitCount = await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'rev-list',
+          '--all',
+          '--count',
+        ]);
+        expect(commitCount.stdout.trim(), '0');
+      },
+    );
+
+    test('pull --with-git applies commits another clone pushed to the '
+        'remote', () async {
+      // Clone from a bare remote so `origin` exists, then publish a tracked
+      // plaintext artifact to it.
+      final workspace = await _setUpWorkspace(initialize: false);
+      final source = await _createSourceRepository(workspace);
+      await _runCommand(initCommand, {}, [source]);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'user.email',
+        'test@example.com',
+      ]);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'user.name',
+        'Test User',
+      ]);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'config',
+        'commit.gpgsign',
+        'false',
+      ]);
+
+      await _writeHomeFile(workspace, '.config/app.toml', 'v1\n');
+      await trackTarget(
+        TrackRequest(
+          mode: const TrackModeValue('normal'),
+          target: workspace.homePath('.config/app.toml'),
+        ),
+        workspace.home,
+      );
+      final push = await _runCommand(pushCommand, {'withGit': true}, []);
+      expect(push.error, isNull);
+
+      // A separate clone rewrites the plaintext artifact and pushes v2.
+      final external = p.join(workspace.root, 'external');
+      await runGit(['clone', source, external]);
+      final artifactRelative = p.joinAll([
+        'profiles',
+        'default',
+        '.config',
+        'app.toml',
+      ]);
+      await io.File(p.join(external, artifactRelative)).writeAsString('v2\n');
+      await runGit(['-C', external, 'add', '-A']);
+      await runGit(['-C', external, 'commit', '-m', 'external update to v2']);
+      await runGit(['-C', external, 'push']);
+
+      // pull --with-git fetches v2 and materializes it back to the home file.
+      final pull = await _runCommand(pullCommand, {
+        'withGit': true,
+        'yes': true,
+      }, []);
+
+      expect(pull.error, isNull);
+      expect(pull.stdout, contains('Pulling from remote...'));
+      expect(pull.stdout, contains('Pull complete'));
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'v2\n',
+      );
     });
 
     test('stops the prepare pull spinner when planning rejects', () async {
