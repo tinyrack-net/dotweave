@@ -6,6 +6,7 @@ import 'package:dotweave/src/services/repo_snapshot.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 import 'package:dotweave/src/util/collation.dart';
 import 'package:dotweave/src/util/concurrency.dart';
+import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/git.dart';
 import 'package:dotweave/src/util/path_util.dart';
 import 'package:dotweave/src/util/perf_trace.dart';
@@ -14,12 +15,16 @@ import 'package:dotweave/src/util/perf_trace.dart';
 // snapshot into per-entry materializations, a PullPlan of updated/deleted
 // local paths, and applies the plan batched over non-overlapping entries.
 
-/// Mirror of the TS `PullRequest` readonly object.
+/// Mirror of the TS `PullRequest` readonly object, extended with the opt-in
+/// git-remote control (`--with-git`) that has no TS counterpart.
 class PullRequest {
-  const PullRequest({required this.dryRun, this.profile});
+  const PullRequest({required this.dryRun, this.profile, this.withGit = false});
 
   final bool dryRun;
   final String? profile;
+
+  /// When true, `git pull` from the remote before snapshotting the repository.
+  final bool withGit;
 }
 
 /// Mirror of the TS `PullResult` readonly object.
@@ -112,7 +117,9 @@ const _defaultBuildPullCounts = buildPullCounts;
 const _defaultBuildRepositorySnapshot = buildRepositorySnapshot;
 const _defaultCollectChangedLocalPaths = collectChangedLocalPaths;
 const _defaultCountDeletedLocalNodes = countDeletedLocalNodes;
+const _defaultHasGitRemote = hasGitRemote;
 const _defaultLoadSyncConfig = loadSyncConfig;
+const _defaultPullFromRemote = pullFromRemote;
 const _defaultRequireGitRepository = requireGitRepository;
 const _defaultResolveSyncPaths = resolveSyncPaths;
 
@@ -132,7 +139,9 @@ class PullDependencies {
     this.buildRepositorySnapshot = _defaultBuildRepositorySnapshot,
     this.collectChangedLocalPaths = _defaultCollectChangedLocalPaths,
     this.countDeletedLocalNodes = _defaultCountDeletedLocalNodes,
+    this.hasGitRemote = _defaultHasGitRemote,
     this.loadSyncConfig = _defaultLoadSyncConfig,
+    this.pullFromRemote = _defaultPullFromRemote,
     this.requireGitRepository = _defaultRequireGitRepository,
     this.resolveSyncPaths = _defaultResolveSyncPaths,
   });
@@ -171,11 +180,13 @@ class PullDependencies {
     Set<String>? deletedKeys,
   )
   countDeletedLocalNodes;
+  final Future<bool> Function(String directory) hasGitRemote;
   final Future<LoadedSyncConfig> Function(
     String syncDirectory, {
     String? profile,
   })
   loadSyncConfig;
+  final Future<void> Function(String directory) pullFromRemote;
   final Future<void> Function(String syncDirectory) requireGitRepository;
   final SyncPaths Function() resolveSyncPaths;
 }
@@ -384,6 +395,24 @@ Future<PreparedPull> preparePull(
   final syncDirectory = dependencies.resolveSyncPaths().syncDirectory;
 
   await dependencies.requireGitRepository(syncDirectory);
+
+  // Pull the remote into the working tree before snapshotting, so the plan
+  // reflects freshly-fetched content. Skipped on dry-run since it mutates the
+  // working tree.
+  if (request.withGit && !request.dryRun) {
+    if (!await dependencies.hasGitRemote(syncDirectory)) {
+      throw DotweaveError(
+        'No git remote is configured for the sync directory.',
+        code: 'SYNC_PULL_NO_REMOTE',
+        details: ['Sync directory: $syncDirectory'],
+        hint:
+            'Clone a remote with "dotweave init <url>", or add one with '
+            '"git remote add origin <url>", before using --with-git.',
+      );
+    }
+
+    await dependencies.pullFromRemote(syncDirectory);
+  }
 
   final config = (await dependencies.loadSyncConfig(
     syncDirectory,

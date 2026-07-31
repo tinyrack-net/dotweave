@@ -30,27 +30,40 @@ final Command<ApplicationContext> pullCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Apply the git-backed sync directory to local config paths',
     fullDescription:
-        'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally.',
+        'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally. Pass --with-git to first pull the latest artifacts from the configured git remote.',
   ),
   func: (context, flags, args) async {
     final dryRun = flags.dryRun ?? false;
+    final withGit = flags.withGit ?? false;
     final logger = loggerFor(context);
 
-    final spin = logger.spinner('Preparing pull...');
+    final request = PullRequest(
+      dryRun: dryRun,
+      profile: flags.profile,
+      withGit: withGit,
+    );
     PreparedPull prepared;
 
-    try {
-      prepared = await preparePull(
-        PullRequest(dryRun: dryRun, profile: flags.profile),
-      );
-    } catch (error) {
+    if (withGit && !dryRun) {
+      // Skip the spinner so git owns the terminal for interactive auth: the
+      // git pull run inside preparePull may prompt for credentials.
+      logger.info('Pulling from remote...');
+      prepared = await preparePull(request);
+    } else {
+      final spin = logger.spinner('Preparing pull...');
+
+      try {
+        prepared = await preparePull(request);
+      } catch (error) {
+        spin.stop();
+        rethrow;
+      }
+
       spin.stop();
-      rethrow;
     }
 
     final config = prepared.config;
     final plan = prepared.plan;
-    spin.stop();
 
     if (plan.updatedLocalPaths.isEmpty && plan.deletedLocalPaths.isEmpty) {
       logger.info('Already up to date');
@@ -125,7 +138,21 @@ final Command<ApplicationContext> pullCommand = buildCommand(
                 withNegated: false,
               ),
             )
-            .map((v) => (dryRun: v.$1.$1, profile: v.$1.$2, yes: v.$2)),
+            .and(
+              BooleanFlag.optional<ApplicationContext>(
+                name: 'withGit',
+                brief: 'Also pull from the git remote before applying',
+                withNegated: false,
+              ),
+            )
+            .map(
+              (v) => (
+                dryRun: v.$1.$1.$1,
+                profile: v.$1.$1.$2,
+                yes: v.$1.$2,
+                withGit: v.$2,
+              ),
+            ),
     positional: PositionalSet.none(),
     aliases: {'y': 'yes'},
   ),

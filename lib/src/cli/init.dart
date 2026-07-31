@@ -48,34 +48,43 @@ final Command<ApplicationContext> initCommand = buildCommand(
     final identity = resolveAgeIdentity(plan, promptAnswer);
     final importingRepository = plan.importingRepository;
 
-    final spin = logger.spinner(
-      importingRepository
-          ? 'Cloning repository...'
-          : 'Initializing sync directory...',
+    final request = InitRequest(
+      ageIdentity: identity.ageIdentity,
+      force: force,
+      generateAgeIdentity: identity.generateAgeIdentity,
+      recipients: const [],
+      repository: repository,
     );
 
     InitResult result;
 
-    try {
-      result = await initializeSyncDirectory(
-        InitRequest(
-          ageIdentity: identity.ageIdentity,
-          force: force,
-          generateAgeIdentity: identity.generateAgeIdentity,
-          recipients: const [],
-          repository: repository,
-        ),
+    if (importingRepository) {
+      // Cloning may prompt for credentials/passphrases on the terminal, so we
+      // skip the spinner: git renders its own progress and auth prompts
+      // directly, and a spinner over the same terminal would hide the prompt.
+      logger.info('Cloning repository...');
+      result = await initializeSyncDirectory(request);
+      logger.info(
+        result.alreadyInitialized
+            ? 'Sync directory already initialized'
+            : 'Sync directory initialized',
       );
-    } catch (error) {
-      spin.stop();
-      rethrow;
-    }
-
-    if (result.alreadyInitialized) {
-      spin.stop();
-      logger.info('Sync directory already initialized');
     } else {
-      spin.succeed('Sync directory initialized');
+      final spin = logger.spinner('Initializing sync directory...');
+
+      try {
+        result = await initializeSyncDirectory(request);
+      } catch (error) {
+        spin.stop();
+        rethrow;
+      }
+
+      if (result.alreadyInitialized) {
+        spin.stop();
+        logger.info('Sync directory already initialized');
+      } else {
+        spin.succeed('Sync directory initialized');
+      }
     }
 
     logger.kv('git', _formatGitSummary(result));

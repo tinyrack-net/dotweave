@@ -66,6 +66,17 @@ class StreamingGitCommandDependencies {
   final GitSpawn spawnGit;
 }
 
+/// Runs a git command with the child inheriting this process's terminal and
+/// completes with its exit code, or errors when spawning fails.
+typedef GitInteractiveRun =
+    Future<int> Function(List<String> args, {String? cwd});
+
+class InteractiveGitCommandDependencies {
+  const InteractiveGitCommandDependencies({required this.runInteractive});
+
+  final GitInteractiveRun runInteractive;
+}
+
 class InitializeRepositoryResult {
   const InitializeRepositoryResult({required this.action, this.source});
 
@@ -354,6 +365,65 @@ Future<GitCommandResult> _runStreamingGitCommand(
   );
 }
 
+/// Runs a git command with the child inheriting this process's terminal, so
+/// git can drive its own credential/passphrase prompts and progress output.
+///
+/// Unlike [runStreamingGitCommandWithDependencies] this cannot capture
+/// stdout/stderr -- they belong to the terminal -- so a non-zero exit surfaces
+/// only the exit code; git already printed its diagnostics to the user. This is
+/// the path for network operations (clone/fetch/push/pull) where blocking on a
+/// hidden credential prompt would otherwise hang forever.
+Future<void> runInteractiveGitCommandWithDependencies(
+  List<String> args,
+  GitCommandOptions? options,
+  InteractiveGitCommandDependencies dependencies,
+) async {
+  final int code;
+  try {
+    code = await dependencies.runInteractive(List.of(args), cwd: options?.cwd);
+  } catch (error) {
+    if (_isEnoentError(error)) {
+      throw _createMissingGitExecutableError();
+    }
+
+    throw _createGitCommandFailedError(
+      error is Exception || error is Error
+          ? extractErrorMessage(error)
+          : 'git failed.',
+    );
+  }
+
+  if (code != 0) {
+    throw _createGitCommandFailedError('git exited with code $code.');
+  }
+}
+
+Future<int> _runInteractiveGitProcess(List<String> args, {String? cwd}) async {
+  final process = await Process.start(
+    'git',
+    args,
+    workingDirectory: cwd,
+    runInShell: false,
+    mode: ProcessStartMode.inheritStdio,
+  );
+
+  return process.exitCode;
+}
+
+/// Runs a git command with the terminal handed to git for interactive auth.
+Future<void> runInteractiveGitCommand(
+  List<String> args, [
+  GitCommandOptions? options,
+]) async {
+  return runInteractiveGitCommandWithDependencies(
+    args,
+    options,
+    const InteractiveGitCommandDependencies(
+      runInteractive: _runInteractiveGitProcess,
+    ),
+  );
+}
+
 /// Verifies that a directory is already a git working tree.
 Future<void> verifyIsGitRepository(String directory) async {
   await _runGitCommand(['-C', directory, 'rev-parse', '--is-inside-work-tree']);
@@ -370,9 +440,65 @@ Future<InitializeRepositoryResult> initializeRepository(
     return const InitializeRepositoryResult(action: 'initialized');
   }
 
-  await _runStreamingGitCommand(['clone', source, directory]);
+  // Hand the terminal to git so it can prompt for credentials/passphrases;
+  // the streaming path would swallow the prompt and hang forever on an
+  // authenticated remote.
+  await runInteractiveGitCommand(['clone', source, directory]);
 
   return InitializeRepositoryResult(action: 'cloned', source: source);
+}
+
+/// Whether the sync directory has any git remote configured.
+///
+/// A locally `init`ed sync directory has none; a directory cloned by
+/// [initializeRepository] has the standard `origin`. Callers use this to reject
+/// remote operations (`--with-git`) up front with a clear error.
+Future<bool> hasGitRemote(String directory) async {
+  final result = await _runGitCommand([
+    'remote',
+  ], GitCommandOptions(cwd: directory));
+
+  return result.stdout.trim().isNotEmpty;
+}
+
+/// Stages every change under [directory] and commits it with [message] when the
+/// tree is dirty. Returns whether a commit was actually created -- a clean tree
+/// is a no-op that returns `false` rather than failing.
+Future<bool> commitAllChanges(String directory, String message) async {
+  final options = GitCommandOptions(cwd: directory);
+
+  await _runGitCommand(['add', '-A'], options);
+
+  final status = await _runGitCommand(['status', '--porcelain'], options);
+  if (status.stdout.trim().isEmpty) {
+    return false;
+  }
+
+  await _runGitCommand(['commit', '-m', message], options);
+
+  return true;
+}
+
+/// Pushes the current branch to `origin`, handing the terminal to git so it can
+/// prompt for credentials on an authenticated remote.
+///
+/// Uses `push -u origin HEAD` rather than a bare `push` so the first push after
+/// cloning an empty remote (which has no upstream configured yet) succeeds and
+/// records the tracking branch. `origin` is the remote name `git clone` — and
+/// thus `dotweave init <url>` — always creates.
+Future<void> pushToRemote(String directory) async {
+  await runInteractiveGitCommand([
+    'push',
+    '-u',
+    'origin',
+    'HEAD',
+  ], GitCommandOptions(cwd: directory));
+}
+
+/// Pulls the current branch from its configured upstream, handing the terminal
+/// to git so it can prompt for credentials on an authenticated remote.
+Future<void> pullFromRemote(String directory) async {
+  await runInteractiveGitCommand(['pull'], GitCommandOptions(cwd: directory));
 }
 
 /// Ensures the sync directory is a usable git repository for dotweave
