@@ -143,6 +143,7 @@ dotweave는 내부 오류 코드를 출력하지 않아요. 아래 코드는 이
 | `Duplicate --<flag> platform value.` | `DUPLICATE_PLATFORM_FLAG` | 한 플래그에 같은 플랫폼 키를 두 번 넘겼어요. |
 | `Invalid --<flag> mode '<value>'.` | `INVALID_SYNC_MODE` | `normal`, `secret`, `ignore` 중 하나를 쓰세요. |
 | `Invalid --<flag> permission '<value>'.` | `INVALID_PERMISSION` | `0600`이나 `0755`처럼 네 자리 8진수 문자열을 쓰세요. |
+| `Commit message cannot be empty.` | `INVALID_COMMIT_MESSAGE` | `--message`에 비어 있지 않은 값을 넘기세요. 앞뒤 공백은 무시해요. |
 | `The --repo flag can only be used with a single sync target.` | `REPO_PATH_TARGET_COUNT` | 저장소 경로를 덮어쓸 때는 대상을 하나씩 추적하세요. |
 | `Pull confirmation requires an interactive terminal.` | 없음 | `dotweave pull -y`로 다시 실행하거나, `--dry-run`으로 미리보기만 하세요. |
 

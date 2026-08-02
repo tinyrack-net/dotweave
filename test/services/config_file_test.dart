@@ -29,7 +29,26 @@ void main() {
   });
 
   group('config-file', () {
-    test('writes v8 directory entries', () {
+    test('preserves synchronized command defaults when rebuilding', () {
+      final document = buildSyncConfigDocument(
+        const ResolvedSyncConfig(
+          commands: SyncCommandDefaults(
+            pull: PullCommandDefaults(yes: true, withGit: true),
+            push: PushCommandDefaults(dryRun: true, message: 'Sync'),
+          ),
+          entries: [],
+          profiles: [],
+          version: 9,
+        ),
+      );
+
+      expect(document.toJson()['commands'], {
+        'pull': {'yes': true, 'withGit': true},
+        'push': {'dryRun': true, 'message': 'Sync'},
+      });
+    });
+
+    test('writes v9 directory entries', () {
       expect(
         buildSyncConfigDocument(
           const ResolvedSyncConfig(
@@ -50,7 +69,7 @@ void main() {
               ),
             ],
             profiles: [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -61,12 +80,12 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
 
-    test('writes v8 file entries with mode and profiles', () {
+    test('writes v9 file entries with mode and profiles', () {
       expect(
         buildSyncConfigDocument(
           const ResolvedSyncConfig(
@@ -87,7 +106,7 @@ void main() {
               ),
             ],
             profiles: ['work'],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -100,7 +119,7 @@ void main() {
             },
           ],
           'profiles': ['work'],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -126,7 +145,7 @@ void main() {
               ),
             ],
             profiles: [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -137,7 +156,7 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -168,7 +187,7 @@ void main() {
               ),
             ],
             profiles: const [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -180,7 +199,7 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -238,7 +257,7 @@ void main() {
               ),
             ],
             profiles: [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -250,7 +269,7 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -284,7 +303,7 @@ void main() {
               ),
             ],
             profiles: [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -306,7 +325,7 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -337,7 +356,7 @@ void main() {
               ),
             ],
             profiles: [],
-            version: 8,
+            version: 9,
           ),
         ).toJson(),
         equals({
@@ -353,7 +372,7 @@ void main() {
             },
           ],
           'profiles': <String>[],
-          'version': 8,
+          'version': 9,
         }),
       );
     });
@@ -367,7 +386,7 @@ void main() {
       await expectLater(
         writeValidatedSyncConfig(
           syncDirectory,
-          const RawSyncConfig(version: 8, profiles: ['default'], entries: []),
+          const RawSyncConfig(version: 9, profiles: ['default'], entries: []),
         ),
         throwsA(predicate((error) => error.toString().contains('default'))),
       );
@@ -386,7 +405,7 @@ void main() {
           writeValidatedSyncConfig(
             syncDirectory,
             const RawSyncConfig(
-              version: 8,
+              version: 9,
               profiles: ['work', ' work '],
               entries: [],
             ),
@@ -411,7 +430,7 @@ void main() {
         writeValidatedSyncConfig(
           syncDirectory,
           const RawSyncConfig(
-            version: 8,
+            version: 9,
             profiles: ['work'],
             entries: [
               SyncConfigEntry(

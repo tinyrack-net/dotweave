@@ -33,7 +33,7 @@ Create or connect the sync directory under the dotweave home directory, then rec
 
 With no `repository` argument, `init` runs `git init -b main` in the sync directory. With one, it runs `git clone`. It refuses to initialize a directory that already exists and is not empty.
 
-It then writes the repository scaffolding: `.gitattributes` containing `* -text`, the managed `.gitignore` block that keeps encrypted artifacts committable, and a `manifest.jsonc` at version `8` with `repositoryFormat` `1`, no entries, and one recipient.
+It then writes the repository scaffolding: `.gitattributes` containing `* -text`, the managed `.gitignore` block that keeps encrypted artifacts committable, and a `manifest.jsonc` at version `9` with `repositoryFormat` `1`, no entries, and one recipient.
 
 For the age identity it uses `--key-file` when given, reuses `keys.txt` when one already exists, and otherwise generates a new identity. When you clone a repository that already has recipients and supply no key, `init` prompts for the private key in an interactive terminal, and fails outright when it cannot prompt.
 

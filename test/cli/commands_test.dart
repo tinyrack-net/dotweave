@@ -41,6 +41,7 @@ import 'package:dotweave/src/services/profile.dart';
 import 'package:dotweave/src/services/push.dart';
 import 'package:dotweave/src/services/sync_mode.dart';
 import 'package:dotweave/src/services/track.dart';
+import 'package:dotweave/src/services/untrack.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -149,16 +150,18 @@ String _kebabCase(String name) => name.replaceAllMapped(
 
 /// Renders a flag map into CLI argument tokens. Booleans become presence
 /// flags, lists expand into repeated occurrences (variadic flags), and other
-/// values become `--flag value` pairs. `null`/`false` entries are omitted.
+/// values become `--flag value` pairs. False booleans use the negated form.
 List<String> _flagTokens(Map<String, Object?> flags) {
   final tokens = <String>[];
   flags.forEach((name, value) {
-    if (value == null || value == false) {
+    if (value == null) {
       return;
     }
     final flag = '--${_kebabCase(name)}';
     if (value == true) {
       tokens.add(flag);
+    } else if (value == false) {
+      tokens.add('--no-${_kebabCase(name)}');
     } else if (value is List) {
       for (final entry in value) {
         tokens
@@ -407,6 +410,30 @@ Future<List<Map<String, Object?>>> _manifestEntries(
   return parseManifestEntries(
     await io.File(workspace.manifestPath).readAsString(),
   );
+}
+
+Future<void> _writeManifestCommands(
+  _Workspace workspace,
+  Map<String, Object?> commands,
+) async {
+  final manifest =
+      jsonDecode(await io.File(workspace.manifestPath).readAsString())
+          as Map<String, Object?>;
+  manifest['commands'] = commands;
+  await io.File(
+    workspace.manifestPath,
+  ).writeAsString(const JsonEncoder.withIndent('  ').convert(manifest));
+}
+
+Future<Map<String, Object?>> _manifestCommands(_Workspace workspace) async {
+  final manifest =
+      jsonDecode(await io.File(workspace.manifestPath).readAsString())
+          as Map<String, Object?>;
+  return (manifest['commands'] as Map<String, Object?>?) ?? {};
+}
+
+Future<String> _gitStdout(List<String> arguments) async {
+  return (await runGit(arguments)).stdout.trim();
 }
 
 /// Creates a bare git repository usable as an init clone source.
@@ -1181,6 +1208,227 @@ void main() {
       },
     );
 
+    test(
+      'uses synchronized command defaults and lets CLI flags override them',
+      () async {
+        final workspace = await _setUpWorkspace();
+        await _writeHomeFile(workspace, '.config/app.toml', 'repository\n');
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            target: workspace.homePath('.config/app.toml'),
+          ),
+          workspace.home,
+        );
+        await pushChanges(const PushRequest(dryRun: false));
+
+        await _writeHomeFile(workspace, '.config/app.toml', 'local\n');
+        await _writeManifestCommands(workspace, {
+          'pull': {'yes': true},
+          'push': {'dryRun': true, 'withGit': true},
+        });
+
+        final pull = await _runCommand(pullCommand, {}, [], stdinIsTTY: false);
+        expect(pull.error, isNull);
+        expect(
+          await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+          'repository\n',
+        );
+
+        await _writeHomeFile(workspace, '.config/app.toml', 'updated\n');
+        final preview = await _runCommand(pushCommand, {'withGit': false}, []);
+        expect(preview.error, isNull);
+        expect(preview.stdout, contains('Push preview (dry run)'));
+
+        final applied = await _runCommand(pushCommand, {
+          'dryRun': false,
+          'withGit': false,
+        }, []);
+        expect(applied.error, isNull);
+        expect(
+          await io.File(
+            workspace.artifactPath('default', '.config/app.toml'),
+          ).readAsString(),
+          'updated\n',
+        );
+      },
+    );
+
+    test('manifest rewrites preserve synchronized command defaults', () async {
+      final workspace = await _setUpWorkspace();
+      const commands = <String, Object?>{
+        'pull': {
+          'dryRun': false,
+          'profile': 'work',
+          'yes': true,
+          'withGit': true,
+        },
+        'push': {
+          'dryRun': false,
+          'profile': 'work',
+          'withGit': true,
+          'message': 'preserved message',
+        },
+      };
+      await _writeManifestCommands(workspace, commands);
+
+      Future<void> expectPreserved() async {
+        expect(await _manifestCommands(workspace), commands);
+      }
+
+      await addProfile('work');
+      await expectPreserved();
+
+      await _writeHomeFile(workspace, '.config/app.toml', 'tracked\n');
+      final target = workspace.homePath('.config/app.toml');
+      await trackTarget(
+        TrackRequest(mode: const TrackModeValue('normal'), target: target),
+        workspace.home,
+      );
+      await expectPreserved();
+
+      await setTargetMode(
+        SetModeRequest(mode: 'secret', target: target),
+        workspace.home,
+      );
+      await expectPreserved();
+
+      await assignProfiles(
+        AssignProfilesRequest(profiles: const ['work'], target: target),
+        workspace.home,
+      );
+      await expectPreserved();
+
+      await untrackTarget(UntrackRequest(target: target), workspace.home);
+      await expectPreserved();
+
+      await removeProfile('work');
+      await expectPreserved();
+    });
+
+    test('CLI boolean values override synchronized pull defaults', () async {
+      final workspace = await _setUpWorkspace();
+      await _writeHomeFile(workspace, '.config/app.toml', 'repository\n');
+      await trackTarget(
+        TrackRequest(
+          mode: const TrackModeValue('normal'),
+          target: workspace.homePath('.config/app.toml'),
+        ),
+        workspace.home,
+      );
+      await pushChanges(const PushRequest(dryRun: false));
+      await _writeHomeFile(workspace, '.config/app.toml', 'local\n');
+      await _writeManifestCommands(workspace, {
+        'pull': {'dryRun': true, 'yes': true},
+      });
+
+      final manifestDryRun = await _runCommand(pullCommand, {}, []);
+      expect(manifestDryRun.error, isNull);
+      expect(manifestDryRun.stdout, contains('Pull preview (dry run)'));
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'local\n',
+      );
+
+      final noDryRun = await _runCommand(pullCommand, {'dryRun': false}, []);
+      expect(noDryRun.error, isNull);
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'repository\n',
+      );
+
+      await _writeHomeFile(workspace, '.config/app.toml', 'local again\n');
+      await _writeManifestCommands(workspace, {
+        'pull': {'dryRun': false, 'yes': true},
+      });
+      final noYes = await _runCommand(
+        pullCommand,
+        {'yes': false},
+        [],
+        stdinIsTTY: false,
+      );
+      expect(
+        _dotweaveError(noYes.error).message,
+        contains('requires an interactive terminal'),
+      );
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'local again\n',
+      );
+
+      await _writeManifestCommands(workspace, {
+        'pull': {'dryRun': false, 'yes': false},
+      });
+      final explicitYes = await _runCommand(
+        pullCommand,
+        {'yes': true},
+        [],
+        stdinIsTTY: false,
+      );
+      expect(explicitYes.error, isNull);
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'repository\n',
+      );
+    });
+
+    test(
+      'manifest and CLI profile defaults select the requested namespace',
+      () async {
+        final workspace = await _setUpWorkspace();
+        await addProfile('work');
+        await _writeHomeFile(workspace, '.config/work.toml', 'work value\n');
+        await _writeHomeFile(
+          workspace,
+          '.config/default.toml',
+          'default value\n',
+        );
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            profiles: const ['work'],
+            target: workspace.homePath('.config/work.toml'),
+          ),
+          workspace.home,
+        );
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            target: workspace.homePath('.config/default.toml'),
+          ),
+          workspace.home,
+        );
+        await _writeManifestCommands(workspace, {
+          'push': {'profile': 'work'},
+        });
+
+        final manifestProfile = await _runCommand(pushCommand, {}, []);
+        expect(manifestProfile.error, isNull);
+        expect(
+          await io.File(
+            workspace.artifactPath('work', '.config/work.toml'),
+          ).readAsString(),
+          'work value\n',
+        );
+        final cliProfile = await _runCommand(pushCommand, {
+          'profile': 'default',
+        }, []);
+        expect(cliProfile.error, isNull);
+        expect(
+          await io.File(
+            workspace.artifactPath('default', '.config/default.toml'),
+          ).readAsString(),
+          'default value\n',
+        );
+
+        await _writeManifestCommands(workspace, {
+          'push': {'profile': 'ghost'},
+        });
+        final unknown = await _runCommand(pushCommand, {}, []);
+        expect(_dotweaveError(unknown.error).code, 'UNKNOWN_PROFILE');
+      },
+    );
+
     test('stops the push spinner when push planning rejects', () async {
       // Push planning rejects for real: the sync directory was never
       // initialized in this workspace.
@@ -1233,6 +1481,11 @@ void main() {
         workspace.home,
       );
 
+      // An explicit CLI flag overrides a synchronized false default.
+      await _writeManifestCommands(workspace, {
+        'push': {'withGit': false},
+      });
+
       // Default commit message.
       final run = await _runCommand(pushCommand, {'withGit': true}, []);
       expect(run.error, isNull);
@@ -1264,6 +1517,191 @@ void main() {
       ]);
       expect(secondLog.stdout, contains('custom sync message'));
     });
+
+    test(
+      'bare push uses synchronized withGit and trimmed message defaults',
+      () async {
+        final workspace = await _setUpWorkspace(initialize: false);
+        final source = await _createSourceRepository(workspace);
+        await _runCommand(initCommand, {}, [source]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'user.email',
+          'test@example.com',
+        ]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'user.name',
+          'Test User',
+        ]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'commit.gpgsign',
+          'false',
+        ]);
+
+        await _writeHomeFile(workspace, '.config/app.toml', 'manifest push\n');
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            target: workspace.homePath('.config/app.toml'),
+          ),
+          workspace.home,
+        );
+        await _writeManifestCommands(workspace, {
+          'push': {
+            'withGit': true,
+            'message': '  synchronized commit message  ',
+          },
+        });
+
+        final run = await _runCommand(pushCommand, {}, []);
+
+        expect(run.error, isNull);
+        expect(run.stdout, contains('Synced to git remote'));
+        expect(
+          await _gitStdout(['-C', source, 'log', '-1', '--format=%s']),
+          'synchronized commit message',
+        );
+        expect(
+          await _gitStdout([
+            '-C',
+            workspace.syncDirectory,
+            'rev-parse',
+            'HEAD',
+          ]),
+          await _gitStdout(['-C', source, 'rev-parse', 'HEAD']),
+        );
+
+        await _writeHomeFile(workspace, '.config/app.toml', 'CLI override\n');
+        final overrideRun = await _runCommand(pushCommand, {
+          'message': '  explicit override message  ',
+        }, []);
+        expect(overrideRun.error, isNull);
+        expect(
+          await _gitStdout(['-C', source, 'log', '-1', '--format=%s']),
+          'explicit override message',
+        );
+
+        final headBeforeCleanPush = await _gitStdout([
+          '-C',
+          source,
+          'rev-parse',
+          'HEAD',
+        ]);
+        final cleanRun = await _runCommand(pushCommand, {}, []);
+        expect(cleanRun.error, isNull);
+        expect(
+          await _gitStdout(['-C', source, 'rev-parse', 'HEAD']),
+          headBeforeCleanPush,
+        );
+      },
+    );
+
+    test(
+      'empty CLI messages fail before artifacts, staging, commit, or push',
+      () async {
+        final workspace = await _setUpWorkspace(initialize: false);
+        final source = await _createSourceRepository(workspace);
+        await _runCommand(initCommand, {}, [source]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'user.email',
+          'test@example.com',
+        ]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'user.name',
+          'Test User',
+        ]);
+        await runGit([
+          '-C',
+          workspace.syncDirectory,
+          'config',
+          'commit.gpgsign',
+          'false',
+        ]);
+        await _writeHomeFile(workspace, '.config/app.toml', 'initial\n');
+        await trackTarget(
+          TrackRequest(
+            mode: const TrackModeValue('normal'),
+            target: workspace.homePath('.config/app.toml'),
+          ),
+          workspace.home,
+        );
+        final initialPush = await _runCommand(pushCommand, {
+          'withGit': true,
+        }, []);
+        expect(initialPush.error, isNull);
+        await _writeHomeFile(workspace, '.config/app.toml', 'must not sync\n');
+
+        final artifact = io.File(
+          workspace.artifactPath('default', '.config/app.toml'),
+        );
+        final artifactBefore = await artifact.readAsBytes();
+        final statusBefore = await _gitStdout([
+          '-C',
+          workspace.syncDirectory,
+          'status',
+          '--porcelain',
+        ]);
+        final headBefore = await _gitStdout([
+          '-C',
+          workspace.syncDirectory,
+          'rev-parse',
+          'HEAD',
+        ]);
+        final remoteBefore = await _gitStdout([
+          '-C',
+          source,
+          'rev-parse',
+          'HEAD',
+        ]);
+
+        for (final invalidMessage in ['', '  \t  ']) {
+          final run = await _runCommand(pushCommand, {
+            'withGit': true,
+            'message': invalidMessage,
+          }, []);
+
+          final error = _dotweaveError(run.error);
+          expect(error.code, 'INVALID_COMMIT_MESSAGE');
+          expect(await artifact.readAsBytes(), artifactBefore);
+          expect(
+            await _gitStdout([
+              '-C',
+              workspace.syncDirectory,
+              'status',
+              '--porcelain',
+            ]),
+            statusBefore,
+          );
+          expect(
+            await _gitStdout([
+              '-C',
+              workspace.syncDirectory,
+              'rev-parse',
+              'HEAD',
+            ]),
+            headBefore,
+          );
+          expect(
+            await _gitStdout(['-C', source, 'rev-parse', 'HEAD']),
+            remoteBefore,
+          );
+        }
+      },
+    );
 
     test('push --with-git fails when no git remote is configured', () async {
       // A locally initialized sync directory has no remote.
@@ -1298,10 +1736,11 @@ void main() {
           workspace.home,
         );
 
-        final run = await _runCommand(pushCommand, {
-          'withGit': true,
-          'dryRun': true,
-        }, []);
+        await _writeManifestCommands(workspace, {
+          'push': {'withGit': true, 'dryRun': true},
+        });
+
+        final run = await _runCommand(pushCommand, {}, []);
 
         expect(run.error, isNull);
         expect(run.stdout, contains('Push preview (dry run)'));
@@ -1364,6 +1803,18 @@ void main() {
       );
       final push = await _runCommand(pushCommand, {'withGit': true}, []);
       expect(push.error, isNull);
+      await _writeManifestCommands(workspace, {
+        'pull': {'withGit': true, 'yes': true},
+      });
+      await runGit(['-C', workspace.syncDirectory, 'add', 'manifest.jsonc']);
+      await runGit([
+        '-C',
+        workspace.syncDirectory,
+        'commit',
+        '-m',
+        'enable synchronized pull defaults',
+      ]);
+      await runGit(['-C', workspace.syncDirectory, 'push']);
 
       // A separate clone rewrites the plaintext artifact and pushes v2.
       final external = p.join(workspace.root, 'external');
@@ -1379,11 +1830,8 @@ void main() {
       await runGit(['-C', external, 'commit', '-m', 'external update to v2']);
       await runGit(['-C', external, 'push']);
 
-      // pull --with-git fetches v2 and materializes it back to the home file.
-      final pull = await _runCommand(pullCommand, {
-        'withGit': true,
-        'yes': true,
-      }, []);
+      // The synchronized defaults fetch v2 and apply it with no CLI flags.
+      final pull = await _runCommand(pullCommand, {}, []);
 
       expect(pull.error, isNull);
       expect(pull.stdout, contains('Pulling from remote...'));
@@ -1391,6 +1839,85 @@ void main() {
       expect(
         await io.File(workspace.homePath('.config/app.toml')).readAsString(),
         'v2\n',
+      );
+
+      // Publish v3, then prove --no-with-git suppresses fetch despite the
+      // synchronized true default.
+      await io.File(p.join(external, artifactRelative)).writeAsString('v3\n');
+      final externalManifestFile = io.File(p.join(external, 'manifest.jsonc'));
+      final externalManifest =
+          jsonDecode(await externalManifestFile.readAsString())
+              as Map<String, Object?>;
+      externalManifest['commands'] = {
+        'pull': {'withGit': false, 'yes': true},
+      };
+      await externalManifestFile.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(externalManifest),
+      );
+      await runGit(['-C', external, 'add', '-A']);
+      await runGit(['-C', external, 'commit', '-m', 'external update to v3']);
+      await runGit(['-C', external, 'push']);
+      final trackingBefore = await _gitStdout([
+        '-C',
+        workspace.syncDirectory,
+        'rev-parse',
+        'refs/remotes/origin/master',
+      ]);
+      final suppressed = await _runCommand(pullCommand, {
+        'withGit': false,
+        'yes': true,
+      }, []);
+      expect(suppressed.error, isNull);
+      expect(suppressed.stdout, isNot(contains('Pulling from remote...')));
+      expect(
+        await _gitStdout([
+          '-C',
+          workspace.syncDirectory,
+          'rev-parse',
+          'refs/remotes/origin/master',
+        ]),
+        trackingBefore,
+      );
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'v2\n',
+      );
+
+      // This bare invocation starts with the local true default, so it still
+      // pulls and applies v3 even though that pull delivers a false default.
+      final snapshotRun = await _runCommand(pullCommand, {}, []);
+      expect(snapshotRun.error, isNull);
+      expect(snapshotRun.stdout, contains('Pulling from remote...'));
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'v3\n',
+      );
+      expect(
+        ((await _manifestCommands(workspace))['pull']
+            as Map<String, Object?>)['withGit'],
+        isFalse,
+      );
+
+      // The newly pulled false default takes effect on the next invocation.
+      await io.File(p.join(external, artifactRelative)).writeAsString('v4\n');
+      await runGit(['-C', external, 'add', '-A']);
+      await runGit(['-C', external, 'commit', '-m', 'external update to v4']);
+      await runGit(['-C', external, 'push']);
+      final nextBare = await _runCommand(pullCommand, {}, []);
+      expect(nextBare.error, isNull);
+      expect(nextBare.stdout, isNot(contains('Pulling from remote...')));
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'v3\n',
+      );
+
+      // An explicit true flag overrides that synchronized false default.
+      final overridden = await _runCommand(pullCommand, {'withGit': true}, []);
+      expect(overridden.error, isNull);
+      expect(overridden.stdout, contains('Pulling from remote...'));
+      expect(
+        await io.File(workspace.homePath('.config/app.toml')).readAsString(),
+        'v4\n',
       );
     });
 

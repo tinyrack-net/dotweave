@@ -36,6 +36,7 @@ Future<ResolvedSyncConfig> ensureRepositoryFormat(
 
   final upgraded = ResolvedSyncConfig(
     age: config.age,
+    commands: config.commands,
     entries: config.entries,
     profiles: config.profiles,
     repositoryFormat: AppConstants.sync.repositoryFormat,

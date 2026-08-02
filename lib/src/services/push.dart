@@ -16,7 +16,7 @@ import 'package:path/path.dart' as p;
 // Mirror of `services/push.ts`: local snapshot -> repository artifact planning
 // and the push orchestration that writes the plan to the sync repository.
 
-/// Commit message used when `--with-git` commits without an explicit `-m`.
+/// Commit message used when git sync commits without an explicit `-m`.
 const String _defaultPushCommitMessage = 'dotweave: sync configuration';
 
 /// Mirror of the TS `PushRequest` readonly object, extended with the opt-in
@@ -35,7 +35,7 @@ class PushRequest {
   /// When true, commit the written artifacts and push them to the git remote.
   final bool withGit;
 
-  /// Overrides [_defaultPushCommitMessage] for the `--with-git` commit.
+  /// Overrides [_defaultPushCommitMessage] for the git sync commit.
   final String? commitMessage;
 }
 

@@ -480,6 +480,7 @@ Future<ProfileRegistryUpdateResult> addProfile(
   final nextConfig = effectiveBuildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
+      commands: config.commands,
       entries: config.entries,
       profiles: [...(config.profiles ?? const <String>[]), normalizedProfile]
         ..sort(compareLocaleLike),
@@ -564,6 +565,7 @@ Future<ProfileRegistryUpdateResult> removeProfile(
   final nextConfig = effectiveBuildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
+      commands: config.commands,
       entries: config.entries,
       profiles: [
         for (final registeredProfile in config.profiles ?? const <String>[])
@@ -688,6 +690,7 @@ Future<AssignProfilesResult> assignProfiles(
   final nextConfig = effectiveBuildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
+      commands: config.commands,
       entries: [
         for (final e in config.entries)
           if (e.repoPath != entry.repoPath)

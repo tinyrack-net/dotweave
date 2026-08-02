@@ -302,6 +302,7 @@ Future<UntrackResult> untrackTarget(
   final nextConfig = dependencies.buildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
+      commands: config.commands,
       entries: [
         for (final configEntry in config.entries)
           if (configEntry.repoPath != entry.repoPath) configEntry,

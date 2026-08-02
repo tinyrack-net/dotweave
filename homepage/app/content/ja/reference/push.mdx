@@ -8,7 +8,7 @@ order: 3
 ## 使い方
 
 ```bash
-dotweave push [--dry-run] [--profile <profile>]
+dotweave push [--dry-run] [--profile <profile>] [--with-git] [--message <message>]
 ```
 
 トラッキング項目のローカルパスの現在の状態を読み取り、`profiles/<profile>/` 配下の artifact をその状態に合わせて書き直します。
@@ -17,8 +17,10 @@ dotweave push [--dry-run] [--profile <profile>]
 
 | フラグ | 型と既定値 | 用途 |
 | --- | --- | --- |
-| `--dry-run` | boolean、`false` | 何も書き込まずに計画だけを組み立てて表示します。`--no-dry-run` で既定値を明示できます。 |
-| `--profile` | `string`、なし | このコマンドに限り、`settings.jsonc` のアクティブなプロファイルの代わりに指定したプロファイル 1 つを使います。 |
+| `--dry-run` | boolean、manifest または `false` | 何も書き込まず計画だけを表示します。manifest の既定値が `true` の場合は `--no-dry-run` で上書きできます。 |
+| `--profile` | `string`、manifest またはなし | `settings.jsonc` のアクティブなプロファイルの代わりに登録済みプロファイルを使います。 |
+| `--with-git` | boolean、manifest または `false` | 更新した artifact をコミットして git リモートへ push します。manifest の既定値が `true` の場合は `--no-with-git` で上書きできます。 |
+| `--message`、`-m` | 空でない `string`、manifest または自動生成 | `--with-git` で使うコミットメッセージを指定します。前後の空白は取り除きます。 |
 
 ## 動作
 
@@ -58,7 +60,7 @@ dotweave push --dry-run
   0 stale artifacts would be removed
 ```
 
-`push` は `git add`、`git commit`、`git push` のいずれも実行しません。同期ディレクトリ内のファイルだけを変更します。コミットとリモートへの反映は [`dotweave cd`](/ja/reference/cd/) と git で行ってください。
+`--with-git` を使うと、更新した同期ディレクトリをコミットして設定済みリモートへ push します。自動生成されるコミットメッセージは `dotweave: sync configuration` です。`--dry-run` ではすべての git 操作を省略します。コマンドラインフラグは [`manifest.jsonc`](/ja/config/manifest/) の既定値より優先されます。
 
 ## エラー
 

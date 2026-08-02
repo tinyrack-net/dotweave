@@ -34,7 +34,7 @@ void main() {
   tearDown(cleanUpSyncFixture);
 
   group('sync service: tracking, profiles, and platform-specific artifacts', () {
-    test('tracks entries in v7 config format', () async {
+    test('tracks entries in the current config format', () async {
       final workspace = await createWorkspace();
       final homeDirectory = p.join(workspace, 'home');
       final xdgConfigHome = p.join(workspace, 'xdg');
@@ -76,7 +76,7 @@ void main() {
       ).readAsString();
       final config = readManifestJson(manifestText);
 
-      expect(config.version, 8);
+      expect(config.version, 9);
       expect(
         (jsonDecode(manifestText) as Map<String, Object?>).containsKey('age'),
         isTrue,

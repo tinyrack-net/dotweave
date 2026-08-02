@@ -143,6 +143,7 @@ dotweave は内部エラーコードを出力しません。以下のコード�
 | `Duplicate --<flag> platform value.` | `DUPLICATE_PLATFORM_FLAG` | 1 つのフラグに同じプラットフォームキーを 2 回渡しました。 |
 | `Invalid --<flag> mode '<value>'.` | `INVALID_SYNC_MODE` | `normal`、`secret`、`ignore` のいずれかを使ってください。 |
 | `Invalid --<flag> permission '<value>'.` | `INVALID_PERMISSION` | `0600` や `0755` のような 4 桁の 8 進数文字列を使ってください。 |
+| `Commit message cannot be empty.` | `INVALID_COMMIT_MESSAGE` | `--message` に空でない値を渡してください。前後の空白は無視されます。 |
 | `The --repo flag can only be used with a single sync target.` | `REPO_PATH_TARGET_COUNT` | リポジトリパスを上書きするときは、対象を 1 つずつトラッキングしてください。 |
 | `Pull confirmation requires an interactive terminal.` | なし | `dotweave pull -y` で実行し直すか、`--dry-run` でプレビューだけにしてください。 |
 

@@ -32,6 +32,7 @@ RawSyncConfig buildSyncConfigDocument(ResolvedSyncConfig config) {
 
   return RawSyncConfig(
     version: AppConstants.sync.configVersion,
+    commands: config.commands,
     // Preserve the actual on-disk format marker rather than forcing the
     // current value: rewriting the manifest (e.g. on track/untrack) must not
     // claim the repository was format-migrated. Only ensureRepositoryFormat

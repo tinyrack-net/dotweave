@@ -11,7 +11,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 ## 使い方
 
 ```bash
-dotweave pull [--dry-run] [--profile <profile>] [--yes]
+dotweave pull [--dry-run] [--profile <profile>] [--yes] [--with-git]
 ```
 
 トラッキング項目として保存されている artifact を読み取り、ホームディレクトリ配下の解決済みローカルパスへ書き戻します。
@@ -20,9 +20,10 @@ dotweave pull [--dry-run] [--profile <profile>] [--yes]
 
 | フラグ | 型と既定値 | 用途 |
 | --- | --- | --- |
-| `--dry-run` | boolean、`false` | ローカルパスに触れず、計画だけを組み立てて表示します。`--no-dry-run` で既定値を明示できます。 |
-| `--profile` | `string`、なし | このコマンドに限り、`settings.jsonc` のアクティブなプロファイルの代わりに指定したプロファイル 1 つを使います。 |
-| `--yes`、`-y` | boolean、`false` | 確認なしで計画を適用します。このフラグに `--no-yes` の形はありません。 |
+| `--dry-run` | boolean、manifest または `false` | ローカルパスに触れず計画だけを表示します。manifest の既定値が `true` の場合は `--no-dry-run` で上書きできます。 |
+| `--profile` | `string`、manifest またはなし | `settings.jsonc` のアクティブなプロファイルの代わりに登録済みプロファイルを使います。 |
+| `--yes`、`-y` | boolean、manifest または `false` | 確認なしで計画を適用します。manifest の既定値が `true` の場合は `--no-yes` で上書きできます。 |
+| `--with-git` | boolean、manifest または `false` | 計画を作る前に git リモートから pull します。manifest の既定値が `true` の場合は `--no-with-git` で上書きできます。 |
 
 ## 確認プロンプトと非対話型シェル
 
@@ -33,6 +34,8 @@ dotweave pull [--dry-run] [--profile <profile>] [--yes]
 非対話型ターミナルで `-y` を付けずに実行すると、`Pull confirmation requires an interactive terminal.` というメッセージで失敗し、`-y` を付けて再実行するヒントが表示されます。CI で遭遇するのはこの失敗なので、スクリプトから実行する pull にはこのフラグが必要です。
 
 差分がない場合は、すでに最新であることを表示し、プロンプトを出さずに終了します。
+
+コマンドラインフラグは [`manifest.jsonc`](/ja/config/manifest/) の同期された既定値より優先されます。
 
 ## 動作
 

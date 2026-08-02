@@ -253,7 +253,7 @@ void main() {
         File(
           p.join(dotweaveHome, 'repository', 'manifest.jsonc'),
         ).readAsString(),
-        completion(contains('"version": 8')),
+        completion(contains('"version": 9')),
       );
       await expectLater(
         File(
@@ -399,7 +399,7 @@ void main() {
         expect(result.gitSource, sourceRepository);
         expect(
           await File(p.join(syncDirectory, 'manifest.jsonc')).readAsString(),
-          contains('"version": 8'),
+          contains('"version": 9'),
         );
         expect(
           await File(p.join(syncDirectory, 'manifest.jsonc')).readAsString(),
@@ -645,7 +645,7 @@ void main() {
       expect(result.gitAction, 'initialized');
       await expectLater(
         File(p.join(syncDirectory, 'manifest.jsonc')).readAsString(),
-        completion(contains('"version": 8')),
+        completion(contains('"version": 9')),
       );
 
       final newIdentity = await File(
@@ -690,7 +690,7 @@ void main() {
         expect(result.gitAction, 'initialized');
         await expectLater(
           File(p.join(syncDirectory, 'manifest.jsonc')).readAsString(),
-          completion(contains('"version": 8')),
+          completion(contains('"version": 9')),
         );
         await expectLater(
           File(p.join(syncDirectory, 'placeholder.txt')).readAsString(),

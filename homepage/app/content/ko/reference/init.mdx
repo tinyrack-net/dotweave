@@ -33,7 +33,7 @@ dotweave 홈 디렉터리 아래에 sync 디렉터리를 만들거나 연결하�
 
 `repository` 인자가 없으면 sync 디렉터리에서 `git init -b main`을 실행해요. 인자가 있으면 `git clone`을 실행해요. 이미 존재하고 비어 있지 않은 디렉터리는 초기화를 거부해요.
 
-그다음 저장소 기본 구조를 써요. `* -text`가 들어 있는 `.gitattributes`, 암호화된 artifact를 커밋할 수 있게 유지하는 관리 `.gitignore` 블록, 그리고 버전 `8`에 `repositoryFormat` `1`, 항목 없음, recipient 하나를 담은 `manifest.jsonc`예요.
+그다음 저장소 기본 구조를 써요. `* -text`가 들어 있는 `.gitattributes`, 암호화된 artifact를 커밋할 수 있게 유지하는 관리 `.gitignore` 블록, 그리고 버전 `9`에 `repositoryFormat` `1`, 항목 없음, recipient 하나를 담은 `manifest.jsonc`예요.
 
 age identity는 `--key-file`이 있으면 그 값을 쓰고, `keys.txt`가 이미 있으면 그걸 재사용하고, 둘 다 없으면 새 identity를 생성해요. 이미 recipient가 있는 저장소를 clone하면서 키를 넘기지 않으면 대화형 터미널에서 비밀 키를 물어보고, 물어볼 수 없으면 그대로 실패해요.
 

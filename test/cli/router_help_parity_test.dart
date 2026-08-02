@@ -38,11 +38,11 @@ void main() {
         'Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository. Pass --with-git to also commit the updated artifacts and push them to the configured git remote (customize the commit message with -m).\n'
         '\n'
         'FLAGS\n'
-        '     [--dry-run/--no-dry-run]  Preview repository updates only\n'
-        "     [--profile]               Use a registered profile layer for this command (add non-default profiles with 'dotweave profile add')\n"
-        '     [--with-git]              Also commit and push to the git remote\n'
-        '  -m [--message]               Commit message for the --with-git commit\n'
-        '  -h  --help                   Print help information and exit\n',
+        '     [--dry-run/--no-dry-run]    Preview repository updates only\n'
+        "     [--profile]                 Use a registered profile layer for this command (add non-default profiles with 'dotweave profile add')\n"
+        '     [--with-git/--no-with-git]  Also commit and push to the git remote\n'
+        '  -m [--message]                 Commit message for the git sync commit\n'
+        '  -h  --help                     Print help information and exit\n',
       );
     });
 

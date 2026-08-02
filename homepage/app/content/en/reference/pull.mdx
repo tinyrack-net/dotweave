@@ -11,7 +11,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 ## Synopsis
 
 ```bash
-dotweave pull [--dry-run] [--profile <profile>] [--yes]
+dotweave pull [--dry-run] [--profile <profile>] [--yes] [--with-git]
 ```
 
 Read the stored artifacts for the tracked entries and write them back to the resolved local paths under your home directory.
@@ -20,9 +20,10 @@ Read the stored artifacts for the tracked entries and write them back to the res
 
 | Flag | Type and default | Purpose |
 | --- | --- | --- |
-| `--dry-run` | boolean, `false` | Build and print the plan without touching any local path. `--no-dry-run` selects the default explicitly. |
-| `--profile` | `string`, none | Use one registered profile for this command instead of the active profile from `settings.jsonc`. |
-| `--yes`, `-y` | boolean, `false` | Apply the plan without prompting. This flag has no `--no-yes` form. |
+| `--dry-run` | boolean, manifest or `false` | Build and print the plan without touching any local path. Use `--no-dry-run` to override a `true` manifest default. |
+| `--profile` | `string`, manifest or none | Use one registered profile instead of the active profile from `settings.jsonc`. |
+| `--yes`, `-y` | boolean, manifest or `false` | Apply the plan without prompting. Use `--no-yes` to override a `true` manifest default. |
+| `--with-git` | boolean, manifest or `false` | Pull from the git remote before building the plan. Use `--no-with-git` to override a `true` manifest default. |
 
 ## Confirmation and non-interactive shells
 
@@ -33,6 +34,8 @@ Pass `--yes` or `-y` to apply without the prompt. Pass `--dry-run` to stop after
 In a non-interactive terminal without `-y`, `pull` fails with `Pull confirmation requires an interactive terminal.` and hints to re-run with `-y`. This is the failure a CI job hits, so scripted pulls need the flag.
 
 When nothing differs, `pull` prints that it is already up to date and returns without prompting.
+
+Command-line flags override the synchronized defaults in [`manifest.jsonc`](/en/config/manifest/).
 
 ## Behavior
 

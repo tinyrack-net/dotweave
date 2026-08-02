@@ -132,7 +132,7 @@ void main() {
               )
               as Map<String, Object?>;
       expect(manifest, containsPair('entries', isEmpty));
-      expect(manifest, containsPair('version', 8));
+      expect(manifest, containsPair('version', 9));
     });
   });
 }

@@ -1,6 +1,6 @@
 ---
 title: manifest.jsonc
-description: 버전 8 sync manifest의 모든 필드와 항목 구조, 플랫폼 값 객체, dotweave가 강제하는 검증 규칙을 정리해요.
+description: 버전 9 sync manifest의 명령 기본값, 항목 구조, 검증 규칙을 정리해요.
 section: config
 order: 0
 ---
@@ -12,7 +12,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 `manifest.jsonc`는 sync 디렉터리 루트에 있어요. 즉 커밋되어 모든 기기가 공유하는 파일이에요. dotweave가 무엇을 추적할지는 이 파일 하나가 결정해요.
 
-현재 버전은 `8`이에요. 버전 `7`도 받아들여서 제자리에서 마이그레이션하고, 그전에 `manifest.jsonc.v7.bak` 백업을 먼저 써요. 버전 `7`은 프로필 이름을 항목에만 저장했고, 마이그레이션이 이를 최상위 `profiles` 레지스트리로 끌어올려요. `8`보다 높은 버전이면 명령이 실패해요.
+현재 버전은 `9`예요. 버전 `8`은 `manifest.jsonc.v8.bak`을 먼저 쓴 다음 제자리에서 마이그레이션해요. 버전 `7`은 버전 `8`을 거치며 항목의 프로필 이름을 최상위 `profiles` 레지스트리로 끌어올려요. `9`보다 높은 버전이면 명령이 실패해요.
 
 파일 형식은 JSONC라서 손으로 편집할 때 `//`와 `/* */` 주석을 남길 수 있어요. 옆에 `manifest.json` 파일이 있으면 읽지 않고 거부해요.
 
@@ -22,14 +22,30 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 | 필드 | 타입과 기본값 | 역할 |
 | --- | --- | --- |
-| `version` | `7` 또는 `8`, 필수 | 스키마 버전이에요. 정수가 아니면 검증에 실패해요. |
+| `version` | `7`, `8`, `9` 중 하나, 필수 | 스키마 버전이에요. 이전 버전은 읽을 때 마이그레이션해요. |
+| `commands` | `object`, 선택 | `pull`과 `push`가 공유하는 동기화된 기본값이에요. |
 | `repositoryFormat` | 0 이상 `integer`, 선택 | 디스크상 artifact 배치 버전이에요. 없으면 `0`으로 봐요. 현재 형식은 `1`이에요. |
 | `age` | `object`, 선택 | `recipients`를 담아요. sync 설정을 읽는 명령은 이 필드가 없으면 실패해요. |
 | `age.recipients` | `string[]`, 최소 1개 | 모든 시크릿 artifact를 암호화할 age 공개 키예요. 각 값은 앞뒤 공백이 잘리고 비어 있으면 안 돼요. |
 | `profiles` | `string[]`, 기본값 `[]` | 이름 있는 프로필 레지스트리예요. `default`는 암묵적이라서 여기에 넣으면 안 돼요. |
 | `entries` | `array`, 필수 | 추적 항목 목록이에요. 비어 있어도 괜찮아요. |
 
-dotweave는 이 키들을 `version`, `repositoryFormat`, `age`, `profiles`, `entries` 순서로 직렬화해요.
+dotweave는 이 키들을 `version`, `commands`, `repositoryFormat`, `age`, `profiles`, `entries` 순서로 직렬화해요.
+
+## 명령 기본값
+
+`commands.pull`과 `commands.push` 아래 필드는 모두 선택이에요. 명령줄 플래그가 manifest 값보다 우선하고, 둘 다 없으면 내장 기본값을 사용해요.
+
+| 필드 | 타입과 기본값 | 역할 |
+| --- | --- | --- |
+| `commands.pull.dryRun` | boolean, `false` | pull 변경을 미리 봐요. |
+| `commands.pull.profile` | `string`, 선택 | pull에서 등록된 프로필을 선택해요. |
+| `commands.pull.yes` | boolean, `false` | 확인 없이 pull 변경을 적용해요. |
+| `commands.pull.withGit` | boolean, `false` | 계획 전에 git 원격에서 pull해요. |
+| `commands.push.dryRun` | boolean, `false` | push 변경을 미리 봐요. |
+| `commands.push.profile` | `string`, 선택 | push에서 등록된 프로필을 선택해요. |
+| `commands.push.withGit` | boolean, `false` | 저장소 변경을 커밋하고 push해요. |
+| `commands.push.message` | 비어 있지 않은 `string`, 선택 | git sync 커밋 메시지를 지정해요. 앞뒤 공백은 제거해요. |
 
 ## 항목 필드
 
@@ -88,7 +104,11 @@ dotweave는 어떤 명령이 파일을 건드리기 전에 manifest 전체를 �
 
 ```jsonc
 {
-  "version": 8,
+  "version": 9,
+  "commands": {
+    "pull": { "yes": true, "withGit": true },
+    "push": { "withGit": true }
+  },
   "repositoryFormat": 1,
   "age": {
     "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/migration.dart';
 import 'package:dotweave/src/config/migrations/sync_v8.dart';
+import 'package:dotweave/src/config/migrations/sync_v9.dart';
 import 'package:dotweave/src/config/platform.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
 import 'package:dotweave/src/config/xdg.dart';
@@ -21,6 +22,7 @@ import 'package:path/path.dart' as p;
 
 final ConfigMigrationRegistry _syncConfigMigrationRegistry = {
   7: migrateSyncConfigV7ToV8,
+  8: migrateSyncConfigV8ToV9,
 };
 
 // ---------------------------------------------------------------------------
@@ -186,11 +188,66 @@ class AgeConfig {
   }
 }
 
+class PullCommandDefaults {
+  const PullCommandDefaults({
+    this.dryRun,
+    this.profile,
+    this.yes,
+    this.withGit,
+  });
+
+  final bool? dryRun;
+  final String? profile;
+  final bool? yes;
+  final bool? withGit;
+
+  Map<String, Object?> toJson() => {
+    if (dryRun != null) 'dryRun': dryRun,
+    if (profile != null) 'profile': profile,
+    if (yes != null) 'yes': yes,
+    if (withGit != null) 'withGit': withGit,
+  };
+}
+
+class PushCommandDefaults {
+  const PushCommandDefaults({
+    this.dryRun,
+    this.profile,
+    this.withGit,
+    this.message,
+  });
+
+  final bool? dryRun;
+  final String? profile;
+  final bool? withGit;
+  final String? message;
+
+  Map<String, Object?> toJson() => {
+    if (dryRun != null) 'dryRun': dryRun,
+    if (profile != null) 'profile': profile,
+    if (withGit != null) 'withGit': withGit,
+    if (message != null) 'message': message,
+  };
+}
+
+class SyncCommandDefaults {
+  const SyncCommandDefaults({this.pull, this.push});
+
+  final PullCommandDefaults? pull;
+  final PushCommandDefaults? push;
+
+  Map<String, Object?> toJson() => {
+    if (pull != null) 'pull': pull!.toJson(),
+    if (push != null) 'push': push!.toJson(),
+  };
+}
+
 /// Mirror of the inferred TS `RawSyncConfig` (`z.infer<typeof
 /// syncConfigSchema>`).
 class RawSyncConfig {
   const RawSyncConfig({
     required this.version,
+    this.commands,
     this.repositoryFormat,
     this.age,
     required this.profiles,
@@ -198,6 +255,7 @@ class RawSyncConfig {
   });
 
   final int version;
+  final SyncCommandDefaults? commands;
   final int? repositoryFormat;
   final AgeConfig? age;
   final List<String> profiles;
@@ -209,6 +267,7 @@ class RawSyncConfig {
   Map<String, Object?> toJson() {
     return {
       'version': version,
+      if (commands != null) 'commands': commands!.toJson(),
       if (repositoryFormat != null) 'repositoryFormat': repositoryFormat,
       if (age != null) 'age': age!.toJson(),
       'profiles': profiles,
@@ -269,6 +328,7 @@ class ResolvedSyncConfigEntry {
 class ResolvedSyncConfig {
   const ResolvedSyncConfig({
     this.age,
+    this.commands,
     required this.entries,
     this.profiles,
     this.repositoryFormat,
@@ -276,6 +336,7 @@ class ResolvedSyncConfig {
   });
 
   final AgeConfig? age;
+  final SyncCommandDefaults? commands;
   final List<ResolvedSyncConfigEntry> entries;
   final List<String>? profiles;
   final int? repositoryFormat;
@@ -349,6 +410,118 @@ String? _parseRequiredTrimmedString(
   }
 
   return trimmedValue;
+}
+
+bool? _parseOptionalBoolean(
+  Map<String, Object?> parent,
+  String key,
+  List<Object> basePath,
+  List<ValidationIssue> issues,
+) {
+  if (!parent.containsKey(key)) return null;
+  final value = parent[key];
+  if (value is bool) return value;
+  issues.add(
+    ValidationIssue(
+      path: [...basePath, key],
+      message:
+          'Invalid input: expected boolean, received ${_receivedType(value)}',
+    ),
+  );
+  return null;
+}
+
+String? _parseOptionalCommandString(
+  Map<String, Object?> parent,
+  String key,
+  List<Object> basePath,
+  List<ValidationIssue> issues,
+) {
+  if (!parent.containsKey(key)) return null;
+  return _parseRequiredTrimmedString(
+    parent[key],
+    [...basePath, key],
+    _receivedType(parent[key]),
+    issues,
+  );
+}
+
+SyncCommandDefaults? _parseCommandDefaults(
+  Map<String, Object?> input,
+  List<ValidationIssue> issues,
+) {
+  if (!input.containsKey('commands')) return null;
+  final rawCommands = input['commands'];
+  if (rawCommands is! Map<String, Object?>) {
+    issues.add(
+      ValidationIssue(
+        path: const ['commands'],
+        message:
+            'Invalid input: expected object, received ${_receivedType(rawCommands)}',
+      ),
+    );
+    return null;
+  }
+
+  PullCommandDefaults? pull;
+  PushCommandDefaults? push;
+  if (rawCommands.containsKey('pull')) {
+    final rawPull = rawCommands['pull'];
+    if (rawPull is! Map<String, Object?>) {
+      issues.add(
+        ValidationIssue(
+          path: const ['commands', 'pull'],
+          message:
+              'Invalid input: expected object, received ${_receivedType(rawPull)}',
+        ),
+      );
+    } else {
+      const path = <Object>['commands', 'pull'];
+      if (rawPull.containsKey('gitAction')) {
+        issues.add(
+          const ValidationIssue(
+            path: [...path, 'gitAction'],
+            message: 'Unrecognized key: "gitAction"',
+          ),
+        );
+      }
+      pull = PullCommandDefaults(
+        dryRun: _parseOptionalBoolean(rawPull, 'dryRun', path, issues),
+        profile: _parseOptionalCommandString(rawPull, 'profile', path, issues),
+        yes: _parseOptionalBoolean(rawPull, 'yes', path, issues),
+        withGit: _parseOptionalBoolean(rawPull, 'withGit', path, issues),
+      );
+    }
+  }
+  if (rawCommands.containsKey('push')) {
+    final rawPush = rawCommands['push'];
+    if (rawPush is! Map<String, Object?>) {
+      issues.add(
+        ValidationIssue(
+          path: const ['commands', 'push'],
+          message:
+              'Invalid input: expected object, received ${_receivedType(rawPush)}',
+        ),
+      );
+    } else {
+      const path = <Object>['commands', 'push'];
+      if (rawPush.containsKey('gitAction')) {
+        issues.add(
+          const ValidationIssue(
+            path: [...path, 'gitAction'],
+            message: 'Unrecognized key: "gitAction"',
+          ),
+        );
+      }
+      push = PushCommandDefaults(
+        dryRun: _parseOptionalBoolean(rawPush, 'dryRun', path, issues),
+        profile: _parseOptionalCommandString(rawPush, 'profile', path, issues),
+        withGit: _parseOptionalBoolean(rawPush, 'withGit', path, issues),
+        message: _parseOptionalCommandString(rawPush, 'message', path, issues),
+      );
+    }
+  }
+  return SyncCommandDefaults(pull: pull, push: push);
 }
 
 /// Mirror of `platformLocalPathSchema` / `platformRepoPathSchema`: an object
@@ -687,12 +860,15 @@ SyncConfigEntry? _parseSyncConfigEntry(
     return (null, issues);
   }
 
-  // version: z.union([z.literal(7), z.literal(8)])
+  // Versions 7 and 8 remain accepted by the raw parser for migration and
+  // repository tooling; normal reads migrate them to the current version.
   final rawVersion = input['version'];
   var version = 0;
 
   if (rawVersion is num &&
-      (rawVersion == 7 || rawVersion == AppConstants.sync.configVersion)) {
+      (rawVersion == 7 ||
+          rawVersion == 8 ||
+          rawVersion == AppConstants.sync.configVersion)) {
     version = rawVersion.toInt();
   } else {
     issues.add(
@@ -798,6 +974,8 @@ SyncConfigEntry? _parseSyncConfigEntry(
     }
   }
 
+  final commands = _parseCommandDefaults(input, issues);
+
   // profiles: z.array(requiredTrimmedStringSchema).default([])
   var profiles = <String>[];
 
@@ -868,6 +1046,7 @@ SyncConfigEntry? _parseSyncConfigEntry(
   return (
     RawSyncConfig(
       version: version,
+      commands: commands,
       repositoryFormat: repositoryFormat,
       age: age,
       profiles: profiles,
@@ -1498,6 +1677,7 @@ ResolvedSyncConfig parseSyncConfig(
 
   return ResolvedSyncConfig(
     age: age,
+    commands: data.commands,
     entries: entries,
     profiles: profiles,
     repositoryFormat: data.repositoryFormat,

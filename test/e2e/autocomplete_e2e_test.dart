@@ -583,6 +583,18 @@ void main() {
       },
     );
 
+    test('completes with-git and never exposes git-action', () async {
+      for (final command in ['pull', 'push']) {
+        final result = await _runCli(['__complete', command, '-']);
+        final names = _completionNames(result.stdout);
+
+        expect(result.exitCode, 0);
+        expect(names, contains('--with-git'));
+        expect(names, isNot(contains('--git-action')));
+        expect(_cleanShellStderr(result.stderr), '');
+      }
+    });
+
     test(
       'populates bash completions from the emitted script',
       () async {
