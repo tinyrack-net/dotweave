@@ -529,6 +529,7 @@ Future<SetModeResult> setTargetMode(
     final nextConfig = effectiveBuildSyncConfigDocument(
       ResolvedSyncConfig(
         age: config.age,
+        commands: config.commands,
         entries: [
           for (final entry in config.entries)
             if (entry.repoPath != target.entry.repoPath)
@@ -611,6 +612,7 @@ Future<SetModeResult> setTargetMode(
     final nextConfig = effectiveBuildSyncConfigDocument(
       ResolvedSyncConfig(
         age: config.age,
+        commands: config.commands,
         entries: [
           for (final entry in config.entries)
             if (entry.repoPath != childRepoPath)
@@ -669,6 +671,7 @@ Future<SetModeResult> setTargetMode(
   final nextConfig = effectiveBuildSyncConfigDocument(
     ResolvedSyncConfig(
       age: config.age,
+      commands: config.commands,
       entries: [...config.entries, newEntry],
       profiles: config.profiles,
       repositoryFormat: config.repositoryFormat,

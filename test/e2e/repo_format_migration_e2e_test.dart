@@ -73,6 +73,11 @@ void main() {
       // metadata file with a physical symlink at the plain path.
       final manifest = await _readManifest(ctx);
       manifest.remove('repositoryFormat');
+      const commandDefaults = {
+        'pull': {'yes': true, 'withGit': false},
+        'push': {'dryRun': false, 'message': 'preserved by migration'},
+      };
+      manifest['commands'] = commandDefaults;
       await _writeManifest(ctx, manifest);
       final marker = File('$plainArtifact$suffix');
       if (await marker.exists()) {
@@ -87,6 +92,7 @@ void main() {
         (await _readManifest(ctx))['repositoryFormat'],
         AppConstants.sync.repositoryFormat,
       );
+      expect((await _readManifest(ctx))['commands'], commandDefaults);
       expectPathAbsent(plainArtifact);
       expect(
         await File('$plainArtifact$suffix').readAsString(),
@@ -99,6 +105,7 @@ void main() {
         (await _readManifest(ctx))['repositoryFormat'],
         AppConstants.sync.repositoryFormat,
       );
+      expect((await _readManifest(ctx))['commands'], commandDefaults);
       expect(
         await File('$plainArtifact$suffix').readAsString(),
         '../.agents/note.md',

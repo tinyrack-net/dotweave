@@ -74,6 +74,181 @@ void main() {
   });
 
   group('sync config', () {
+    test('migrates v8 to v9 and writes a v8 backup', () async {
+      final workspace = await createTemporaryDirectory('dotweave-sync-config-');
+      final syncDirectory = p.join(workspace, 'sync');
+      final homeDirectory = p.join(workspace, 'home');
+      final manifestPath = p.join(syncDirectory, 'manifest.jsonc');
+      await Directory(syncDirectory).create(recursive: true);
+      await Directory(homeDirectory).create(recursive: true);
+      const original =
+          '{"version":8,"repositoryFormat":1,"age":{"recipients":["age1example"]},"profiles":[],"entries":[]}';
+      await File(manifestPath).writeAsString(original);
+
+      final config = await readSyncConfig(
+        syncDirectory,
+        SyncConfigResolutionContext(
+          homeDirectory: homeDirectory,
+          platformKey: PlatformKey.linux,
+          readEnv: (_) => null,
+          xdgConfigHome: p.join(homeDirectory, '.config'),
+        ),
+      );
+
+      expect(config.version, 9);
+      expect(config.commands, isNull);
+      expect(
+        jsonDecode(await File('$manifestPath.v8.bak').readAsString()),
+        jsonDecode(original),
+      );
+      expect(await File(manifestPath).readAsString(), contains('"version": 9'));
+      expect(
+        await File(manifestPath).readAsString(),
+        isNot(contains('"commands"')),
+      );
+    });
+
+    test('preserves explicit false command defaults', () {
+      final config = parseRawSyncConfig({
+        'version': 9,
+        'commands': {
+          'pull': {'dryRun': false, 'yes': false, 'withGit': false},
+          'push': {'dryRun': false, 'withGit': false},
+        },
+        'profiles': <Object?>[],
+        'entries': <Object?>[],
+      });
+
+      expect(config.toJson()['commands'], {
+        'pull': {'dryRun': false, 'yes': false, 'withGit': false},
+        'push': {'dryRun': false, 'withGit': false},
+      });
+    });
+
+    test('keeps commands absent when the field is omitted', () {
+      final config = parseRawSyncConfig({
+        'version': 9,
+        'profiles': <Object?>[],
+        'entries': <Object?>[],
+      });
+
+      expect(config.commands, isNull);
+      expect(config.toJson(), isNot(contains('commands')));
+    });
+
+    test('parses and serializes synchronized command defaults', () {
+      final config = parseRawSyncConfig({
+        'version': 9,
+        'commands': {
+          'pull': {
+            'dryRun': false,
+            'profile': ' work ',
+            'yes': true,
+            'withGit': true,
+          },
+          'push': {
+            'dryRun': true,
+            'profile': 'personal',
+            'withGit': false,
+            'message': ' Sync dotfiles ',
+          },
+        },
+        'profiles': <Object?>[],
+        'entries': <Object?>[],
+      });
+
+      expect(config.toJson()['commands'], {
+        'pull': {
+          'dryRun': false,
+          'profile': 'work',
+          'yes': true,
+          'withGit': true,
+        },
+        'push': {
+          'dryRun': true,
+          'profile': 'personal',
+          'withGit': false,
+          'message': 'Sync dotfiles',
+        },
+      });
+    });
+
+    test('rejects invalid boolean command defaults', () {
+      expect(
+        () => parseRawSyncConfig({
+          'version': 9,
+          'commands': {
+            'pull': {'dryRun': 1, 'yes': 'yes', 'withGit': 'yes'},
+            'push': {'dryRun': 'false', 'withGit': 0},
+          },
+          'profiles': <Object?>[],
+          'entries': <Object?>[],
+        }),
+        throwsA(
+          isA<DotweaveError>().having(
+            (error) => error.details.join('\n'),
+            'details',
+            allOf(
+              contains('commands.pull.yes'),
+              contains('commands.pull.withGit'),
+              contains('commands.pull.dryRun'),
+              contains('commands.push.dryRun'),
+              contains('commands.push.withGit'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('rejects empty command strings after trimming', () {
+      expect(
+        () => parseRawSyncConfig({
+          'version': 9,
+          'commands': {
+            'pull': {'profile': '  '},
+            'push': {'profile': '', 'message': ' \t '},
+          },
+          'profiles': <Object?>[],
+          'entries': <Object?>[],
+        }),
+        throwsA(
+          isA<DotweaveError>().having(
+            (error) => error.details.join('\n'),
+            'details',
+            allOf(
+              contains('commands.pull.profile'),
+              contains('commands.push.profile'),
+              contains('commands.push.message'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('rejects the unpublished gitAction field', () {
+      expect(
+        () => parseRawSyncConfig({
+          'version': 9,
+          'commands': {
+            'pull': {'gitAction': 'sync'},
+            'push': {'gitAction': 'none'},
+          },
+          'profiles': <Object?>[],
+          'entries': <Object?>[],
+        }),
+        throwsA(
+          isA<DotweaveError>().having(
+            (error) => error.details.join('\n'),
+            'details',
+            allOf(
+              contains('commands.pull.gitAction'),
+              contains('commands.push.gitAction'),
+            ),
+          ),
+        ),
+      );
+    });
+
     test('does not write migrated v8 config when migrated v7 config fails '
         'semantic validation', () async {
       final workspace = await createTemporaryDirectory('dotweave-sync-config-');

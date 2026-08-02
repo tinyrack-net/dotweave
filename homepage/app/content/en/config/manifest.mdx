@@ -1,6 +1,6 @@
 ---
 title: manifest.jsonc
-description: Every field in the version 8 sync manifest, including entry shape, platform value objects, and the validation rules Dotweave enforces.
+description: Every field in the version 9 sync manifest, including command defaults, entry shape, and validation rules.
 section: config
 order: 0
 ---
@@ -12,7 +12,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 `manifest.jsonc` sits at the root of the sync directory, which means it is committed and shared across every machine. It is the only file that decides what Dotweave tracks.
 
-The current version is `8`. Dotweave also accepts version `7` and migrates it in place, writing a `manifest.jsonc.v7.bak` backup first. Version `7` stored profile names only on entries; the migration hoists them into the top-level `profiles` registry. A version higher than `8` fails the command.
+The current version is `9`. Dotweave migrates version `8` in place after writing `manifest.jsonc.v8.bak`. Version `7` migrates through version `8`, which hoists entry profile names into the top-level `profiles` registry. A version higher than `9` fails the command.
 
 The file is JSONC, so `//` and `/* */` comments survive hand editing. A `manifest.json` file sitting beside it is rejected rather than read.
 
@@ -22,14 +22,30 @@ Dotweave rewrites this file when you run `dotweave track`, `dotweave untrack`, o
 
 | Field | Type and default | Purpose |
 | --- | --- | --- |
-| `version` | `7` or `8`, required | Schema version. A non-integer value fails validation. |
+| `version` | `7`, `8`, or `9`, required | Schema version. Older versions are migrated on read. |
+| `commands` | `object`, optional | Synchronized defaults for `pull` and `push`. |
 | `repositoryFormat` | `integer` >= 0, optional | On-disk artifact layout version. Absent means `0`. The current format is `1`. |
 | `age` | `object`, optional | Holds `recipients`. Commands that read the sync config fail without it. |
 | `age.recipients` | `string[]`, at least one entry | age public keys every secret artifact is encrypted to. Each value is trimmed and must be non-empty. |
 | `profiles` | `string[]`, defaults to `[]` | Registry of named profiles. `default` is implicit and must not appear here. |
 | `entries` | `array`, required | The tracked entries. May be empty. |
 
-Dotweave serializes these keys in the order `version`, `repositoryFormat`, `age`, `profiles`, `entries`.
+Dotweave serializes these keys in the order `version`, `commands`, `repositoryFormat`, `age`, `profiles`, `entries`.
+
+## Command defaults
+
+Every field under `commands.pull` and `commands.push` is optional. A command-line flag overrides its manifest value. Without either value, Dotweave uses the built-in default.
+
+| Field | Type and default | Purpose |
+| --- | --- | --- |
+| `commands.pull.dryRun` | boolean, `false` | Preview pull changes. |
+| `commands.pull.profile` | `string`, optional | Select a registered profile for pull. |
+| `commands.pull.yes` | boolean, `false` | Apply pull changes without confirmation. |
+| `commands.pull.withGit` | boolean, `false` | Pull from the git remote before planning. |
+| `commands.push.dryRun` | boolean, `false` | Preview push changes. |
+| `commands.push.profile` | `string`, optional | Select a registered profile for push. |
+| `commands.push.withGit` | boolean, `false` | Commit and push repository changes. |
+| `commands.push.message` | non-empty `string`, optional | Set the git sync commit message. Surrounding whitespace is trimmed. |
 
 ## Entry fields
 
@@ -88,7 +104,11 @@ Editing `manifest.jsonc` by hand is supported, but run `dotweave status` afterwa
 
 ```jsonc
 {
-  "version": 8,
+  "version": 9,
+  "commands": {
+    "pull": { "yes": true, "withGit": true },
+    "push": { "withGit": true }
+  },
   "repositoryFormat": 1,
   "age": {
     "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]

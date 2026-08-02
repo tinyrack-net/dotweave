@@ -8,7 +8,7 @@ order: 3
 ## 사용법
 
 ```bash
-dotweave push [--dry-run] [--profile <profile>]
+dotweave push [--dry-run] [--profile <profile>] [--with-git] [--message <message>]
 ```
 
 추적 항목의 로컬 경로 상태를 읽어서 `profiles/<profile>/` 아래 artifact를 그 상태에 맞게 다시 써요.
@@ -17,8 +17,10 @@ dotweave push [--dry-run] [--profile <profile>]
 
 | 플래그 | 타입과 기본값 | 역할 |
 | --- | --- | --- |
-| `--dry-run` | boolean, `false` | 아무것도 쓰지 않고 계획만 만들어 출력해요. `--no-dry-run`으로 기본값을 명시할 수도 있어요. |
-| `--profile` | `string`, 없음 | 이 명령에서만 `settings.jsonc`의 활성 프로필 대신 지정한 프로필 하나를 사용해요. |
+| `--dry-run` | boolean, manifest 또는 `false` | 아무것도 쓰지 않고 계획만 출력해요. manifest 기본값이 `true`이면 `--no-dry-run`으로 덮어쓸 수 있어요. |
+| `--profile` | `string`, manifest 또는 없음 | `settings.jsonc`의 활성 프로필 대신 등록된 프로필 하나를 사용해요. |
+| `--with-git` | boolean, manifest 또는 `false` | 바뀐 artifact를 커밋하고 git 원격으로 push해요. manifest 기본값이 `true`이면 `--no-with-git`으로 덮어쓸 수 있어요. |
+| `--message`, `-m` | 비어 있지 않은 `string`, manifest 또는 자동 생성 | `--with-git`이 만드는 커밋 메시지를 지정해요. 앞뒤 공백은 제거해요. |
 
 ## 동작
 
@@ -58,7 +60,7 @@ dotweave push --dry-run
   0 stale artifacts would be removed
 ```
 
-`push`는 `git add`, `git commit`, `git push`를 실행하지 않아요. sync 디렉터리 안의 파일만 바꿔요. 커밋과 원격 반영은 [`dotweave cd`](/ko/reference/cd/)와 git으로 직접 하세요.
+`--with-git`을 사용하면 갱신된 sync 디렉터리를 커밋하고 설정된 원격으로 push해요. 자동 커밋 메시지는 `dotweave: sync configuration`이에요. `--dry-run`에서는 모든 git 동작을 건너뛰어요. 명령줄 플래그는 [`manifest.jsonc`](/ko/config/manifest/)의 기본값보다 우선해요.
 
 ## 오류
 

@@ -44,6 +44,7 @@ class EffectiveSyncConfig {
   const EffectiveSyncConfig({
     this.activeProfile,
     required this.age,
+    this.commands,
     required this.entries,
     this.profiles,
     this.repositoryFormat,
@@ -52,6 +53,7 @@ class EffectiveSyncConfig {
 
   final String? activeProfile;
   final RuntimeAgeConfig age;
+  final SyncCommandDefaults? commands;
   final List<ResolvedSyncConfigEntry> entries;
   final List<String>? profiles;
   final int? repositoryFormat;
@@ -134,6 +136,7 @@ EffectiveSyncConfig buildEffectiveSyncConfig(
   return EffectiveSyncConfig(
     activeProfile: activeProfile,
     age: age,
+    commands: fullConfig.commands,
     entries: entries,
     profiles: fullConfig.profiles,
     repositoryFormat: fullConfig.repositoryFormat,

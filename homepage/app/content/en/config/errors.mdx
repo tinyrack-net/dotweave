@@ -143,6 +143,7 @@ Read [Upgrade config and repository formats](/en/guides/upgrading/) for what eac
 | `Duplicate --<flag> platform value.` | `DUPLICATE_PLATFORM_FLAG` | The same platform key was passed twice for one flag. |
 | `Invalid --<flag> mode '<value>'.` | `INVALID_SYNC_MODE` | Use `normal`, `secret`, or `ignore`. |
 | `Invalid --<flag> permission '<value>'.` | `INVALID_PERMISSION` | Use a four-character octal string such as `0600` or `0755`. |
+| `Commit message cannot be empty.` | `INVALID_COMMIT_MESSAGE` | Pass a non-empty value to `--message`. Surrounding whitespace is ignored. |
 | `The --repo flag can only be used with a single sync target.` | `REPO_PATH_TARGET_COUNT` | Track one target at a time when overriding its repository path. |
 | `Pull confirmation requires an interactive terminal.` | none | Re-run as `dotweave pull -y`, or use `--dry-run` to preview only. |
 

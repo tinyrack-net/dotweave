@@ -33,13 +33,16 @@ final Command<ApplicationContext> pullCommand = buildCommand(
         'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally. Pass --with-git to first pull the latest artifacts from the configured git remote.',
   ),
   func: (context, flags, args) async {
-    final dryRun = flags.dryRun ?? false;
-    final withGit = flags.withGit ?? false;
+    final defaults = (await loadSyncCommandDefaults())?.pull;
+    final dryRun = flags.dryRun ?? defaults?.dryRun ?? false;
+    final profile = flags.profile ?? defaults?.profile;
+    final yes = flags.yes ?? defaults?.yes ?? false;
+    final withGit = flags.withGit ?? defaults?.withGit ?? false;
     final logger = loggerFor(context);
 
     final request = PullRequest(
       dryRun: dryRun,
-      profile: flags.profile,
+      profile: profile,
       withGit: withGit,
     );
     PreparedPull prepared;
@@ -88,7 +91,7 @@ final Command<ApplicationContext> pullCommand = buildCommand(
 
     if (dryRun) {
       logger.info('Pull preview (dry run)');
-    } else if (flags.yes ?? false) {
+    } else if (yes) {
       await applyUnderSpinner();
     } else {
       // Mirror of the TS `process.stdin.isTTY ?? false` check.
@@ -135,14 +138,12 @@ final Command<ApplicationContext> pullCommand = buildCommand(
               BooleanFlag.optional<ApplicationContext>(
                 name: 'yes',
                 brief: 'Apply pull changes without prompting',
-                withNegated: false,
               ),
             )
             .and(
               BooleanFlag.optional<ApplicationContext>(
                 name: 'withGit',
                 brief: 'Also pull from the git remote before applying',
-                withNegated: false,
               ),
             )
             .map(

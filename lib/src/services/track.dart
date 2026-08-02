@@ -629,6 +629,7 @@ Future<TrackResult> trackTarget(
     final nextConfig = effectiveBuildSyncConfigDocument(
       ResolvedSyncConfig(
         age: config.age,
+        commands: config.commands,
         entries: [...config.entries, nextEntry],
         profiles: config.profiles,
         repositoryFormat: config.repositoryFormat,
@@ -684,6 +685,7 @@ Future<TrackResult> trackTarget(
     final nextConfig = effectiveBuildSyncConfigDocument(
       ResolvedSyncConfig(
         age: config.age,
+        commands: config.commands,
         entries: [
           for (final entry in config.entries)
             if (entry.localPath != candidate.localPath)

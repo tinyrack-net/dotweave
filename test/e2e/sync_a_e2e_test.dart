@@ -74,7 +74,7 @@ void main() {
       expect(recipients, hasLength(1));
       expect(recipients.single, matches(RegExp('^age1')));
       expect(manifest['entries'], isEmpty);
-      expect(manifest['version'], 8);
+      expect(manifest['version'], 9);
 
       expect(
         await File(

@@ -4,6 +4,20 @@ import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/cli/command_logger.dart';
 import 'package:dotweave/src/cli/shared_flags.dart';
 import 'package:dotweave/src/services/push.dart';
+import 'package:dotweave/src/util/error.dart';
+
+String? _normalizeCommitMessage(String? value) {
+  if (value == null) return null;
+  final message = value.trim();
+  if (message.isEmpty) {
+    throw DotweaveError(
+      'Commit message cannot be empty.',
+      code: 'INVALID_COMMIT_MESSAGE',
+      hint: 'Pass a non-empty value to --message.',
+    );
+  }
+  return message;
+}
 
 final Command<ApplicationContext> pushCommand = buildCommand(
   docs: const CommandDocs(
@@ -13,13 +27,16 @@ final Command<ApplicationContext> pushCommand = buildCommand(
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);
-    final dryRun = flags.dryRun ?? false;
-    final withGit = flags.withGit ?? false;
+    final defaults = (await loadSyncCommandDefaults())?.push;
+    final dryRun = flags.dryRun ?? defaults?.dryRun ?? false;
+    final profile = flags.profile ?? defaults?.profile;
+    final withGit = flags.withGit ?? defaults?.withGit ?? false;
+    final message = _normalizeCommitMessage(flags.message ?? defaults?.message);
     final request = PushRequest(
       dryRun: dryRun,
-      profile: flags.profile,
+      profile: profile,
       withGit: withGit,
-      commitMessage: flags.message,
+      commitMessage: message,
     );
 
     PushResult result;
@@ -71,13 +88,12 @@ final Command<ApplicationContext> pushCommand = buildCommand(
               BooleanFlag.optional<ApplicationContext>(
                 name: 'withGit',
                 brief: 'Also commit and push to the git remote',
-                withNegated: false,
               ),
             )
             .and(
               ParsedFlag.optional<String, ApplicationContext>(
                 name: 'message',
-                brief: 'Commit message for the --with-git commit',
+                brief: 'Commit message for the git sync commit',
                 parse: stringParser,
                 placeholder: 'message',
               ),

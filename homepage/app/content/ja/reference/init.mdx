@@ -33,7 +33,7 @@ dotweave ホームディレクトリの下に同期ディレクトリを作成�
 
 `repository` 引数がない場合は、同期ディレクトリで `git init -b main` を実行します。ある場合は `git clone` を実行します。すでに存在して空でないディレクトリの初期化は拒否します。
 
-続いてリポジトリの基本構成を書き込みます。`* -text` を含む `.gitattributes`、暗号化された artifact をコミット可能に保つ管理 `.gitignore` ブロック、そしてバージョン `8`、`repositoryFormat` `1`、項目なし、recipient 1 件の `manifest.jsonc` です。
+続いてリポジトリの基本構成を書き込みます。`* -text` を含む `.gitattributes`、暗号化された artifact をコミット可能に保つ管理 `.gitignore` ブロック、そしてバージョン `9`、`repositoryFormat` `1`、項目なし、recipient 1 件の `manifest.jsonc` です。
 
 age identity は、`--key-file` が指定されていればその値を使い、`keys.txt` がすでにあれば再利用し、どちらもなければ新しい identity を生成します。recipient がすでにあるリポジトリを clone して鍵を渡さなかった場合は、対話型ターミナルで秘密鍵を尋ね、尋ねられない場合はそのまま失敗します。
 

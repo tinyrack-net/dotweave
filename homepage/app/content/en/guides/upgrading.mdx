@@ -14,7 +14,7 @@ Dotweave migrates a config file when it reads it. There is no separate upgrade c
 
 Before rewriting, Dotweave writes a backup next to the original file, named `<filename>.v<originalVersion>.bak`. Migrating a version 7 manifest therefore leaves `manifest.jsonc.v7.bak`, and a version 2 settings file leaves `settings.jsonc.v2.bak`. The rewrite itself is atomic, and it runs only after the migrated result passes semantic validation, so an invalid migration is never persisted.
 
-`manifest.jsonc` is at version `8`, and version `7` is accepted and migrated. `settings.jsonc` is at version `3`, and version `2` is accepted and migrated.
+`manifest.jsonc` is at version `9`; versions `7` and `8` are accepted and migrated. `settings.jsonc` is at version `3`, and version `2` is accepted and migrated.
 
 The manifest step from 7 to 8 hoists profile names into a registry. Profile names used to live only on individual entries; the migration collects them into a top-level `profiles` array, sorted, with `default` left out because that profile is implicit. The settings step from 2 to 3 drops a legacy `age` section.
 

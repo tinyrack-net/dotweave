@@ -45,7 +45,7 @@ class _SyncSection {
   const _SyncSection();
 
   final String configFileName = 'manifest.jsonc';
-  final int configVersion = 8;
+  final int configVersion = 9;
   final int defaultConcurrency = 20;
   final String defaultProfile = 'default';
   final List<String> modes = const ['normal', 'secret', 'ignore'];

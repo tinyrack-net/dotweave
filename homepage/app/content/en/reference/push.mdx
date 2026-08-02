@@ -8,7 +8,7 @@ order: 3
 ## Synopsis
 
 ```bash
-dotweave push [--dry-run] [--profile <profile>]
+dotweave push [--dry-run] [--profile <profile>] [--with-git] [--message <message>]
 ```
 
 Read the current state of the tracked local paths and rewrite the artifacts under `profiles/<profile>/` to match.
@@ -17,8 +17,10 @@ Read the current state of the tracked local paths and rewrite the artifacts unde
 
 | Flag | Type and default | Purpose |
 | --- | --- | --- |
-| `--dry-run` | boolean, `false` | Build and print the plan without writing anything. `--no-dry-run` selects the default explicitly. |
-| `--profile` | `string`, none | Use one registered profile for this command instead of the active profile from `settings.jsonc`. |
+| `--dry-run` | boolean, manifest or `false` | Build and print the plan without writing anything. Use `--no-dry-run` to override a `true` manifest default. |
+| `--profile` | `string`, manifest or none | Use one registered profile instead of the active profile from `settings.jsonc`. |
+| `--with-git` | boolean, manifest or `false` | Commit the updated artifacts and push them to the git remote. Use `--no-with-git` to override a `true` manifest default. |
+| `--message`, `-m` | non-empty `string`, manifest or generated | Set the commit message used by `--with-git`. Surrounding whitespace is trimmed. |
 
 ## Behavior
 
@@ -58,7 +60,7 @@ dotweave push --dry-run
   0 stale artifacts would be removed
 ```
 
-`push` never runs `git add`, `git commit`, or `git push`. It only changes files inside the sync directory. Commit and publish yourself with [`dotweave cd`](/en/reference/cd/) and git.
+With `--with-git`, `push` commits the updated sync directory and pushes it to the configured remote. The generated commit message is `dotweave: sync configuration`. `--dry-run` skips every git action. Command-line flags override the synchronized defaults in [`manifest.jsonc`](/en/config/manifest/).
 
 ## Errors
 

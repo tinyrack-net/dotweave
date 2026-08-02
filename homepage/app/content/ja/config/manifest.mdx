@@ -1,6 +1,6 @@
 ---
 title: manifest.jsonc
-description: バージョン 8 の同期 manifest の全フィールド、項目の構造、プラットフォーム値オブジェクト、dotweave が強制する検証ルールをまとめます。
+description: バージョン 9 の同期 manifest のコマンド既定値、項目構造、検証ルールをまとめます。
 section: config
 order: 0
 ---
@@ -12,7 +12,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 `manifest.jsonc` は同期ディレクトリのルートにあります。つまりコミットされ、すべてのマシンで共有されるファイルです。dotweave が何をトラッキングするかは、このファイルだけが決めます。
 
-現在のバージョンは `8` です。バージョン `7` も受け付け、その場でマイグレーションします。事前に `manifest.jsonc.v7.bak` バックアップを書き出します。バージョン `7` はプロファイル名を項目にだけ保存していたため、マイグレーションでトップレベルの `profiles` レジストリへ引き上げます。`8` より新しいバージョンではコマンドが失敗します。
+現在のバージョンは `9` です。バージョン `8` は `manifest.jsonc.v8.bak` を先に書いてからその場でマイグレーションします。バージョン `7` はバージョン `8` を経由し、項目のプロファイル名をトップレベルの `profiles` レジストリへ引き上げます。`9` より新しいバージョンではコマンドが失敗します。
 
 形式は JSONC なので、手で編集するときに `//` と `/* */` のコメントを残せます。隣に `manifest.json` がある場合は読み込まずに拒否します。
 
@@ -22,14 +22,30 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 | フィールド | 型と既定値 | 用途 |
 | --- | --- | --- |
-| `version` | `7` または `8`、必須 | スキーマのバージョンです。整数でない値は検証に失敗します。 |
+| `version` | `7`、`8`、`9` のいずれか、必須 | スキーマバージョンです。以前のバージョンは読み取り時に移行します。 |
+| `commands` | `object`、任意 | `pull` と `push` で同期する既定値です。 |
 | `repositoryFormat` | 0 以上の `integer`、任意 | ディスク上の artifact 配置バージョンです。未指定なら `0` として扱います。現在の形式は `1` です。 |
 | `age` | `object`、任意 | `recipients` を保持します。同期設定を読むコマンドは、このフィールドがないと失敗します。 |
 | `age.recipients` | `string[]`、1 件以上 | すべてのシークレット artifact を暗号化する age 公開鍵です。各値は前後の空白が取り除かれ、空にできません。 |
 | `profiles` | `string[]`、既定値 `[]` | 名前付きプロファイルのレジストリです。`default` は暗黙なので、ここに書いてはいけません。 |
 | `entries` | `array`、必須 | トラッキング項目の一覧です。空でも構いません。 |
 
-dotweave はこれらのキーを `version`、`repositoryFormat`、`age`、`profiles`、`entries` の順に直列化します。
+dotweave はこれらのキーを `version`、`commands`、`repositoryFormat`、`age`、`profiles`、`entries` の順に直列化します。
+
+## コマンドの既定値
+
+`commands.pull` と `commands.push` 配下のフィールドはすべて任意です。コマンドラインフラグが manifest の値より優先され、どちらもなければ組み込みの既定値を使います。
+
+| フィールド | 型と既定値 | 用途 |
+| --- | --- | --- |
+| `commands.pull.dryRun` | boolean、`false` | pull の変更をプレビューします。 |
+| `commands.pull.profile` | `string`、任意 | pull で登録済みプロファイルを選びます。 |
+| `commands.pull.yes` | boolean、`false` | 確認なしで pull の変更を適用します。 |
+| `commands.pull.withGit` | boolean、`false` | 計画前に git リモートから pull します。 |
+| `commands.push.dryRun` | boolean、`false` | push の変更をプレビューします。 |
+| `commands.push.profile` | `string`、任意 | push で登録済みプロファイルを選びます。 |
+| `commands.push.withGit` | boolean、`false` | リポジトリの変更をコミットして push します。 |
+| `commands.push.message` | 空でない `string`、任意 | git sync のコミットメッセージを指定します。前後の空白は取り除きます。 |
 
 ## 項目のフィールド
 
@@ -88,7 +104,11 @@ dotweave はコマンドがファイルに触れる前に manifest 全体を検�
 
 ```jsonc
 {
-  "version": 8,
+  "version": 9,
+  "commands": {
+    "pull": { "yes": true, "withGit": true },
+    "push": { "withGit": true }
+  },
   "repositoryFormat": 1,
   "age": {
     "recipients": ["age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"]

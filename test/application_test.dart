@@ -101,6 +101,32 @@ void main() {
       expect(resolveExitCode(const _ExitCodeError('blocked', 7)), 7);
     });
 
+    test(
+      'rejects and does not document the unpublished --git-action flag',
+      () async {
+        for (final command in ['pull', 'push']) {
+          final output = await _runCapturedCli([
+            command,
+            '--git-action',
+            'sync',
+          ]);
+
+          expect(output.exitCode, isNot(0));
+          expect(output.stdout, '');
+          expect(
+            output.stderr,
+            contains('No flag registered for --git-action'),
+          );
+
+          final help = await _runCapturedCli([command, '--help']);
+          expect(help.exitCode, 0);
+          expect(help.stdout, isNot(contains('--git-action')));
+          expect(help.stdout, contains('--with-git'));
+          expect(help.stdout, contains('--no-with-git'));
+        }
+      },
+    );
+
     test('falls back to a generic exit code for unsupported error shapes', () {
       expect(resolveExitCode(Exception('blocked')), 1);
       expect(resolveExitCode({'exitCode': '7'}), 1);

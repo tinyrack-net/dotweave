@@ -11,7 +11,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 ## 사용법
 
 ```bash
-dotweave pull [--dry-run] [--profile <profile>] [--yes]
+dotweave pull [--dry-run] [--profile <profile>] [--yes] [--with-git]
 ```
 
 추적 항목에 저장된 artifact를 읽어서 홈 디렉터리 아래 로컬 경로로 다시 써요.
@@ -20,9 +20,10 @@ dotweave pull [--dry-run] [--profile <profile>] [--yes]
 
 | 플래그 | 타입과 기본값 | 역할 |
 | --- | --- | --- |
-| `--dry-run` | boolean, `false` | 로컬 경로를 건드리지 않고 계획만 만들어 출력해요. `--no-dry-run`으로 기본값을 명시할 수도 있어요. |
-| `--profile` | `string`, 없음 | 이 명령에서만 `settings.jsonc`의 활성 프로필 대신 지정한 프로필 하나를 사용해요. |
-| `--yes`, `-y` | boolean, `false` | 확인 없이 계획을 적용해요. 이 플래그에는 `--no-yes` 형태가 없어요. |
+| `--dry-run` | boolean, manifest 또는 `false` | 로컬 경로를 건드리지 않고 계획만 출력해요. manifest 기본값이 `true`이면 `--no-dry-run`으로 덮어쓸 수 있어요. |
+| `--profile` | `string`, manifest 또는 없음 | `settings.jsonc`의 활성 프로필 대신 등록된 프로필 하나를 사용해요. |
+| `--yes`, `-y` | boolean, manifest 또는 `false` | 확인 없이 계획을 적용해요. manifest 기본값이 `true`이면 `--no-yes`로 덮어쓸 수 있어요. |
+| `--with-git` | boolean, manifest 또는 `false` | 계획을 만들기 전에 git 원격에서 pull해요. manifest 기본값이 `true`이면 `--no-with-git`으로 덮어쓸 수 있어요. |
 
 ## 확인 프롬프트와 비대화형 셸
 
@@ -33,6 +34,8 @@ dotweave pull [--dry-run] [--profile <profile>] [--yes]
 비대화형 터미널에서 `-y` 없이 실행하면 `Pull confirmation requires an interactive terminal.` 메시지로 실패하고, `-y`로 다시 실행하라는 힌트를 보여줘요. CI에서 마주치는 실패가 바로 이 경우라서, 스크립트로 돌리는 pull에는 이 플래그가 필요해요.
 
 차이가 없으면 이미 최신 상태라고 알리고 프롬프트 없이 그대로 끝나요.
+
+명령줄 플래그는 [`manifest.jsonc`](/ko/config/manifest/)에 동기화된 기본값보다 우선해요.
 
 ## 동작
 
