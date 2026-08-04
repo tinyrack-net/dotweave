@@ -61,10 +61,10 @@ packages:
     dependency: "direct main"
     description:
       name: cliweave
-      sha256: "62bb155bd9214bbf7680c3f50546185ec4045eea396e174f5aa29bf2a0a1b10f"
+      sha256: fa1fd49ddaa75d84a71f9858dafabb83863b34b7b9ba719c813faf5b501fcf18
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   collection:
     dependency: transitive
     description:
@@ -309,10 +309,10 @@ packages:
     dependency: "direct dev"
     description:
       name: shipworld
-      sha256: "87e3bb7f8924c330f054d9fff99303efb76399b3afc2fdb47aa73f62c47948b2"
+      sha256: "9917e5df15fac1c972ead7e242a67876652218e633182e6adf91eff2d54de7e6"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.2"
+    version: "0.2.0"
   source_map_stack_trace:
     dependency: transitive
     description:

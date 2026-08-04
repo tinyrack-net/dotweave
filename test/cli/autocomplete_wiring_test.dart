@@ -24,9 +24,12 @@ void main() {
         contains('env -u COMP_LINE dotweave __complete "\${inputs[@]}"'),
       );
       expect(completionScripts.fish, contains('command dotweave __complete'));
+      // PowerShell passes the raw line through COMP_LINE rather than as
+      // arguments, because PowerShell 5.1 drops empty string arguments.
+      expect(completionScripts.powershell, contains(r'& dotweave __complete'));
       expect(
         completionScripts.powershell,
-        contains(r'& dotweave __complete $inputs'),
+        contains(r'$env:COMP_LINE = $commandLine'),
       );
     });
 
