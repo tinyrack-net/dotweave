@@ -121,9 +121,9 @@ final class _Kernel32 {
   // Both bindings are `isLeaf`: the calls run directly on the mutator thread
   // with no Dart<->native thread-state transition, and — critically — no VM
   // code runs between an adjacent GetFileAttributesExW/GetLastError pair, so
-  // the thread's last-error value cannot be clobbered (unlike package:win32's
-  // lazily-resolved bindings, cf. windows/win32_links.dart's warm-up
-  // workaround).
+  // the thread's last-error value cannot be clobbered. package:win32 solves
+  // the same problem differently, by capturing the code into a Win32Result
+  // alongside each return value (cf. windows/win32_links.dart).
   _Kernel32._() {
     final kernel32 = DynamicLibrary.open('kernel32.dll');
     getFileAttributesExW = kernel32
