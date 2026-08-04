@@ -51,7 +51,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - `shipworld`: Published reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo and consumed here from pub.dev (invoked with `dart run shipworld:shipworld`).
 - `cliweave`: Published CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
 - `dartage`: Published pure-Dart age v1 encryption dependency (X25519 recipients).
-- `tool/`: Repository-only validation, compiled-binary smoke checks, benchmarks, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`.
+- `tool/`: Repository-only validation, compiled-binary smoke checks, benchmarks, release driving, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`; `tool/release.dart` wraps the release commands so they can be driven from any worktree.
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `pubspec.yaml` at build time).
 
 ---
@@ -65,6 +65,18 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - **Analyze:** `dart analyze --fatal-infos`
 - **Format:** `dart format .`
 - **Native Binary Build:** `dart compile exe bin/dotweave.dart`
+
+### Releasing (repo root)
+- **Prepare:** `dart run tool/release.dart prepare <major|minor|patch>` (add `--dry-run` to preview)
+- **Finalize:** `dart run tool/release.dart finalize` — after the release PR is merged
+
+Shipworld only prepares and finalizes a target from its configured branch
+(`main`), and git allows that branch in one worktree at a time. `tool/release.dart`
+locates whichever worktree holds it, so these commands work from any worktree.
+`prepare` pushes the release commit to `release/v<version>` and restores local
+`main` to `origin/main`; open a PR from that branch and merge it, then run
+`finalize`. Tags are signed with the maintainer's local git signing key, which is
+why finalizing stays on a workstation rather than moving into CI.
 
 ### Homepage (`homepage/`)
 - **Install Dependencies:** `pnpm install` (run from `homepage/`)
