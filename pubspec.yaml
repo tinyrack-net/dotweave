@@ -10,7 +10,7 @@ executables:
   dotweave: dotweave
 
 dependencies:
-  cliweave: ^0.2.1
+  cliweave: ^0.2.2
   cryptography: ^2.7.0
   dartage: ^0.2.0
   ffi: ^2.1.0
@@ -19,5 +19,5 @@ dependencies:
 
 dev_dependencies:
   lints: ^6.0.0
-  shipworld: ^0.1.2
+  shipworld: ^0.2.0
   test: ^1.26.0
