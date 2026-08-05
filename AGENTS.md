@@ -3,8 +3,8 @@
 ## Project Overview
 **Dotweave** is a git-backed configuration synchronization tool for dotfiles. Unlike traditional tools that force you to shape your local environment around a repository, Dotweave treats your home directory (`HOME`) as the source of truth and uses a git repository purely as a synchronization artifact.
 
-- **Main Technologies:** Dart (>=3.12) for the CLI (repo root) and repository tooling (`tool/`), with the published `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
-- **Architecture:** The repo root is a single Dart package (`pubspec.yaml`, `name: dotweave`); the published `cliweave`, `dartage`, and `shipworld` libraries (all from the `tinyrack-net/dart-packages` monorepo) are consumed from pub.dev, with `shipworld` providing the release and desktop-packaging tooling. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
+- **Main Technologies:** Dart (>=3.12) for the CLI (repo root) and repository tooling (`tool/`), with the `cliweave` CLI framework and `dartage` encryption library; TypeScript/React with pnpm for the documentation homepage (`homepage/`, a standalone Node project built with React Router and `@tinyrack/docs`). Secrets are age-encrypted.
+- **Architecture:** The repo root is a single Dart package (`pubspec.yaml`, `name: dotweave`); the `cliweave`, `dartage`, and `shipworld` libraries all come from the `tinyrack-net/dart-packages` monorepo as git dependencies pinned to commit hashes, with `shipworld` providing the release and desktop-packaging tooling. The homepage is an independent Node project at `homepage/` with its own pnpm lockfile. The CLI is distributed as compiled native binaries via GitHub Releases, Homebrew, and WinGet.
 
 ---
 
@@ -48,9 +48,14 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ## Repository Structure
 - Repo root: The core CLI tool (`dotweave` Dart package — `bin/`, `lib/`, `test/`).
-- `shipworld`: Published reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo and consumed here from pub.dev (invoked with `dart run shipworld:shipworld`).
-- `cliweave`: Published CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
-- `dartage`: Published pure-Dart age v1 encryption dependency (X25519 recipients).
+- `shipworld`: Reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo (invoked with `dart run shipworld:shipworld`).
+- `cliweave`: CLI framework dependency providing command routing, argument scanning, help rendering, exit codes, completion proposals, terminal logging, spinners, and completion-script generators.
+- `dartage`: Pure-Dart age v1 encryption dependency (X25519 recipients).
+
+  All three are consumed as git dependencies on `tinyrack-net/dart-packages`, pinned
+  to commit hashes rather than pub.dev versions. To bump one, update its `ref` in
+  `pubspec.yaml` — and for `cliweave`, the matching `dependency_overrides` entry too,
+  which exists because `shipworld` declares its own `cliweave` dependency from pub.dev.
 - `tool/`: Repository-only validation, compiled-binary smoke checks, benchmarks, release driving, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`; `tool/release.dart` wraps the release commands so they can be driven from any worktree.
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `pubspec.yaml` at build time).
 
