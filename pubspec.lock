@@ -60,10 +60,11 @@ packages:
   cliweave:
     dependency: "direct main"
     description:
-      name: cliweave
-      sha256: fa1fd49ddaa75d84a71f9858dafabb83863b34b7b9ba719c813faf5b501fcf18
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/cliweave"
+      ref: b0a3e334eb09d7d6ed91549e26f06d99fb61101f
+      resolved-ref: b0a3e334eb09d7d6ed91549e26f06d99fb61101f
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
     version: "0.2.2"
   collection:
     dependency: transitive
@@ -108,10 +109,11 @@ packages:
   dartage:
     dependency: "direct main"
     description:
-      name: dartage
-      sha256: e66a5de142dd2ef9045c05a2de968b0959ed5b2124852c5b727bf10bb911bbad
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/dartage"
+      ref: "7e924a446fe5fdc80c1eb3fb2d437bf524cb529d"
+      resolved-ref: "7e924a446fe5fdc80c1eb3fb2d437bf524cb529d"
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
     version: "0.2.0"
   ffi:
     dependency: "direct main"
@@ -316,10 +318,11 @@ packages:
   shipworld:
     dependency: "direct dev"
     description:
-      name: shipworld
-      sha256: "9917e5df15fac1c972ead7e242a67876652218e633182e6adf91eff2d54de7e6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/shipworld"
+      ref: c82cd8351d216cfa21de517375c0241dae7d57bd
+      resolved-ref: c82cd8351d216cfa21de517375c0241dae7d57bd
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
     version: "0.2.0"
   source_map_stack_trace:
     dependency: transitive
