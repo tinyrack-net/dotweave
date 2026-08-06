@@ -7,6 +7,7 @@ on:
     tags:
       - "v*.*.*"
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:
@@ -14,8 +15,11 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+  # A cancelled merge-queue check reads as a failure and ejects the pull
+  # request from the queue, so those runs always finish.
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' &&
-    !startsWith(github.ref, 'refs/tags/v') }}
+    !startsWith(github.ref, 'refs/tags/v') &&
+    github.event_name != 'merge_group' }}
 
 jobs:
   lint:
@@ -256,6 +260,24 @@ jobs:
           name: dotweave-win32-${{ matrix.msixarch }}-msix
           path: dist/pkg/dotweave-win-${{ matrix.msixarch }}.msix
           if-no-files-found: error
+
+  quality-gate:
+    name: Quality Gate
+    if: always()
+    needs:
+      - lint
+      - dart-analyze
+      - dart-test
+      - homepage
+      - autocomplete-shell-smoke
+      - build-and-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every quality job to succeed
+        env:
+          QUALITY_RESULTS: ${{ toJSON(needs) }}
+        run: jq -e 'all(.[]; .result == "success")' <<< "$QUALITY_RESULTS"
 
   bundle-msix:
     name: Bundle MSIX
