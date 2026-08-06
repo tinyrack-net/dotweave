@@ -13,24 +13,24 @@ dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: b0a3e334eb09d7d6ed91549e26f06d99fb61101f
+      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
       path: packages/cliweave
   cryptography: ^2.7.0
   dartage:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 7e924a446fe5fdc80c1eb3fb2d437bf524cb529d
+      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
       path: packages/dartage
   ffi: ^2.1.0
   path: ^1.9.0
-  win32: ^6.3.0
+  win32: ^6.4.0
 
 dev_dependencies:
   lints: ^6.0.0
   shipworld:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: c82cd8351d216cfa21de517375c0241dae7d57bd
+      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
       path: packages/shipworld
   test: ^1.26.0
 
@@ -40,5 +40,5 @@ dependency_overrides:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: b0a3e334eb09d7d6ed91549e26f06d99fb61101f
+      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
       path: packages/cliweave
