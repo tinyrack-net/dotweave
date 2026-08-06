@@ -46,6 +46,21 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 
 ---
 
+## Merging
+`main` accepts changes only through a pull request that passes the merge queue.
+
+- The single required check is **Quality Gate**, a job in `.github/workflows/pipeline.yml`
+  that aggregates every validation job. Adding or renaming a validation job means
+  updating that job's `needs:` list — the branch protection setting stays untouched.
+- Enable auto-merge with `gh pr merge <n> --auto --squash`. Once the checks pass the
+  pull request enters the merge queue, which re-runs the pipeline against `main` on a
+  `merge_group` event before squashing. The branch is deleted on merge.
+- Never cancel a merge-queue run: a cancelled check reads as a failure and ejects the
+  pull request from the queue.
+- The rules apply to administrators too, so there is no direct push to `main`.
+
+---
+
 ## Repository Structure
 - Repo root: The core CLI tool (`dotweave` Dart package — `bin/`, `lib/`, `test/`).
 - `shipworld`: Reusable release, signing, and desktop-packaging library/CLI, maintained in the `tinyrack-net/dart-packages` monorepo (invoked with `dart run shipworld:shipworld`).
