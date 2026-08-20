@@ -62,6 +62,154 @@ String toNativeLinkTarget(String target, [String? platform]) {
       : target;
 }
 
+/// Matches a POSIX-separator path that is absolute on some platform: a Windows
+/// drive-letter root (`C:/...`), a UNC or POSIX root (`//server/share`, `/usr`).
+///
+/// [p.posix.isAbsolute] answers `false` for `C:/Users/x`, and the ambient
+/// [p.isAbsolute] answers differently depending on the host, so neither is
+/// usable here: the portable-target helpers must behave identically whether
+/// they run on Windows or on a Linux CI machine with `platform: 'win32'`.
+final RegExp _absolutePosixSeparatorPath = RegExp(r'^([A-Za-z]:/|/)');
+
+String _stripTrailingSlash(String path) {
+  return path.length > 1 && path.endsWith('/')
+      ? path.substring(0, path.length - 1)
+      : path;
+}
+
+/// Canonical repository form of a symlink target read from the filesystem via
+/// `readLinkTarget`: POSIX separators, with an absolute target inside
+/// [homeDirectory] rewritten to the portable `~` / `~/...` form. Relative
+/// targets are already portable and absolute targets outside HOME cannot be
+/// made portable, so both keep their shape.
+///
+/// Only for *raw* targets. Use [normalizePortableLinkTarget] for a value that
+/// has already been stored -- this function escapes a literal leading `~`,
+/// which would corrupt an already-anchored target.
+///
+/// The HOME prefix match is purely lexical -- no `realpath` -- and is
+/// case-insensitive on Windows only. A target that reaches into HOME through a
+/// different real path (because HOME itself is a link) therefore stays
+/// verbatim; resolving it would destroy relative targets, add a stat per
+/// symlink to the push hot path, and silently rewrite what the user expressed.
+String toPortableLinkTarget(
+  String rawTarget,
+  String homeDirectory, [
+  String? platform,
+]) {
+  final target = toPosixLinkTarget(rawTarget);
+
+  if (!_absolutePosixSeparatorPath.hasMatch(target)) {
+    // A *relative* target whose first segment is literally `~` (a directory
+    // named `~` beside the link) would be indistinguishable from a
+    // home-anchored one once stored. Writing it as `./~/...` keeps it distinct
+    // without an escape scheme the artifact format could never drop again: the
+    // OS resolves `./~/x` and `~/x` to the same place.
+    return isHomeAnchoredLinkTarget(target) ? './$target' : target;
+  }
+
+  return _anchorHomePrefix(target, homeDirectory, platform);
+}
+
+/// Re-canonicalizes a target that has already been through storage: an
+/// artifact file's contents, or a snapshot node built from one. Anchors a
+/// legacy absolute target written before repository format 2 and leaves every
+/// portable form (`~`, `~/...`, `./~/...`, relative, outside HOME) alone.
+///
+/// Idempotent, so it is safe on every read and every write. Unlike
+/// [toPortableLinkTarget] it does not escape a leading `~`, because at this
+/// point a leading `~` already means "home-anchored".
+String normalizePortableLinkTarget(
+  String storedTarget,
+  String homeDirectory, [
+  String? platform,
+]) {
+  final target = toPosixLinkTarget(storedTarget);
+
+  if (!_absolutePosixSeparatorPath.hasMatch(target)) {
+    return target;
+  }
+
+  return _anchorHomePrefix(target, homeDirectory, platform);
+}
+
+/// Rewrites an absolute POSIX-separator [target] that sits inside
+/// [homeDirectory] to its `~`-anchored form. Callers must have established
+/// that [target] is absolute.
+String _anchorHomePrefix(
+  String target,
+  String homeDirectory,
+  String? platform,
+) {
+  final home = _stripTrailingSlash(toPosixLinkTarget(homeDirectory));
+
+  if (home.isEmpty) {
+    return target;
+  }
+
+  final caseInsensitive = (platform ?? _processPlatform) == 'win32';
+  String comparisonKey(String path) =>
+      caseInsensitive ? path.toLowerCase() : path;
+
+  final targetKey = comparisonKey(target);
+  final homeKey = comparisonKey(home);
+
+  if (targetKey == homeKey) {
+    return _homePrefix;
+  }
+
+  // The trailing separator is what keeps `C:/Users/winetree94x/...` from
+  // matching a HOME of `C:/Users/winetree94`.
+  if (!targetKey.startsWith('$homeKey$_posixPathSeparator')) {
+    return target;
+  }
+
+  // Slice the suffix from the original so the user's casing under HOME
+  // survives byte for byte.
+  return '$_homePrefix$_posixPathSeparator'
+      '${target.substring(home.length + 1)}';
+}
+
+/// Expands the portable form produced by [toPortableLinkTarget] back into an
+/// absolute POSIX-separator path rooted at [homeDirectory]. Anything else is
+/// returned unchanged. Compose with [toNativeLinkTarget] before handing the
+/// result to the OS.
+///
+/// This deliberately duplicates the `~` semantics of `expandHomePath` in
+/// `config/xdg.dart` rather than calling it: `util` may not import `config`,
+/// and that function additionally trims its input and resolves through
+/// `p.current`, both of which would corrupt a link target.
+String fromPortableLinkTarget(String storedTarget, String homeDirectory) {
+  if (!isHomeAnchoredLinkTarget(storedTarget)) {
+    return storedTarget;
+  }
+
+  final home = _stripTrailingSlash(toPosixLinkTarget(homeDirectory));
+
+  if (storedTarget == _homePrefix) {
+    return home;
+  }
+
+  return '$home$_posixPathSeparator${storedTarget.substring(2)}';
+}
+
+/// Whether a stored target is `~` or begins with `~/`.
+bool isHomeAnchoredLinkTarget(String storedTarget) {
+  return storedTarget == _homePrefix ||
+      storedTarget.startsWith('$_homePrefix$_posixPathSeparator');
+}
+
+/// Whether a stored target will fail to resolve after a move to another
+/// machine or user: an absolute path that is not home-anchored. Drives the
+/// push/status/doctor warnings; never blocks an operation.
+bool isNonPortableLinkTarget(String storedTarget) {
+  if (isHomeAnchoredLinkTarget(storedTarget)) {
+    return false;
+  }
+
+  return _absolutePosixSeparatorPath.hasMatch(toPosixLinkTarget(storedTarget));
+}
+
 typedef LinkTargetNormalizerPlatform = String;
 
 /// Mirrors NodeJS `process.platform` for the values dotweave distinguishes.

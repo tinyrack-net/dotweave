@@ -69,6 +69,18 @@ tests pin it.
 - **Non-integer config `version`** (e.g. 7.5): TS enters the migration loop
   and fails with CONFIG_MIGRATION_NOT_FOUND; Dart (`is int` check) falls
   through to validation failure. JSON-integer versions behave identically.
+- **Portable symlink targets** (repository format 2): TS stored a symlink's
+  target verbatim (only `\` -> `/`), so an absolute target committed a
+  machine- and user-specific path that pulled as a dangling link elsewhere.
+  Dart rewrites an absolute target inside HOME to `~/...` on capture
+  (`toPortableLinkTarget`) and expands it against the pulling machine's HOME
+  on materialization (`fromPortableLinkTarget`). Prefix matching is lexical
+  (no realpath) and case-insensitive on Windows only; a relative target whose
+  first segment is literally `~` is stored as `./~/...` so it stays distinct
+  from an anchored one. Targets outside HOME stay verbatim and are reported by
+  `push`/`status`/`doctor` as non-portable. Pinned by
+  `test/util/path_util_test.dart`, `test/config/migrations/repo_format_v2_test.dart`,
+  and `test/e2e/symlink_cross_platform_e2e_test.dart`.
 
 ## Performance notes (behavior-neutral)
 

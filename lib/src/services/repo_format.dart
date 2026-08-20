@@ -1,5 +1,6 @@
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/migrations/repo_format_v1.dart';
+import 'package:dotweave/src/config/migrations/repo_format_v2.dart';
 import 'package:dotweave/src/config/repo_format_migration.dart';
 import 'package:dotweave/src/services/config_file.dart';
 
@@ -7,11 +8,12 @@ import 'package:dotweave/src/services/config_file.dart';
 // migrations and records the completed format in the manifest.
 
 /// Registry of on-disk repository format migrations, keyed by source format.
-/// Add the next step (e.g. `{1: migrateRepositoryFormatV1ToV2}`) when the
+/// Add the next step (e.g. `{2: migrateRepositoryFormatV2ToV3}`) when the
 /// format evolves. Steps must be contiguous up to
 /// `AppConstants.sync.repositoryFormat`.
 final RepoFormatMigrationRegistry repositoryFormatMigrationRegistry = {
   0: migrateRepositoryFormatV0ToV1,
+  1: migrateRepositoryFormatV1ToV2,
 };
 
 /// Brings a repository's on-disk artifacts up to the current format and

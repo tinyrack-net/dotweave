@@ -52,6 +52,209 @@ void main() {
       expect(isExplicitLocalPath('bundle/file.txt'), false);
     });
 
+    group('toPortableLinkTarget', () {
+      const windowsHome = r'C:\Users\winetree94';
+
+      test('anchors an absolute windows target inside HOME', () {
+        expect(
+          toPortableLinkTarget(
+            r'C:\Users\winetree94\.agents\AGENTS.md',
+            windowsHome,
+            'win32',
+          ),
+          '~/.agents/AGENTS.md',
+        );
+      });
+
+      test('matches the HOME prefix case-insensitively on windows', () {
+        expect(
+          toPortableLinkTarget(
+            r'c:\users\WINETREE94\.agents\AGENTS.md',
+            windowsHome,
+            'win32',
+          ),
+          '~/.agents/AGENTS.md',
+        );
+      });
+
+      test('matches the HOME prefix case-sensitively on linux', () {
+        expect(
+          toPortableLinkTarget(
+            '/HOME/user/.agents/a.md',
+            '/home/user',
+            'linux',
+          ),
+          '/HOME/user/.agents/a.md',
+        );
+      });
+
+      test('does not match a sibling directory sharing the HOME prefix', () {
+        expect(
+          toPortableLinkTarget(
+            r'C:\Users\winetree94x\.agents\AGENTS.md',
+            windowsHome,
+            'win32',
+          ),
+          'C:/Users/winetree94x/.agents/AGENTS.md',
+        );
+      });
+
+      test('returns ~ for a target that is exactly HOME', () {
+        expect(toPortableLinkTarget(windowsHome, windowsHome, 'win32'), '~');
+        expect(toPortableLinkTarget('/home/user', '/home/user', 'linux'), '~');
+      });
+
+      test('ignores a trailing separator on HOME', () {
+        expect(
+          toPortableLinkTarget('/home/user/.config', '/home/user/', 'linux'),
+          '~/.config',
+        );
+      });
+
+      test('leaves a relative target unchanged', () {
+        expect(
+          toPortableLinkTarget(r'..\.agents\AGENTS.md', windowsHome, 'win32'),
+          '../.agents/AGENTS.md',
+        );
+      });
+
+      test('leaves an absolute target outside HOME unchanged', () {
+        expect(
+          toPortableLinkTarget('/opt/homebrew/bin/tool', '/home/user', 'linux'),
+          '/opt/homebrew/bin/tool',
+        );
+        expect(
+          toPortableLinkTarget(r'D:\shared\x', windowsHome, 'win32'),
+          'D:/shared/x',
+        );
+      });
+
+      test('anchors a target under a UNC HOME', () {
+        expect(
+          toPortableLinkTarget(
+            r'\\server\share\u\.agents\a.md',
+            r'\\server\share\u',
+            'win32',
+          ),
+          '~/.agents/a.md',
+        );
+      });
+
+      test('disambiguates a relative target named ~', () {
+        expect(
+          toPortableLinkTarget('~/notes.md', '/home/user', 'linux'),
+          './~/notes.md',
+        );
+        expect(toPortableLinkTarget('~', '/home/user', 'linux'), './~');
+      });
+
+      test('escapes a raw ~ target only once, then stays stable', () {
+        final stored = toPortableLinkTarget(
+          '~/notes.md',
+          '/home/user',
+          'linux',
+        );
+
+        expect(stored, './~/notes.md');
+        expect(
+          normalizePortableLinkTarget(stored, '/home/user', 'linux'),
+          './~/notes.md',
+        );
+      });
+    });
+
+    group('normalizePortableLinkTarget', () {
+      test('anchors a legacy absolute target stored before format 2', () {
+        expect(
+          normalizePortableLinkTarget(
+            'C:/Users/winetree94/.agents/AGENTS.md',
+            r'C:\Users\winetree94',
+            'win32',
+          ),
+          '~/.agents/AGENTS.md',
+        );
+      });
+
+      test('is idempotent across every portable form', () {
+        for (final target in [
+          '~/.agents/AGENTS.md',
+          '~',
+          '../.agents/AGENTS.md',
+          '/opt/homebrew/bin/tool',
+          './~/notes.md',
+        ]) {
+          expect(
+            normalizePortableLinkTarget(target, '/home/user', 'linux'),
+            target,
+            reason: 'expected $target to survive a second pass unchanged',
+          );
+        }
+      });
+    });
+
+    group('fromPortableLinkTarget', () {
+      test('expands ~ to HOME', () {
+        expect(fromPortableLinkTarget('~', r'C:\Users\me'), 'C:/Users/me');
+      });
+
+      test('expands ~/ against HOME', () {
+        expect(
+          fromPortableLinkTarget('~/.agents/AGENTS.md', r'C:\Users\me'),
+          'C:/Users/me/.agents/AGENTS.md',
+        );
+      });
+
+      test('ignores a trailing separator on HOME', () {
+        expect(
+          fromPortableLinkTarget('~/.config', '/home/user/'),
+          '/home/user/.config',
+        );
+      });
+
+      test('leaves relative and absolute targets unchanged', () {
+        expect(fromPortableLinkTarget('../a.md', '/home/user'), '../a.md');
+        expect(fromPortableLinkTarget('./~/a.md', '/home/user'), './~/a.md');
+        expect(fromPortableLinkTarget('/opt/x', '/home/user'), '/opt/x');
+      });
+
+      test('round-trips with toPortableLinkTarget', () {
+        const home = r'C:\Users\winetree94';
+        const raw = r'C:\Users\winetree94\.agents\AGENTS.md';
+
+        expect(
+          fromPortableLinkTarget(
+            toPortableLinkTarget(raw, home, 'win32'),
+            home,
+          ),
+          'C:/Users/winetree94/.agents/AGENTS.md',
+        );
+      });
+    });
+
+    group('isNonPortableLinkTarget', () {
+      test('reports absolute targets that are not home-anchored', () {
+        expect(isNonPortableLinkTarget('/opt/homebrew/bin/tool'), true);
+        expect(isNonPortableLinkTarget('C:/Program Files/tool.exe'), true);
+        expect(isNonPortableLinkTarget('//server/share/x'), true);
+      });
+
+      test('accepts home-anchored and relative targets', () {
+        expect(isNonPortableLinkTarget('~'), false);
+        expect(isNonPortableLinkTarget('~/.agents/AGENTS.md'), false);
+        expect(isNonPortableLinkTarget('../.agents/AGENTS.md'), false);
+        expect(isNonPortableLinkTarget('./~/notes.md'), false);
+      });
+    });
+
+    group('isHomeAnchoredLinkTarget', () {
+      test('recognizes ~ and ~/ prefixes only', () {
+        expect(isHomeAnchoredLinkTarget('~'), true);
+        expect(isHomeAnchoredLinkTarget('~/a'), true);
+        expect(isHomeAnchoredLinkTarget('./~/a'), false);
+        expect(isHomeAnchoredLinkTarget('~abc/a'), false);
+      });
+    });
+
     group('normalizeLinkTarget', () {
       test('returns absolute target as-is on non-windows', () {
         expect(normalizeLinkTarget('/usr/bin/python3'), '/usr/bin/python3');

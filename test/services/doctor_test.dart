@@ -258,9 +258,47 @@ void main() {
               'state (1 entry).',
           level: 'ok',
         ),
+        DoctorCheck(
+          checkId: 'symlink-portability',
+          detail: 'All tracked symlink targets resolve on any machine.',
+          level: 'ok',
+        ),
       ]);
       expect(mocked.pathExistsCalls, contains('/tmp/dotweave/keys.txt'));
       expect(mocked.pathExistsCalls, contains('/tmp/home/.ssh/id_ed25519'));
+    });
+
+    test('warns when a tracked symlink target points outside HOME', () async {
+      final mocked = MockedDoctorSeams();
+      mocked.verifyIsGitRepository = (directory) async {};
+      mocked.loadSyncConfig = (syncDirectory) async {
+        return createLoadedConfig(entryLocalPaths: ['/tmp/home/.ssh/config']);
+      };
+      mocked.buildRepositorySnapshot = (syncDirectory, config) async {
+        return <String, SnapshotNode>{
+          '.ssh/config': const SymlinkSnapshotNode(
+            linkTarget: '/opt/shared/ssh-config',
+          ),
+          '.agents/AGENTS.md': const SymlinkSnapshotNode(
+            linkTarget: '~/.agents/AGENTS.md',
+          ),
+        };
+      };
+      mocked.pathExists = (path) async => true;
+
+      final result = await runDoctorChecks(mocked.dependencies);
+
+      expect(result.hasWarnings, true);
+      expect(
+        result.checks.last,
+        const DoctorCheck(
+          checkId: 'symlink-portability',
+          detail:
+              '1 symlink target points outside your home directory and will '
+              'not resolve on another machine: .ssh/config',
+          level: 'warn',
+        ),
+      );
     });
 
     test('reports batch progress while treating multiple missing paths as '

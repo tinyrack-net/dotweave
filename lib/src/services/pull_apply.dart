@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dotweave/src/config/constants.dart';
+import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
@@ -218,7 +219,8 @@ bool _materializedFileModeMatches(
 
 Future<bool> _isMaterializedFileLikeNodeCurrent(
   String targetPath,
-  FileLikeSnapshotNode node, [
+  FileLikeSnapshotNode node,
+  String homeDirectory, [
   int? fileMode,
 ]) async {
   final stats = await getPathStats(targetPath);
@@ -235,8 +237,15 @@ Future<bool> _isMaterializedFileLikeNodeCurrent(
 
       final currentLinkTarget = await readLinkTarget(targetPath);
 
+      // The stored target must be expanded before comparing: `~/...` is not
+      // absolute, so normalizeLinkTarget would otherwise resolve it against
+      // the link's own directory and never match -- making every pull rewrite
+      // the link forever.
       return normalizeLinkTarget(currentLinkTarget, p.dirname(targetPath)) ==
-          normalizeLinkTarget(node.linkTarget, p.dirname(targetPath));
+          normalizeLinkTarget(
+            fromPortableLinkTarget(node.linkTarget, homeDirectory),
+            p.dirname(targetPath),
+          );
     case FileSnapshotNode():
       if (!stats.isFile) {
         return false;
@@ -281,7 +290,8 @@ String _resolveStagingParentDirectory(String targetPath) {
 
 Future<void> _stageAndReplacePath(
   String targetPath,
-  FileLikeSnapshotNode node, [
+  FileLikeSnapshotNode node,
+  String homeDirectory, [
   int? fileMode,
 ]) async {
   await tracePhase(
@@ -299,7 +309,12 @@ Future<void> _stageAndReplacePath(
   try {
     switch (node) {
       case SymlinkSnapshotNode():
-        await createSymlink(toNativeLinkTarget(node.linkTarget), stagedPath);
+        await createSymlink(
+          toNativeLinkTarget(
+            fromPortableLinkTarget(node.linkTarget, homeDirectory),
+          ),
+          stagedPath,
+        );
       case FileSnapshotNode():
         // The staged file's parent is the createTemp directory made just
         // above — no need to re-ensure it.
@@ -569,7 +584,10 @@ Future<List<String>> collectChangedLocalPaths(
   ResolvedSyncConfigEntry entry,
   EntryMaterialization materialization, [
   EffectiveSyncConfig? config,
+  String? homeDirectory,
 ]) async {
+  final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
+
   if (materialization is AbsentEntryMaterialization) {
     if (config == null) {
       return [];
@@ -597,6 +615,7 @@ Future<List<String>> collectChangedLocalPaths(
     return await _isMaterializedFileLikeNodeCurrent(
           entry.localPath,
           materialization.node,
+          home,
           entry.permission,
         )
         ? []
@@ -631,6 +650,7 @@ Future<List<String>> collectChangedLocalPaths(
     if (!await _isMaterializedFileLikeNodeCurrent(
       targetPath,
       node,
+      home,
       entry.permission,
     )) {
       changedLocalPaths.add(targetPath);
@@ -726,7 +746,8 @@ Future<void> _reconcileMaterializedDirectoryPath(
   ResolvedSyncConfigEntry entry,
   Set<String> desiredKeys,
   Map<String, FileLikeSnapshotNode> desiredNodes,
-  EffectiveSyncConfig config, [
+  EffectiveSyncConfig config,
+  String homeDirectory, [
   int? fileMode,
 ]) async {
   final desiredRootKey = buildDirectoryKey(entry.repoPath);
@@ -776,13 +797,17 @@ Future<void> _reconcileMaterializedDirectoryPath(
 
       if (await tracePhase(
         'reconcile.currencyCheck',
-        () =>
-            _isMaterializedFileLikeNodeCurrent(targetNodePath, node, fileMode),
+        () => _isMaterializedFileLikeNodeCurrent(
+          targetNodePath,
+          node,
+          homeDirectory,
+          fileMode,
+        ),
       )) {
         return;
       }
 
-      await _stageAndReplacePath(targetNodePath, node, fileMode);
+      await _stageAndReplacePath(targetNodePath, node, homeDirectory, fileMode);
     },
   );
 
@@ -819,8 +844,10 @@ Future<void> _reconcileMaterializedDirectoryPath(
 Future<void> applyEntryMaterialization(
   ResolvedSyncConfigEntry entry,
   EntryMaterialization materialization,
-  EffectiveSyncConfig config,
-) async {
+  EffectiveSyncConfig config, {
+  String? homeDirectory,
+}) async {
+  final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
   final rule = resolveSyncRule(
     _toResolvedSyncConfig(config),
     entry.repoPath,
@@ -839,6 +866,7 @@ Future<void> applyEntryMaterialization(
           materialization.desiredKeys,
           {},
           config,
+          home,
           entry.permission,
         );
 
@@ -850,6 +878,7 @@ Future<void> applyEntryMaterialization(
       await _stageAndReplacePath(
         entry.localPath,
         materialization.node,
+        home,
         entry.permission,
       );
     case DirectoryEntryMaterialization():
@@ -858,6 +887,7 @@ Future<void> applyEntryMaterialization(
         materialization.desiredKeys,
         materialization.nodes,
         config,
+        home,
         entry.permission,
       );
   }

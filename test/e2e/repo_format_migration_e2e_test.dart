@@ -112,6 +112,52 @@ void main() {
       );
     });
 
+    test('rewrites a format-1 absolute in-HOME symlink target to the '
+        'home-anchored form on push', () async {
+      final ageKeys = await ctx.createAgeKeyPair();
+      await ctx.writeIdentityFile(ageKeys.identity);
+
+      final realFile = p.join(ctx.homeDir, '.agents', 'AGENTS.md');
+      final link = p.join(ctx.homeDir, '.claude', 'AGENTS.md');
+      await Directory(p.join(ctx.homeDir, '.agents')).create(recursive: true);
+      await File(realFile).writeAsString('# agents\n');
+      await Directory(p.join(ctx.homeDir, '.claude')).create(recursive: true);
+      await createSymlink(realFile, link);
+
+      await ctx.runCli(['init']);
+      await ctx.runCli(['track', link]);
+      await ctx.runCli(['push']);
+
+      final artifact = p.join(
+        ctx.xdgDir,
+        'dotweave',
+        'repository',
+        'profiles',
+        'default',
+        '.claude',
+        'AGENTS.md${AppConstants.sync.symlinkArtifactSuffix}',
+      );
+
+      // Downgrade to format 1: an absolute target written by an older CLI.
+      final absoluteTarget = realFile.replaceAll(r'\', '/');
+      final manifest = await _readManifest(ctx);
+      manifest['repositoryFormat'] = 1;
+      await _writeManifest(ctx, manifest);
+      await File(artifact).writeAsString(absoluteTarget);
+
+      await ctx.runCli(['push']);
+
+      expect(
+        (await _readManifest(ctx))['repositoryFormat'],
+        AppConstants.sync.repositoryFormat,
+      );
+      expect(await File(artifact).readAsString(), '~/.agents/AGENTS.md');
+
+      // Idempotent: a second push leaves the anchored target alone.
+      await ctx.runCli(['push']);
+      expect(await File(artifact).readAsString(), '~/.agents/AGENTS.md');
+    });
+
     test('refuses a repository whose format is newer than the CLI '
         'supports', () async {
       final ageKeys = await ctx.createAgeKeyPair();

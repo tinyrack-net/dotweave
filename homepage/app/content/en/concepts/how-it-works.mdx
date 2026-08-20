@@ -20,7 +20,7 @@ Both `push` and `pull` accept `--dry-run`, which builds and prints the plan with
 
 `push` reads your tracked paths and rewrites the artifacts under `profiles/<profile>/` to match. It compares content before writing, so an unchanged file produces no write at all.
 
-A `normal` entry is copied verbatim. A `secret` entry is encrypted to every recipient in `manifest.jsonc` and stored with a `.dotweave.secret` suffix. A symlink is stored as a `<name>.dotweave.symlink` file holding the link target. An `ignore` entry is skipped.
+A `normal` entry is copied verbatim. A `secret` entry is encrypted to every recipient in `manifest.jsonc` and stored with a `.dotweave.secret` suffix. A symlink is stored as a `<name>.dotweave.symlink` file holding the link target, home-anchored as `~/...` when it points inside your home directory. An `ignore` entry is skipped.
 
 For secrets, the comparison decrypts the stored ciphertext and compares plaintext. Re-pushing an unchanged secret therefore does not produce a new ciphertext, which keeps your git history free of meaningless churn.
 

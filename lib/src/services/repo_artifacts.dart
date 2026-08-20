@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dotweave/src/config/constants.dart';
 import 'package:dotweave/src/config/platform.dart';
+import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
@@ -797,10 +798,15 @@ Future<bool> _isSecretArtifactUnchanged(
 
 /// Mirror of the TS `isRepoArtifactCurrent`; [ageConfig] mirrors the
 /// `Pick<AgeWriteConfig, "identityFile">` parameter shape.
+/// [homeDirectory] is resolved lazily, and only for symlink artifacts: this
+/// runs once per artifact through the injected `StatusDependencies` typedef,
+/// which cannot forward a named argument, so a plain file must not pay for an
+/// environment lookup it never uses.
 Future<bool> isRepoArtifactCurrent(
   String rootDirectory,
   RepoArtifact artifact, [
   ({String identityFile})? ageConfig,
+  String? homeDirectory,
 ]) async {
   final relativePath = resolveArtifactRelativePath(
     category: artifact.category,
@@ -824,9 +830,15 @@ Future<bool> isRepoArtifactCurrent(
       return false;
     }
 
+    final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
     final storedTarget = await File(artifactPath).readAsString();
 
-    return storedTarget == toPosixLinkTarget(artifact.linkTarget);
+    // Compares raw file bytes, not snapshot values: a format-1 artifact holds
+    // an absolute target while the artifact carries the anchored one, so it is
+    // reported stale and the push rewrites it. That is the intent -- the
+    // repository needs rewriting even though the local link does not.
+    return storedTarget ==
+        normalizePortableLinkTarget(artifact.linkTarget, home);
   }
 
   final fileArtifact = artifact as FileRepoArtifact;
@@ -864,7 +876,10 @@ Future<void> writeArtifactsToDirectory(
   String rootDirectory,
   List<RepoArtifact> artifacts, [
   AgeWriteConfig? ageConfig,
+  String? homeDirectory,
 ]) async {
+  final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
+
   await Directory(rootDirectory).create(recursive: true);
 
   final artifactPaths = [
@@ -908,6 +923,7 @@ Future<void> writeArtifactsToDirectory(
           rootDirectory,
           artifact,
           ageConfig == null ? null : (identityFile: ageConfig.identityFile),
+          home,
         ),
       )) {
         return;
@@ -923,7 +939,7 @@ Future<void> writeArtifactsToDirectory(
         // so git versions it as an ordinary blob on every platform, instead of
         // a physical symlink/junction that git cannot portably track.
         await writeFileNode(artifactPath, (
-          contents: toPosixLinkTarget(artifact.linkTarget),
+          contents: normalizePortableLinkTarget(artifact.linkTarget, home),
           executable: false,
         ), ensureParent: false);
         return;

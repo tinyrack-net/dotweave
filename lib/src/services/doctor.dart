@@ -261,6 +261,28 @@ Future<DoctorResult> runDoctorChecks([
     ),
   );
 
+  final nonPortableTargets = collectNonPortableSymlinkTargets(
+    repositorySnapshot,
+  );
+
+  checks.add(
+    nonPortableTargets.isEmpty
+        ? _ok(
+            'symlink-portability',
+            'All tracked symlink targets resolve on any machine.',
+          )
+        : _warn(
+            'symlink-portability',
+            nonPortableTargets.length == 1
+                ? '1 symlink target points outside your home directory and '
+                      'will not resolve on another machine: '
+                      '${nonPortableTargets.single}'
+                : '${nonPortableTargets.length} symlink targets point outside '
+                      'your home directory and will not resolve on another '
+                      'machine: ${nonPortableTargets.take(3).join(', ')}',
+          ),
+  );
+
   final hasFailures = checks.any((check) => check.level == 'fail');
   final hasWarnings = checks.any((check) => check.level == 'warn');
 

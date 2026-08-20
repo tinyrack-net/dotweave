@@ -395,7 +395,9 @@ void main() {
           Link(artifactPath).target(),
           throwsA(isA<FileSystemException>()),
         );
-        await expectSymlinkArtifact(artifactPath, linkTarget);
+        // The link was created with an absolute target inside HOME, so the
+        // artifact stores it home-anchored.
+        await expectSymlinkArtifact(artifactPath, '~/target.txt');
       });
 
       test('prunes registered profile artifacts when no entries own '

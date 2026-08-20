@@ -134,6 +134,13 @@ final Command<ApplicationContext> statusCommand = buildCommand(
     logger.section('Push changes (repository)');
     _logPushChanges(logger, result.push.changes);
 
+    for (final repoPath in result.push.nonPortableSymlinkTargets) {
+      logger.warn(
+        'Symlink target points outside your home directory and will not '
+        'resolve on another machine: $repoPath',
+      );
+    }
+
     logger.section('Pull changes (local)');
     _logPullChanges(logger, result.pull.changes);
   },

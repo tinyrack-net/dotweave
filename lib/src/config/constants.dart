@@ -56,8 +56,10 @@ class _SyncSection {
   /// [configVersion] (which versions the manifest structure); this versions
   /// how artifacts are laid out under profiles/. Format 1 stores symlinks as
   /// .dotweave.symlink metadata files (format 0 used physical
-  /// symlinks/junctions).
-  final int repositoryFormat = 1;
+  /// symlinks/junctions). Format 2 additionally stores a symlink target that
+  /// points inside HOME as `~/...`, so it resolves against the pulling
+  /// machine's home directory instead of the pushing machine's.
+  final int repositoryFormat = 2;
 
   /// Repositories below this format are refused with guidance to migrate
   /// using an older dotweave first. Raise this (and delete the corresponding
