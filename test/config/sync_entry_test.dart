@@ -10,12 +10,14 @@ ResolvedSyncConfigEntry makeEntry(
   String? localPath,
   List<String>? profiles,
   SyncMode? mode,
+  ConfiguredSyncRepoPath? configuredRepoPath,
 }) {
   return ResolvedSyncConfigEntry(
     configuredMode: const PlatformSyncMode(defaultValue: 'normal'),
     configuredLocalPath: PlatformStringValue(
       defaultValue: '/home/user/$repoPath',
     ),
+    configuredRepoPath: configuredRepoPath,
     kind: kind,
     localPath: localPath ?? '/home/user/$repoPath',
     profiles: profiles ?? [],
@@ -157,6 +159,104 @@ void main() {
           );
         },
       );
+
+      test('collects every configured repo path variant of a child entry', () {
+        final parent = makeEntry(
+          '.config/zsh',
+          'directory',
+          localPath: '/home/user/.config/zsh',
+        );
+        // Resolved for mac; the other variants belong to the machines that
+        // resolve to them and must not be adopted by the parent here.
+        final child = makeEntry(
+          '.config/zsh/platform.mac.zsh',
+          'file',
+          localPath: '/home/user/.config/zsh/platform.zsh',
+          configuredRepoPath: const PlatformStringValue(
+            defaultValue: '.config/zsh/platform.zsh',
+            mac: '.config/zsh/platform.mac.zsh',
+            wsl: '.config/zsh/platform.wsl.zsh',
+          ),
+        );
+
+        expect(collectChildEntryPaths(makeConfig([parent, child]), parent), {
+          '.config/zsh/platform.zsh',
+          '.config/zsh/platform.mac.zsh',
+          '.config/zsh/platform.wsl.zsh',
+        });
+      });
+
+      test('ignores configured variants outside the parent subtree', () {
+        final parent = makeEntry(
+          '.config/zsh',
+          'directory',
+          localPath: '/home/user/.config/zsh',
+        );
+        final child = makeEntry(
+          '.config/zsh/platform.mac.zsh',
+          'file',
+          localPath: '/home/user/.config/zsh/platform.zsh',
+          configuredRepoPath: const PlatformStringValue(
+            defaultValue: '.config/zsh/platform.zsh',
+            mac: '.config/zsh/platform.mac.zsh',
+            win: 'AppData/Roaming/zsh/platform.zsh',
+          ),
+        );
+
+        expect(collectChildEntryPaths(makeConfig([parent, child]), parent), {
+          '.config/zsh/platform.zsh',
+          '.config/zsh/platform.mac.zsh',
+        });
+      });
+
+      test('collects variants for a repo-path parent', () {
+        final parent = makeEntry(
+          '.config/zsh',
+          'directory',
+          localPath: '/home/user/.config/zsh',
+        );
+        final child = makeEntry(
+          '.config/zsh/platform.mac.zsh',
+          'file',
+          localPath: '/home/user/.config/zsh/platform.zsh',
+          configuredRepoPath: const PlatformStringValue(
+            defaultValue: '.config/zsh/platform.zsh',
+            mac: '.config/zsh/platform.mac.zsh',
+            wsl: '.config/zsh/platform.wsl.zsh',
+          ),
+        );
+
+        // The repo-path form has no entry to resolve local paths against, so it
+        // collects the variants and no local-path shadow.
+        expect(
+          collectChildEntryPaths(makeConfig([parent, child]), '.config/zsh'),
+          {
+            '.config/zsh/platform.zsh',
+            '.config/zsh/platform.mac.zsh',
+            '.config/zsh/platform.wsl.zsh',
+          },
+        );
+      });
+
+      test("does not claim the parent entry's own configured variants", () {
+        // Resolved for linux, where the mac variant is nested under the
+        // resolved path. Claiming it would stop the entry materializing
+        // anything under `.config/zsh/mac`.
+        final parent = makeEntry(
+          '.config/zsh',
+          'directory',
+          localPath: '/home/user/.config/zsh',
+          configuredRepoPath: const PlatformStringValue(
+            defaultValue: '.config/zsh',
+            mac: '.config/zsh/mac',
+          ),
+        );
+
+        expect(
+          collectChildEntryPaths(makeConfig([parent]), parent),
+          <String>{},
+        );
+      });
     });
 
     group('resolveEntryRelativeRepoPath', () {

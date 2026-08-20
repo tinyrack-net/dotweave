@@ -35,15 +35,17 @@ void main() {
     SyncConfigEntryKind kind,
     String localPath,
     String repoPath,
-    SyncMode mode, [
+    SyncMode mode, {
     int? permission,
-  ]) {
+    ConfiguredSyncRepoPath? configuredRepoPath,
+  }) {
     return ResolvedSyncConfigEntry(
       configuredLocalPath: PlatformStringValue(defaultValue: localPath),
       configuredMode: PlatformSyncMode(defaultValue: mode),
       configuredPermission: permission == null
           ? null
           : PlatformPermission(defaultValue: formatPermissionOctal(permission)),
+      configuredRepoPath: configuredRepoPath,
       kind: kind,
       localPath: localPath,
       mode: mode,
@@ -346,7 +348,7 @@ void main() {
         keyFile,
         '.ssh/id_rsa',
         'normal',
-        0x180, // 0o600
+        permission: 0x180, // 0o600
       );
 
       expect(
@@ -414,7 +416,7 @@ void main() {
         sshDirectory,
         '.ssh',
         'normal',
-        0x180, // 0o600
+        permission: 0x180, // 0o600
       );
 
       expect(
@@ -506,6 +508,59 @@ void main() {
           }, createConfig([rootEntry, childEntry]));
 
       expect(materialization.type, 'directory');
+      expect(materialization.desiredKeys, {
+        buildDirectoryKey('.config/zsh'),
+        '.config/zsh/other.zsh',
+      });
+      expect(
+        materialization is DirectoryEntryMaterialization
+            ? [...materialization.nodes.keys]
+            : <String>[],
+        ['other.zsh'],
+      );
+    });
+
+    test('does not materialize another platform\'s variant of a child repo '
+        'path', () {
+      final rootEntry = createEntry(
+        'directory',
+        '/home/user/.config/zsh',
+        '.config/zsh',
+        'normal',
+      );
+      // Resolved for mac. The wsl variant is the WSL machine's artifact and is
+      // not this directory entry's content, even though it sits underneath it.
+      final childEntry = createEntry(
+        'file',
+        '/home/user/.config/zsh/platform.zsh',
+        '.config/zsh/platform.mac.zsh',
+        'normal',
+        configuredRepoPath: const PlatformStringValue(
+          defaultValue: '.config/zsh/platform.zsh',
+          mac: '.config/zsh/platform.mac.zsh',
+          wsl: '.config/zsh/platform.wsl.zsh',
+        ),
+      );
+      final materialization =
+          buildEntryMaterialization(rootEntry, <String, SnapshotNode>{
+            buildDirectoryKey('.config/zsh'): const DirectorySnapshotNode(),
+            '.config/zsh/platform.mac.zsh': FileSnapshotNode(
+              contents: bufferFrom('mac artifact\n'),
+              executable: false,
+              secret: false,
+            ),
+            '.config/zsh/platform.wsl.zsh': FileSnapshotNode(
+              contents: bufferFrom('wsl artifact\n'),
+              executable: false,
+              secret: false,
+            ),
+            '.config/zsh/other.zsh': FileSnapshotNode(
+              contents: bufferFrom('other\n'),
+              executable: false,
+              secret: false,
+            ),
+          }, createConfig([rootEntry, childEntry]));
+
       expect(materialization.desiredKeys, {
         buildDirectoryKey('.config/zsh'),
         '.config/zsh/other.zsh',
@@ -612,6 +667,56 @@ void main() {
         '.config/zsh/other.zsh',
       });
       expect(keyToLocalPath.containsKey('.config/zsh/platform.zsh'), false);
+    });
+
+    test('does not count a local file at another platform\'s variant path as a '
+        'stale parent path', () async {
+      // A file left behind by the pull leak this fix closes. It is claimed by
+      // the child entry, so the parent neither materializes nor deletes it: it
+      // is inert until the user removes it.
+      final workspace = await createWorkspace();
+      final rootDirectory = p.join(workspace, '.config', 'zsh');
+      final leakedFile = p.join(rootDirectory, 'platform.wsl.zsh');
+      final otherFile = p.join(rootDirectory, 'other.zsh');
+
+      await Directory(rootDirectory).create(recursive: true);
+      await File(leakedFile).writeAsString('wsl artifact\n');
+      await File(otherFile).writeAsString('other\n');
+
+      final rootEntry = createEntry(
+        'directory',
+        rootDirectory,
+        '.config/zsh',
+        'normal',
+      );
+      final childEntry = createEntry(
+        'file',
+        p.join(rootDirectory, 'platform.zsh'),
+        '.config/zsh/platform.mac.zsh',
+        'normal',
+        configuredRepoPath: const PlatformStringValue(
+          defaultValue: '.config/zsh/platform.zsh',
+          mac: '.config/zsh/platform.mac.zsh',
+          wsl: '.config/zsh/platform.wsl.zsh',
+        ),
+      );
+      final existingKeys = <String>{};
+      final keyToLocalPath = <String, String>{};
+
+      final deletedLocalCount = await countDeletedLocalNodes(
+        rootEntry,
+        {buildDirectoryKey('.config/zsh'), '.config/zsh/other.zsh'},
+        createConfig([rootEntry, childEntry]),
+        existingKeys,
+        keyToLocalPath,
+      );
+
+      expect(deletedLocalCount, 0);
+      expect(existingKeys, {
+        buildDirectoryKey('.config/zsh'),
+        '.config/zsh/other.zsh',
+      });
+      expect(keyToLocalPath.containsKey('.config/zsh/platform.wsl.zsh'), false);
     });
 
     test('should not throw EINVAL when a symlink node in snapshot exists as a '

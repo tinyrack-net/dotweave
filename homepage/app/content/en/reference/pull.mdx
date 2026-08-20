@@ -43,6 +43,8 @@ Secret artifacts are decrypted with the identity in `keys.txt` before anything i
 
 Every local write is staged in a temporary directory beside the target and then renamed into place, so an interrupted pull cannot leave a half-written file. Stale local paths are deleted deepest-first, and a directory is deleted only when all of its children are already scheduled for deletion.
 
+`pull` writes only the artifacts your tracked entries own on this machine's platform key. A repository path owned by another platform's `repoPath` override stays in the repository: `pull` does not write it into your home directory, and does not delete it if it is already there. See [Platform-specific paths](/en/concepts/platform-paths/).
+
 Entries are applied in batches, grouped so that no two entries in one batch have overlapping local paths.
 
 ```bash
