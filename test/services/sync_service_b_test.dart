@@ -1252,7 +1252,9 @@ void main() {
         '.config',
         'link-replacement',
       );
-      await expectSymlinkArtifact(artifactPath, symlinkTarget);
+      // The link was created with an absolute target inside HOME, so the
+      // artifact stores it home-anchored.
+      await expectSymlinkArtifact(artifactPath, '~/.link-replacement-target');
 
       await File(manifestPath).writeAsString(
         jsonStringify({

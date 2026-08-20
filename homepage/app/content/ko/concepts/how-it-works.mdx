@@ -20,7 +20,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 `push`는 추적 경로를 읽어서 `profiles/<profile>/` 아래 artifact를 그에 맞게 다시 써요. 쓰기 전에 내용을 비교하기 때문에 변경되지 않은 파일에는 쓰기가 아예 일어나지 않아요.
 
-`normal` 항목은 그대로 복사돼요. `secret` 항목은 `manifest.jsonc`의 모든 recipient를 대상으로 암호화되고 `.dotweave.secret` 접미사가 붙어 저장돼요. 심링크는 링크 대상을 담은 `<name>.dotweave.symlink` 파일로 저장돼요. `ignore` 항목은 건너뛰어요.
+`normal` 항목은 그대로 복사돼요. `secret` 항목은 `manifest.jsonc`의 모든 recipient를 대상으로 암호화되고 `.dotweave.secret` 접미사가 붙어 저장돼요. 심링크는 링크 대상을 담은 `<name>.dotweave.symlink` 파일로 저장되고, 대상이 홈 디렉터리 안이면 `~/...` 형태로 저장돼요. `ignore` 항목은 건너뛰어요.
 
 시크릿을 비교할 때는 저장된 암호문을 복호화해서 평문을 비교해요. 그래서 변경되지 않은 시크릿을 다시 push해도 새 암호문이 생기지 않고, git 히스토리에 의미 없는 변경이 쌓이지 않아요.
 

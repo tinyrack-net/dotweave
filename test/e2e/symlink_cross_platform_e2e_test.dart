@@ -221,6 +221,116 @@ void main() {
       expect(secondPull.stdout.contains('Already up to date'), true);
     });
 
+    /// The failure this whole feature exists to fix: an ABSOLUTE target is
+    /// machine- and user-specific, so before home-anchoring it pulled as a
+    /// dangling link on every other machine.
+    test('syncs a symlink whose target is an ABSOLUTE path inside HOME and '
+        "resolves it against the second machine's own HOME", () async {
+      final remote = p.join(ctx.workspace, 'remote-abs.git');
+      final keyFile = p.join(ctx.workspace, 'abs.agekey');
+      final ageKeys = await ctx.createAgeKeyPair();
+
+      final realFile = p.join(ctx.homeDir, '.agents', 'AGENTS.md');
+      final link = p.join(ctx.homeDir, '.claude', 'AGENTS.md');
+
+      await ctx.runGit(['init', '--bare', '-b', 'main', remote]);
+      await ctx.writeIdentityFile(ageKeys.identity);
+      await File(keyFile).writeAsString('${ageKeys.identity}\n');
+      await Directory(p.join(ctx.homeDir, '.agents')).create(recursive: true);
+      await File(realFile).writeAsString('# agents (machine A)\n');
+      await Directory(p.join(ctx.homeDir, '.claude')).create(recursive: true);
+      // Absolute target, not relative -- this is the regression.
+      await createSymlink(realFile, link);
+
+      await ctx.runCli(['init', remote]);
+      await ctx.runCli(['track', link]);
+      await ctx.runCli(['push']);
+
+      final repoDir = p.join(ctx.xdgDir, 'dotweave', 'repository');
+      await ctx.runGit(['add', '.'], repoDir);
+      await ctx.runGit(['commit', '-m', 'sync absolute symlink'], repoDir);
+      await ctx.runGit(['push', '-u', 'origin', 'main'], repoDir);
+
+      final artifactFile = p.join(
+        repoDir,
+        'profiles',
+        'default',
+        '.claude',
+        'AGENTS.md${AppConstants.sync.symlinkArtifactSuffix}',
+      );
+
+      // Machine A's absolute HOME path never reaches the repository.
+      expect(await File(artifactFile).readAsString(), '~/.agents/AGENTS.md');
+
+      final tree = await gitTree(repoDir);
+      GitTreeEntry? artifact;
+
+      for (final entry in tree) {
+        if (entry.path.endsWith('.claude/AGENTS.md.dotweave.symlink')) {
+          artifact = entry;
+          break;
+        }
+      }
+
+      expect(artifact?.mode, '100644');
+      expect(tree.any((e) => e.mode == '120000'), false);
+
+      // Machine B: a different HOME entirely.
+      final machineB = machineBEnv('B3');
+      final homeB = machineB.homeB;
+      final envB = machineB.env;
+
+      await Directory(p.join(homeB, '.agents')).create(recursive: true);
+      await File(
+        p.join(homeB, '.agents', 'AGENTS.md'),
+      ).writeAsString('# agents (machine B)\n');
+
+      await ctx.runCli(['init', remote, '--key-file', keyFile], env: envB);
+      final pull = await ctx.runCli(['pull', '-y'], env: envB);
+      expect(pull.exitCode, 0);
+
+      final linkB = p.join(homeB, '.claude', 'AGENTS.md');
+      expect(
+        FileSystemEntity.typeSync(linkB, followLinks: false),
+        FileSystemEntityType.link,
+      );
+
+      // The `~` expanded against machine B's HOME, not machine A's...
+      expect(
+        (await readLinkTarget(linkB)).replaceAll(r'\', '/'),
+        startsWith(homeB.replaceAll(r'\', '/')),
+      );
+      // ...and the link actually resolves instead of dangling.
+      expect(await File(linkB).readAsString(), contains('machine B'));
+
+      // The materialized link is recognized as current on the next pass; a
+      // missing `~` expansion in the freshness check would rewrite it forever.
+      final secondPull = await ctx.runCli(['pull'], env: envB);
+      expect(secondPull.stdout.contains('Already up to date'), true);
+    });
+
+    test('warns on push when a symlink target points outside HOME', () async {
+      final ageKeys = await ctx.createAgeKeyPair();
+      final outsideTarget = p.join(ctx.workspace, 'outside', 'shared.md');
+      final link = p.join(ctx.homeDir, '.claude', 'shared.md');
+
+      await ctx.writeIdentityFile(ageKeys.identity);
+      await Directory(p.dirname(outsideTarget)).create(recursive: true);
+      await File(outsideTarget).writeAsString('# shared\n');
+      await Directory(p.join(ctx.homeDir, '.claude')).create(recursive: true);
+      await createSymlink(outsideTarget, link);
+
+      await ctx.runCli(['init']);
+      await ctx.runCli(['track', link]);
+      final push = await ctx.runCli(['push']);
+
+      // logger.warn writes to stderr. The push itself still succeeds -- a
+      // non-portable target is a warning, never a failure.
+      expect(push.exitCode, 0);
+      expect(push.stderr, contains('points outside your home directory'));
+      expect(push.stderr, contains('.claude/shared.md'));
+    });
+
     test('reads a legacy physical-symlink artifact and migrates it to the '
         'metadata-file format on push', () async {
       final realFile = p.join(ctx.homeDir, '.agents', 'note.md');

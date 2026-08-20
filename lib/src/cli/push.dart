@@ -57,6 +57,13 @@ final Command<ApplicationContext> pushCommand = buildCommand(
     logger.log(
       '  ${result.deletedArtifactCount} stale artifacts $removalAction',
     );
+
+    for (final repoPath in result.nonPortableSymlinkTargets) {
+      logger.warn(
+        'Symlink target points outside your home directory and will not '
+        'resolve on another machine: $repoPath',
+      );
+    }
   },
   parameters: CommandParameters(
     flags:

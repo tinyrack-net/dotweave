@@ -182,6 +182,7 @@ class StatusPushSummary {
        directoryCount = result.directoryCount,
        dryRun = result.dryRun,
        encryptedFileCount = result.encryptedFileCount,
+       nonPortableSymlinkTargets = result.nonPortableSymlinkTargets,
        plainFileCount = result.plainFileCount,
        symlinkCount = result.symlinkCount;
 
@@ -189,6 +190,7 @@ class StatusPushSummary {
   final int directoryCount;
   final bool dryRun;
   final int encryptedFileCount;
+  final List<String> nonPortableSymlinkTargets;
   final int plainFileCount;
   final int symlinkCount;
   final PushChanges changes;
@@ -201,6 +203,10 @@ class StatusPushSummary {
         other.directoryCount == directoryCount &&
         other.dryRun == dryRun &&
         other.encryptedFileCount == encryptedFileCount &&
+        _listEquals(
+          other.nonPortableSymlinkTargets,
+          nonPortableSymlinkTargets,
+        ) &&
         other.plainFileCount == plainFileCount &&
         other.symlinkCount == symlinkCount &&
         other.changes == changes &&
@@ -213,6 +219,7 @@ class StatusPushSummary {
     directoryCount,
     dryRun,
     encryptedFileCount,
+    Object.hashAll(nonPortableSymlinkTargets),
     plainFileCount,
     symlinkCount,
     changes,

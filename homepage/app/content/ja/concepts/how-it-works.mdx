@@ -20,7 +20,7 @@ import { TRAlert } from "@tinyrack/ui/components/alert";
 
 `push` はトラッキング対象のパスを読み、`profiles/<profile>/` 配下の artifact をそれに合わせて書き直します。書き込む前に内容を比較するため、変更のないファイルには書き込みが一切発生しません。
 
-`normal` の項目はそのままコピーされます。`secret` の項目は `manifest.jsonc` のすべての recipient 向けに暗号化され、`.dotweave.secret` サフィックスを付けて保存されます。シンボリックリンクは、リンク先を保持する `<name>.dotweave.symlink` ファイルとして保存されます。`ignore` の項目はスキップされます。
+`normal` の項目はそのままコピーされます。`secret` の項目は `manifest.jsonc` のすべての recipient 向けに暗号化され、`.dotweave.secret` サフィックスを付けて保存されます。シンボリックリンクは、リンク先を保持する `<name>.dotweave.symlink` ファイルとして保存され、ホームディレクトリ内を指す場合は `~/...` として保存されます。`ignore` の項目はスキップされます。
 
 シークレットの比較では、保存された暗号文を復号して平文を比べます。そのため変更のないシークレットを push し直しても新しい暗号文は生まれず、git の履歴に意味のない差分が積み上がりません。
 

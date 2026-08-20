@@ -635,5 +635,50 @@ void main() {
 
       expect(changedPaths, contains(skillsPath));
     });
+
+    test('materializes a home-anchored symlink target against the current '
+        'home directory', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final home = await createWorkspace();
+      final targetFile = p.join(home, '.agents', 'AGENTS.md');
+      final linkPath = p.join(home, '.claude', 'AGENTS.md');
+
+      await Directory(p.dirname(targetFile)).create(recursive: true);
+      await File(targetFile).writeAsString('agents\n');
+
+      final entry = createEntry(
+        'file',
+        linkPath,
+        '.claude/AGENTS.md',
+        'normal',
+      );
+      final materialization = const FileEntryMaterialization(
+        desiredKeys: {'.claude/AGENTS.md'},
+        node: SymlinkSnapshotNode(linkTarget: '~/.agents/AGENTS.md'),
+      );
+      final config = createConfig([entry]);
+
+      await applyEntryMaterialization(
+        entry,
+        materialization,
+        config,
+        homeDirectory: home,
+      );
+
+      // The `~` expands to THIS machine's home, and the link actually resolves.
+      expect(await readLinkTarget(linkPath), targetFile);
+      expect(await File(linkPath).readAsString(), 'agents\n');
+
+      // Regression guard: without expanding `~` before the freshness
+      // comparison, the stored target resolves against the link's own
+      // directory, never matches, and every pull rewrites the link forever.
+      expect(
+        await collectChangedLocalPaths(entry, materialization, config, home),
+        isEmpty,
+      );
+    });
   });
 }

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/repo_artifact_path.dart';
 import 'package:dotweave/src/services/sync_context.dart';
+import 'package:dotweave/src/util/collation.dart';
 import 'package:dotweave/src/util/concurrency.dart';
 import 'package:dotweave/src/util/error.dart';
 import 'package:dotweave/src/util/file_mode.dart';
@@ -86,6 +88,25 @@ bool _resolveSnapshotExecutable(
   return isExecutableMode(entry?.permission ?? filesystemMode);
 }
 
+/// Repository paths whose stored symlink target will not resolve after a move
+/// to another machine or user: an absolute path that could not be anchored to
+/// HOME. Rendered as a warning by `push`, `status`, and `doctor`; nothing here
+/// blocks an operation.
+///
+/// Lives here rather than in `push.dart` so `doctor.dart` can use it without
+/// taking a dependency on the push service.
+List<String> collectNonPortableSymlinkTargets(
+  Map<String, SnapshotNode> snapshot,
+) {
+  final repoPaths = [
+    for (final entry in snapshot.entries)
+      if (entry.value case SymlinkSnapshotNode(:final linkTarget))
+        if (isNonPortableLinkTarget(linkTarget)) entry.key,
+  ];
+
+  return repoPaths..sort(compareLocaleLike);
+}
+
 void addSnapshotNode(
   Map<String, SnapshotNode> snapshot,
   String repoPath,
@@ -104,6 +125,7 @@ Future<void> _addLocalNode(
   String repoPath,
   String path,
   PathStats stats,
+  String homeDirectory,
 ) async {
   assertStorageSafeRepoPath(repoPath);
   final mode = requireManagedSyncMode(
@@ -133,7 +155,10 @@ Future<void> _addLocalNode(
       snapshot,
       repoPath,
       SymlinkSnapshotNode(
-        linkTarget: toPosixLinkTarget(await readLinkTarget(path)),
+        linkTarget: toPortableLinkTarget(
+          await readLinkTarget(path),
+          homeDirectory,
+        ),
       ),
     );
 
@@ -161,6 +186,7 @@ Future<void> _walkLocalDirectory(
   String localDirectory,
   String repoPathPrefix,
   Set<String> childEntryPaths,
+  String homeDirectory,
 ) async {
   final entries = await listDirectoryEntries(localDirectory);
 
@@ -180,6 +206,7 @@ Future<void> _walkLocalDirectory(
         localPath,
         repoPath,
         childEntryPaths,
+        homeDirectory,
       );
       continue;
     }
@@ -199,6 +226,7 @@ Future<void> _walkLocalDirectory(
           isSymbolicLink: true,
           mode: 0,
         ),
+        homeDirectory,
       );
       continue;
     }
@@ -207,7 +235,14 @@ Future<void> _walkLocalDirectory(
     // available from the directory listing.
     final stats = await requirePathStats(localPath);
 
-    await _addLocalNode(snapshot, config, repoPath, localPath, stats);
+    await _addLocalNode(
+      snapshot,
+      config,
+      repoPath,
+      localPath,
+      stats,
+      homeDirectory,
+    );
   }
 }
 
@@ -271,11 +306,16 @@ Future<void> _warmLocalCache(EffectiveSyncConfig config) async {
   });
 }
 
+/// [homeDirectory] anchors captured symlink targets into their portable
+/// `~/...` form. It is resolved from the environment when omitted; tests pass
+/// it directly to avoid the global `testEnvOverride` seam.
 Future<Map<String, SnapshotNode>> buildLocalSnapshot(
-  EffectiveSyncConfig config,
-) async {
+  EffectiveSyncConfig config, {
+  String? homeDirectory,
+}) async {
   final snapshot = <String, SnapshotNode>{};
   final queryConfig = _toResolvedSyncConfig(config);
+  final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
 
   await _warmLocalCache(config);
 
@@ -310,6 +350,7 @@ Future<Map<String, SnapshotNode>> buildLocalSnapshot(
         entry.repoPath,
         entry.localPath,
         stats,
+        home,
       );
       continue;
     }
@@ -334,6 +375,7 @@ Future<Map<String, SnapshotNode>> buildLocalSnapshot(
       entry.localPath,
       entry.repoPath,
       childEntryPaths,
+      home,
     );
     addSnapshotNode(snapshot, entry.repoPath, const DirectorySnapshotNode());
   }

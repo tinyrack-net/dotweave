@@ -1724,9 +1724,9 @@ void main() {
     });
 
     test('formats successful doctor checks with an all-pass summary', () async {
-      // DELTA: the real doctor always runs its six checks (git, config,
-      // profiles, age, entries, local-paths), so the all-pass summary
-      // counts 6 ok instead of the TS mock's 2.
+      // DELTA: the real doctor always runs its seven checks (git, config,
+      // profiles, age, entries, local-paths, symlink-portability), so the
+      // all-pass summary counts 7 ok instead of the TS mock's 2.
       final workspace = await _setUpWorkspace();
 
       await _writeHomeFile(workspace, '.gitconfig', 'x\n');
@@ -1743,7 +1743,7 @@ void main() {
       expect(run.error, isNull);
       expect(
         run.stdout,
-        contains('Doctor passed (6 ok · 0 warnings · 0 failures)'),
+        contains('Doctor passed (7 ok · 0 warnings · 0 failures)'),
       );
       expect(run.stderr, isEmpty);
       expect(run.stdout, isNot(contains('✖')));
@@ -1766,7 +1766,7 @@ void main() {
       expect(
         run.stderr,
         contains(
-          'Doctor completed with warnings (5 ok · 1 warnings · 0 failures)',
+          'Doctor completed with warnings (6 ok · 1 warnings · 0 failures)',
         ),
       );
 
@@ -1800,11 +1800,11 @@ void main() {
         expect(error, isA<CommandExitCode>());
         expect((error as CommandExitCode).exitCode, 1);
 
-        // DELTA: real summary counts (5 ok · 0 warnings · 1 failures) versus
+        // DELTA: real summary counts (6 ok · 0 warnings · 1 failures) versus
         // the TS mock's single-check result.
         expect(
           run.stdout,
-          contains('Doctor found issues (5 ok · 0 warnings · 1 failures)'),
+          contains('Doctor found issues (6 ok · 0 warnings · 1 failures)'),
         );
 
         final issueLines = run.stdoutLines

@@ -22,7 +22,7 @@ A rewrite reformats the file from the parsed data, so hand-written comments and 
 
 ## Repository format 0 to 1
 
-The repository format is separate from the manifest version. It versions how artifacts are laid out on disk rather than how the manifest is structured, and it is recorded as `repositoryFormat` in `manifest.jsonc`. The current format is `1`; an absent field means format `0`.
+The repository format is separate from the manifest version. It versions how artifacts are laid out on disk rather than how the manifest is structured, and it is recorded as `repositoryFormat` in `manifest.jsonc`. The current format is `2`; an absent field means format `0`.
 
 Format 0 stored a tracked symlink as a real symlink under `profiles/`. Format 1 stores it as a regular `<name>.dotweave.symlink` metadata file holding the POSIX link target, which travels between platforms through git. The migration walks everything under `profiles/` and converts each physical symlink it finds. It is idempotent: once no physical symlinks remain, running it again does nothing.
 
@@ -31,6 +31,18 @@ Unlike a config migration, this one touches the filesystem, and it runs during a
 <TRAlert.Root variant="warning">
 Commit the sync directory and leave it clean before the first `push` on a new Dotweave version. A format migration rewrites files under `profiles/`, and a clean tree keeps that rewrite reviewable as a single git diff.
 </TRAlert.Root>
+
+## Repository format 1 to 2
+
+Format 1 stored a symlink target exactly as the operating system reported it. A link created with an absolute target inside your home directory therefore committed a path containing your user name, such as `C:/Users/you/.agents/AGENTS.md`, and pulling it on another machine recreated that same dangling path. Format 2 stores such a target as `~/.agents/AGENTS.md`, and `pull` expands the `~` against the home directory of the machine doing the pull.
+
+The migration rewrites each `.dotweave.symlink` file whose target sits inside the home directory of the machine running it. Relative targets and targets outside the home directory are left exactly as they were, and a file already in the portable form is not rewritten at all. Like the format 0 migration, it runs during a non-dry-run `dotweave push` and is idempotent.
+
+<TRAlert.Root variant="warning">
+Upgrade every machine before the first format 2 `push`. An older Dotweave reads `repositoryFormat` first and fails with `REPO_FORMAT_NEWER`, which is deliberate: without the upgrade it would create a literal `~` directory instead of resolving the target.
+</TRAlert.Root>
+
+Until that push runs, `dotweave status` lists the affected symlinks under push changes while reporting the local side as up to date. Both readings are correct — the repository needs rewriting, the link on disk does not.
 
 ## When a repository is too new or too old
 

@@ -39,6 +39,20 @@ class PushRequest {
   final String? commitMessage;
 }
 
+bool _listEquals(List<String> left, List<String> right) {
+  if (left.length != right.length) {
+    return false;
+  }
+
+  for (var index = 0; index < left.length; index += 1) {
+    if (left[index] != right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /// Mirror of the TS `PushResult` readonly object.
 class PushResult {
   const PushResult({
@@ -46,6 +60,7 @@ class PushResult {
     required this.directoryCount,
     required this.dryRun,
     required this.encryptedFileCount,
+    this.nonPortableSymlinkTargets = const [],
     required this.plainFileCount,
     required this.symlinkCount,
   });
@@ -54,6 +69,11 @@ class PushResult {
   final int directoryCount;
   final bool dryRun;
   final int encryptedFileCount;
+
+  /// Repository paths whose symlink target will not resolve on another
+  /// machine. Rendered as a warning by the CLI; never blocks the push.
+  final List<String> nonPortableSymlinkTargets;
+
   final int plainFileCount;
   final int symlinkCount;
 
@@ -64,6 +84,10 @@ class PushResult {
         other.directoryCount == directoryCount &&
         other.dryRun == dryRun &&
         other.encryptedFileCount == encryptedFileCount &&
+        _listEquals(
+          other.nonPortableSymlinkTargets,
+          nonPortableSymlinkTargets,
+        ) &&
         other.plainFileCount == plainFileCount &&
         other.symlinkCount == symlinkCount;
   }
@@ -74,6 +98,7 @@ class PushResult {
     directoryCount,
     dryRun,
     encryptedFileCount,
+    Object.hashAll(nonPortableSymlinkTargets),
     plainFileCount,
     symlinkCount,
   );
@@ -83,6 +108,7 @@ class PushResult {
     return 'PushResult(deletedArtifactCount: $deletedArtifactCount, '
         'directoryCount: $directoryCount, dryRun: $dryRun, '
         'encryptedFileCount: $encryptedFileCount, '
+        'nonPortableSymlinkTargets: $nonPortableSymlinkTargets, '
         'plainFileCount: $plainFileCount, symlinkCount: $symlinkCount)';
   }
 }
@@ -105,6 +131,7 @@ class PushPlan {
     required this.deletedArtifactCount,
     required this.desiredArtifactKeys,
     required this.existingArtifactKeys,
+    this.nonPortableSymlinkTargets = const [],
     this.staleReplacementDirectoryRoots,
     required this.snapshot,
   });
@@ -115,6 +142,7 @@ class PushPlan {
   final int deletedArtifactCount;
   final Set<String> desiredArtifactKeys;
   final Set<String> existingArtifactKeys;
+  final List<String> nonPortableSymlinkTargets;
   final List<String>? staleReplacementDirectoryRoots;
   final Map<String, SnapshotNode> snapshot;
 }
@@ -213,6 +241,7 @@ Future<PushPlan> buildPushPlan(
     deletedArtifactKeys: deletedArtifactKeys,
     desiredArtifactKeys: writableArtifactKeys,
     existingArtifactKeys: existingArtifactKeys,
+    nonPortableSymlinkTargets: collectNonPortableSymlinkTargets(snapshot),
     staleReplacementDirectoryRoots: replacementPlan.roots,
     snapshot: snapshot,
   );
@@ -239,6 +268,7 @@ PushResult buildPushResultFromPlan(PushPlan plan, bool dryRun) {
     directoryCount: plan.counts.directoryCount,
     dryRun: dryRun,
     encryptedFileCount: plan.counts.encryptedFileCount,
+    nonPortableSymlinkTargets: plan.nonPortableSymlinkTargets,
     plainFileCount: plan.counts.plainFileCount,
     symlinkCount: plan.counts.symlinkCount,
   );

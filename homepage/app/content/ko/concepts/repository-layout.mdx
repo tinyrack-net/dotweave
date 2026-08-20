@@ -75,7 +75,7 @@ dotweave가 소유하는 모든 것은 디렉터리 하나 아래에 있어요. 
 | --- | --- | --- |
 | `<name>` | `normal` 모드의 일반 파일 | 바이트 그대로예요. |
 | `<name>.dotweave.secret` | `secret` 모드의 일반 파일 | `-----BEGIN AGE ENCRYPTED FILE-----`로 시작하는 ASCII armor age 암호문이에요. |
-| `<name>.dotweave.symlink` | 심링크 | POSIX 링크 대상을 담은 일반 파일이에요. |
+| `<name>.dotweave.symlink` | 심링크 | POSIX 링크 대상을 담은 일반 파일이에요. 홈 디렉터리 안을 가리키면 `~/...` 형태로 저장돼요. |
 
 이 두 접미사에 의미가 있기 때문에, 추적 경로의 어떤 세그먼트도 둘 중 하나로 끝나면 안 돼요.
 

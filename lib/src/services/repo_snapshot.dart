@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dotweave/src/config/runtime_env.dart';
 import 'package:dotweave/src/config/sync_queries.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/local_snapshot.dart';
@@ -64,7 +65,8 @@ Future<void> _readArtifactLeaf(
   String absolutePath,
   String storagePath,
   EffectiveSyncConfig config,
-  Map<String, SnapshotNode> snapshot, [
+  Map<String, SnapshotNode> snapshot,
+  String homeDirectory, [
   PathStats? providedStats,
 ]) async {
   final artifact = parseArtifactRelativePath(storagePath);
@@ -197,7 +199,14 @@ Future<void> _readArtifactLeaf(
       snapshot,
       artifact.repoPath,
       SymlinkSnapshotNode(
-        linkTarget: toPosixLinkTarget(await File(absolutePath).readAsString()),
+        // A format-1 artifact holds an absolute target. Anchoring it here (in
+        // memory only) keeps it comparable with the freshly anchored local
+        // snapshot, so no phantom drift appears before the format-2 migration
+        // rewrites the file on the next push.
+        linkTarget: normalizePortableLinkTarget(
+          await File(absolutePath).readAsString(),
+          homeDirectory,
+        ),
       ),
     );
 
@@ -226,7 +235,10 @@ Future<void> _readArtifactLeaf(
       snapshot,
       artifact.repoPath,
       SymlinkSnapshotNode(
-        linkTarget: toPosixLinkTarget(await readLinkTarget(absolutePath)),
+        linkTarget: toPortableLinkTarget(
+          await readLinkTarget(absolutePath),
+          homeDirectory,
+        ),
       ),
     );
 
@@ -267,7 +279,8 @@ Future<void> _readArtifactLeaf(
 Future<void> _walkArtifactTree(
   String rootDirectory,
   EffectiveSyncConfig config,
-  Map<String, SnapshotNode> snapshot, [
+  Map<String, SnapshotNode> snapshot,
+  String homeDirectory, [
   String prefix = '',
 ]) async {
   final entries = await listDirectoryEntries(rootDirectory);
@@ -279,7 +292,13 @@ Future<void> _walkArtifactTree(
     // The directory listing already tells us whether this entry is a
     // directory, so recursing needs no stat call at all here.
     if (entry.isDirectory) {
-      await _walkArtifactTree(absolutePath, config, snapshot, storagePath);
+      await _walkArtifactTree(
+        absolutePath,
+        config,
+        snapshot,
+        homeDirectory,
+        storagePath,
+      );
       continue;
     }
 
@@ -288,7 +307,14 @@ Future<void> _walkArtifactTree(
     // same type/mode with a second full stat call on the same path.
     final stats = await requirePathStats(absolutePath);
 
-    await _readArtifactLeaf(absolutePath, storagePath, config, snapshot, stats);
+    await _readArtifactLeaf(
+      absolutePath,
+      storagePath,
+      config,
+      snapshot,
+      homeDirectory,
+      stats,
+    );
   }
 }
 
@@ -353,11 +379,16 @@ Future<void> _warmArtifactCache(
   });
 }
 
+/// [homeDirectory] anchors legacy absolute symlink targets stored before
+/// repository format 2 so they stay comparable with the local snapshot. It is
+/// resolved from the environment when omitted.
 Future<Map<String, SnapshotNode>> buildRepositorySnapshot(
   String syncDirectory,
-  EffectiveSyncConfig config,
-) async {
+  EffectiveSyncConfig config, {
+  String? homeDirectory,
+}) async {
   final snapshot = <String, SnapshotNode>{};
+  final home = homeDirectory ?? resolveHomeDirectoryFromEnv();
   final artifactProfiles = collectArtifactProfiles(
     entries: config.entries,
     registeredProfiles: config.profiles ?? const [],
@@ -383,6 +414,7 @@ Future<Map<String, SnapshotNode>> buildRepositorySnapshot(
             profileDirectory,
             config,
             snapshot,
+            home,
             'profiles/$profile',
           );
         }

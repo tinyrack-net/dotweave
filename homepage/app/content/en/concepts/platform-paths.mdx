@@ -77,7 +77,11 @@ POSIX file modes are not applied on Windows. A `permission` value still lives in
 
 Content comparison on Windows compares bytes first, then falls back to comparing the decoded UTF-8 text with CRLF normalized to LF. A file that differs only in line endings is not treated as a change there, so neither `push` nor `pull` rewrites it. Do not expect Dotweave to convert line endings for you, and note that a byte-order mark still counts as a real difference.
 
-Repository format 1 stores a symlink as a `<name>.dotweave.symlink` metadata file holding the link target, and `pull` recreates the link locally. On Windows the directory case prefers a real directory symlink, which keeps a relative target relative. When the operating system denies symlink creation, which happens without Developer Mode or elevation, Dotweave falls back to a Windows junction. A junction target is always absolute, so the resulting link is less portable than the symlink it replaced.
+Repository format 2 stores a symlink as a `<name>.dotweave.symlink` metadata file holding the link target, and `pull` recreates the link locally. A target that points inside your home directory is stored as `~/...` and expanded against the home directory of the machine doing the pull, so an absolute target written on Windows still resolves under a different user name on macOS or Linux. A relative target stays relative. A target outside your home directory is stored exactly as written and cannot be made portable; `push`, `status`, and `dotweave doctor` name each one so you can move the target inside your home directory or point the link at a relative path instead.
+
+The `~` prefix is reserved. A relative target whose first segment is literally `~` is stored as `./~/...`, which the operating system resolves identically, so a directory named `~` is never mistaken for the home directory.
+
+On Windows the directory case prefers a real directory symlink, which keeps a relative target relative. When the operating system denies symlink creation, which happens without Developer Mode or elevation, Dotweave falls back to a Windows junction. A junction target is always absolute, so a junction pointing outside your home directory is the least portable link Dotweave can produce.
 
 Environment variable names are matched case-insensitively on Windows and case-sensitively everywhere else. `%AppData%` and `%APPDATA%` resolve the same value on Windows, while on Linux or macOS only the exact name resolves. Read [Environment variables and paths](/en/config/environment/) for the full list Dotweave reads.
 

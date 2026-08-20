@@ -75,7 +75,7 @@ A suffix on the stored file encodes what the original was:
 | --- | --- | --- |
 | `<name>` | a regular file in `normal` mode | The bytes verbatim. |
 | `<name>.dotweave.secret` | a regular file in `secret` mode | ASCII-armored age ciphertext, beginning `-----BEGIN AGE ENCRYPTED FILE-----`. |
-| `<name>.dotweave.symlink` | a symlink | A regular file holding the POSIX link target. |
+| `<name>.dotweave.symlink` | a symlink | A regular file holding the POSIX link target, home-anchored as `~/...` when it points inside your home directory. |
 
 Because those two suffixes carry meaning, no tracked path may contain a segment ending in either one.
 

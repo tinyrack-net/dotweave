@@ -237,6 +237,112 @@ void main() {
       expect((node as SymlinkSnapshotNode).linkTarget, targetFile);
     });
 
+    test('anchors an absolute symlink target inside HOME', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final home = await createWorkspace();
+      final targetFile = p.join(home, '.agents', 'AGENTS.md');
+      final linkPath = p.join(home, '.claude', 'AGENTS.md');
+
+      await Directory(p.dirname(targetFile)).create(recursive: true);
+      await Directory(p.dirname(linkPath)).create(recursive: true);
+      await File(targetFile).writeAsString('agents\n');
+      await Link(linkPath).create(targetFile);
+
+      final snapshot = await buildLocalSnapshot(
+        createConfig([
+          createEntry('file', linkPath, '.claude/AGENTS.md', 'normal'),
+        ]),
+        homeDirectory: home,
+      );
+
+      expect(
+        (snapshot['.claude/AGENTS.md']! as SymlinkSnapshotNode).linkTarget,
+        '~/.agents/AGENTS.md',
+      );
+    });
+
+    test('keeps a relative symlink target verbatim', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final home = await createWorkspace();
+      final targetFile = p.join(home, '.agents', 'AGENTS.md');
+      final linkPath = p.join(home, '.claude', 'AGENTS.md');
+
+      await Directory(p.dirname(targetFile)).create(recursive: true);
+      await Directory(p.dirname(linkPath)).create(recursive: true);
+      await File(targetFile).writeAsString('agents\n');
+      await Link(linkPath).create('../.agents/AGENTS.md');
+
+      final snapshot = await buildLocalSnapshot(
+        createConfig([
+          createEntry('file', linkPath, '.claude/AGENTS.md', 'normal'),
+        ]),
+        homeDirectory: home,
+      );
+
+      expect(
+        (snapshot['.claude/AGENTS.md']! as SymlinkSnapshotNode).linkTarget,
+        '../.agents/AGENTS.md',
+      );
+    });
+
+    test('keeps an absolute symlink target outside HOME verbatim', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final home = await createWorkspace();
+      final outside = await createWorkspace();
+      final targetFile = p.join(outside, 'shared.md');
+      final linkPath = p.join(home, 'shared.md');
+
+      await File(targetFile).writeAsString('shared\n');
+      await Link(linkPath).create(targetFile);
+
+      final snapshot = await buildLocalSnapshot(
+        createConfig([createEntry('file', linkPath, 'shared.md', 'normal')]),
+        homeDirectory: home,
+      );
+
+      expect(
+        (snapshot['shared.md']! as SymlinkSnapshotNode).linkTarget,
+        targetFile,
+      );
+      expect(collectNonPortableSymlinkTargets(snapshot), ['shared.md']);
+    });
+
+    test('reports no non-portable targets for anchored and relative '
+        'symlinks', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final home = await createWorkspace();
+      final targetFile = p.join(home, '.agents', 'AGENTS.md');
+      final anchored = p.join(home, 'anchored.md');
+      final relative = p.join(home, 'relative.md');
+
+      await Directory(p.dirname(targetFile)).create(recursive: true);
+      await File(targetFile).writeAsString('agents\n');
+      await Link(anchored).create(targetFile);
+      await Link(relative).create('.agents/AGENTS.md');
+
+      final snapshot = await buildLocalSnapshot(
+        createConfig([
+          createEntry('file', anchored, 'anchored.md', 'normal'),
+          createEntry('file', relative, 'relative.md', 'normal'),
+        ]),
+        homeDirectory: home,
+      );
+
+      expect(collectNonPortableSymlinkTargets(snapshot), isEmpty);
+    });
+
     test('skips absent local paths for normal-mode entries', () async {
       final workspace = await createWorkspace();
       final absentPath = p.join(workspace, 'does-not-exist.txt');
