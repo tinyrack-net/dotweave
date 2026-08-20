@@ -1,0 +1,12 @@
+# Runner labels actionlint 1.7.7 does not ship in its known-label set. They are
+# all GitHub-hosted, not self-hosted; this is the only key actionlint offers
+# for teaching it a label.
+#
+# Only labels it actually rejects belong here. It already knows windows-2025,
+# ubuntu-24.04, and ubuntu-24.04-arm, so declaring those would be dead config
+# that outlives the runner bump that motivated it.
+self-hosted-runner:
+  labels:
+    - macos-26
+    - macos-15-intel
+    - windows-11-arm
