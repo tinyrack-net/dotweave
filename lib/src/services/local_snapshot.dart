@@ -194,7 +194,7 @@ Future<void> _walkLocalDirectory(
     final localPath = p.join(localDirectory, entry.name);
     final repoPath = p.posix.join(repoPathPrefix, entry.name);
 
-    if (childEntryPaths.contains(repoPath)) {
+    if (isClaimedChildPath(childEntryPaths, repoPath)) {
       continue;
     }
 

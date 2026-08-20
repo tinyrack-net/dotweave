@@ -30,6 +30,8 @@ A `localPath` value accepts an absolute path, a `~/...` path, `$XDG_CONFIG_HOME/
 
 `repoPath` is always a relative POSIX path, and on most entries it is the same on every platform. Override it only when two machines genuinely have to store into different repository locations, because a shared `repoPath` is what lets both machines see one artifact.
 
+Each `repoPath` variant belongs to the platform that declares it. A directory entry that happens to contain another platform's variant does not treat it as its own content: `pull` leaves that artifact in the repository instead of writing it into your home directory, and `push` neither overwrites nor deletes it. One consequence is worth planning around. A local file inside a tracked directory whose repository path matches another platform's `repoPath` override is skipped in both directions, on every machine that does not resolve to that variant. Choose variant names that cannot collide with real files, or give the entry a `repoPath` outside the tracked directory.
+
 Dotweave does not infer any of this. It does not translate a macOS path into its Windows equivalent, and `dotweave track` records only the machine you ran it on. Every other platform's value is one you declare.
 
 ## How WSL resolves

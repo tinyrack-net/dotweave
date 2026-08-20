@@ -27,15 +27,17 @@ void main() {
     SyncConfigEntryKind kind,
     String localPath,
     String repoPath,
-    SyncMode mode, [
+    SyncMode mode, {
     int? permission,
-  ]) {
+    ConfiguredSyncRepoPath? configuredRepoPath,
+  }) {
     return ResolvedSyncConfigEntry(
       configuredLocalPath: PlatformStringValue(defaultValue: localPath),
       configuredMode: PlatformSyncMode(defaultValue: mode),
       configuredPermission: permission == null
           ? null
           : PlatformPermission(defaultValue: formatPermissionOctal(permission)),
+      configuredRepoPath: configuredRepoPath,
       kind: kind,
       localPath: localPath,
       mode: mode,
@@ -137,6 +139,47 @@ void main() {
       },
     );
 
+    test('does not collect a local file whose repo path is another platform\'s '
+        'variant of a child entry', () async {
+      // The trade-off of claiming every configured variant. Pushing this file
+      // would store it at `.config/zsh/platform.wsl.zsh`, overwriting what the
+      // WSL machine put there -- so the parent leaves it alone, on this
+      // machine and on any other that is not WSL.
+      final workspace = await createWorkspace();
+      final zshDirectory = p.join(workspace, '.config', 'zsh');
+      final platformFile = p.join(zshDirectory, 'platform.zsh');
+      final foreignFile = p.join(zshDirectory, 'platform.wsl.zsh');
+      final otherFile = p.join(zshDirectory, 'other.zsh');
+
+      await Directory(zshDirectory).create(recursive: true);
+      await File(platformFile).writeAsString('mac platform\n');
+      await File(foreignFile).writeAsString('looks like wsl\n');
+      await File(otherFile).writeAsString('other\n');
+
+      final snapshot = await buildLocalSnapshot(
+        createConfig([
+          createEntry('directory', zshDirectory, '.config/zsh', 'normal'),
+          createEntry(
+            'file',
+            platformFile,
+            '.config/zsh/platform.mac.zsh',
+            'normal',
+            configuredRepoPath: const PlatformStringValue(
+              defaultValue: '.config/zsh/platform.zsh',
+              mac: '.config/zsh/platform.mac.zsh',
+              wsl: '.config/zsh/platform.wsl.zsh',
+            ),
+          ),
+        ]),
+      );
+
+      expect([...snapshot.keys]..sort(), [
+        '.config/zsh',
+        '.config/zsh/other.zsh',
+        '.config/zsh/platform.mac.zsh',
+      ]);
+    });
+
     test(
       'still captures explicit child overrides under ignored directories',
       () async {
@@ -203,8 +246,14 @@ void main() {
 
         final snapshot = await buildLocalSnapshot(
           createConfig([
-            createEntry('file', keyFile, '.ssh/id_rsa', 'normal', 0x180),
-          ]), // 0o600
+            createEntry(
+              'file',
+              keyFile,
+              '.ssh/id_rsa',
+              'normal',
+              permission: 0x180, // 0o600
+            ),
+          ]),
         );
         final node = snapshot['.ssh/id_rsa'];
 

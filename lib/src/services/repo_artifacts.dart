@@ -172,28 +172,8 @@ Future<Set<String>?> readCommittedProfileRegistry(
   // it now propagates.
 }
 
-List<String> _collectConfiguredRepoPathVariants(ResolvedSyncConfigEntry entry) {
-  final configuredRepoPath = entry.configuredRepoPath;
-
-  if (configuredRepoPath == null) {
-    return [entry.repoPath];
-  }
-
-  // Mirrors `[...new Set(Object.values(entry.configuredRepoPath))]`; the TS
-  // object carries its keys in schema order (default, win, mac, linux, wsl).
-  final rawValues = <String>{
-    configuredRepoPath.defaultValue,
-    if (configuredRepoPath.win != null) configuredRepoPath.win!,
-    if (configuredRepoPath.mac != null) configuredRepoPath.mac!,
-    if (configuredRepoPath.linux != null) configuredRepoPath.linux!,
-    if (configuredRepoPath.wsl != null) configuredRepoPath.wsl!,
-  };
-
-  return [for (final value in rawValues) normalizeSyncRepoPath(value)];
-}
-
 bool _entryOwnsArtifactPath(ResolvedSyncConfigEntry entry, String repoPath) {
-  return _collectConfiguredRepoPathVariants(entry).any((candidate) {
+  return collectConfiguredRepoPathVariants(entry).any((candidate) {
     return entry.kind == 'directory'
         ? isPathEqualOrNested(repoPath, candidate)
         : repoPath == candidate;
@@ -204,7 +184,7 @@ List<({int depth, String repoPath})> _collectEntryRepoPathVariants(
   ResolvedSyncConfigEntry entry,
 ) {
   return [
-    for (final repoPath in _collectConfiguredRepoPathVariants(entry))
+    for (final repoPath in collectConfiguredRepoPathVariants(entry))
       (depth: repoPath.split('/').length, repoPath: repoPath),
   ];
 }
@@ -247,7 +227,7 @@ bool _entryCompatibleWithArtifact(
   ParsedArtifactPath artifact,
   String artifactKind,
 ) {
-  return _collectConfiguredRepoPathVariants(entry).any((candidate) {
+  return collectConfiguredRepoPathVariants(entry).any((candidate) {
     if (entry.kind == 'directory') {
       return isPathEqualOrNested(artifact.repoPath, candidate);
     }
@@ -348,12 +328,58 @@ bool _artifactHasAlternatePlatformOwner(
   });
 }
 
+/// Whether some entry stores [artifact] at this exact path on a platform other
+/// than this one, under a mode that is not `ignore`.
+///
+/// Checked before the `active` verdict, because `active` is decided by
+/// [findOwningSyncEntry], which only sees each entry's *resolved* repo path. A
+/// directory entry that happens to contain another platform's variant is
+/// therefore reported as its owner, and the artifact would be pruned the first
+/// time this machine pushes without a local counterpart -- deleting what the
+/// other machine stored.
+///
+/// The comparison is exact equality, never containment. A directory entry that
+/// is active on every platform contains every path beneath it, so a nested test
+/// would protect its whole subtree and nothing in the repository would ever be
+/// prunable again.
+///
+/// `repoPath != entry.repoPath` is what keeps this from protecting an entry's
+/// own current-platform artifact, which must stay writable and prunable.
+bool _artifactHasForeignPlatformVariantOwner(
+  List<ResolvedSyncConfigEntry> entries,
+  ParsedArtifactPath artifact,
+) {
+  return entries.any((entry) {
+    return _platformKeys.any((platformKey) {
+      final repoPath = _resolveConfiguredRepoPathForPlatform(
+        entry,
+        platformKey,
+      );
+
+      return repoPath == artifact.repoPath &&
+          repoPath != entry.repoPath &&
+          _resolveConfiguredModeForPlatform(
+                entry.configuredMode,
+                platformKey,
+              ) !=
+              'ignore';
+    });
+  });
+}
+
 ArtifactOwnershipDisposition classifyArtifactOwnership(
   EffectiveSyncConfig config,
   ArtifactOwnershipConfig ownershipConfig,
   ParsedArtifactPath artifact,
   String artifactKind,
 ) {
+  if (_artifactHasForeignPlatformVariantOwner(
+    ownershipConfig.entries,
+    artifact,
+  )) {
+    return 'platform-protected';
+  }
+
   final rule = resolveSyncRule(
     _toResolvedSyncConfig(config),
     artifact.repoPath,

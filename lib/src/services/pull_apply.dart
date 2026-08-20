@@ -162,7 +162,7 @@ EntryMaterialization buildEntryMaterialization(
       continue;
     }
 
-    if (childEntryPaths.contains(repoPath)) {
+    if (isClaimedChildPath(childEntryPaths, repoPath)) {
       continue;
     }
 
@@ -433,7 +433,7 @@ Future<void> _collectLocalLeafKeys(
       continue;
     }
 
-    if (childEntryPaths.contains(repoPath)) {
+    if (isClaimedChildPath(childEntryPaths, repoPath)) {
       continue;
     }
 
