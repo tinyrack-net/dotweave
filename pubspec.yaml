@@ -1,7 +1,7 @@
 name: dotweave
 description: >-
   Cross-platform dotfiles sync CLI. Dart port of @tinyrack/dotweave.
-version: 2.4.0
+version: 2.5.0
 publish_to: none
 environment:
   sdk: ^3.12.0
