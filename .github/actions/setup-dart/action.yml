@@ -1,0 +1,23 @@
+name: 'Set up Dart'
+description: >-
+  Install the pinned Dart SDK and restore the pub cache. Seven jobs carried
+  their own copy of both, so the SDK version and the cache key live here
+  instead and no job can pin a different one.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up the Dart SDK
+      uses: dart-lang/setup-dart@v1
+      with:
+        sdk: 3.12.2
+
+    # setup-dart exports PUB_CACHE on every host, including Windows, where it
+    # resolves to C:\Users\runneradmin/.pub-cache, so one POSIX-shaped path
+    # covers the whole matrix. The cache is 14 MB, small enough that no host
+    # is better off fetching the packages again.
+    - name: Restore the pub cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.pub-cache
+        key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}

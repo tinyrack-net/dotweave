@@ -44,6 +44,13 @@ For the homepage (run from `homepage/`):
 
 If any step fails, you MUST fix the issues before proceeding or reporting completion.
 
+A change under `.github/` additionally requires, before opening the pull request:
+- `dart test test/tool/pipeline_test.dart test/tool/ci_scope_test.dart`
+- `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7`
+
+Both are seconds long and both fail for reasons CI cannot report until minutes in —
+a malformed expression or an empty matrix is a workflow error, not a failed job.
+
 ---
 
 ## Merging
@@ -52,12 +59,47 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
 - The single required check is **Quality Gate**, a job in `.github/workflows/pipeline.yml`
   that aggregates every validation job. Adding or renaming a validation job means
   updating that job's `needs:` list — the branch protection setting stays untouched.
+  A job missing from `needs:` is not a gate failure, it is an unverified merge, which
+  is why `test/tool/pipeline_test.dart` asserts the list rather than leaving it to review.
+- The gate counts `skipped` as a pass, because the `changes` job scopes jobs out by
+  diff. It makes one exception: `changes` itself must succeed. If it failed, every
+  other job would skip and a gate without that clause would wave through a run that
+  verified nothing.
 - Enable auto-merge with `gh pr merge <n> --auto --squash`. Once the checks pass the
   pull request enters the merge queue, which re-runs the pipeline against `main` on a
   `merge_group` event before squashing. The branch is deleted on merge.
 - Never cancel a merge-queue run: a cancelled check reads as a failure and ejects the
   pull request from the queue.
 - The rules apply to administrators too, so there is no direct push to `main`.
+
+---
+
+## CI Scope
+Every pull request runs the full `linux + macOS + Windows` matrix. This tool's subject
+is filesystem semantics — symlinks, Windows junctions, path handling — so the macOS and
+Windows legs are not duplicates of the Linux one, and the runners are free for a public
+repository.
+
+What a diff *does* narrow is which half of the repository runs. `tool/ci_scope.dart`
+classifies the changed files into one of four scopes, and the `changes` job turns that
+into two booleans the jobs key off:
+
+| Scope | Runs |
+| --- | --- |
+| `docs-only` | nothing — top-level `*.md` and `.agents/` only |
+| `homepage-only` | `lint`, `homepage` |
+| `dart-only` | `dart-analyze`, `dart-test`, `autocomplete-shell-smoke`, `build-and-package` |
+| `full` | everything |
+
+Two classifications are deliberately conservative and are pinned by tests:
+`homepage/app/content/` counts as a Dart change because `test/e2e/docs_cli_drift_e2e_test.dart`
+reads that tree, and `pubspec.yaml` counts as a homepage change because the homepage
+build reads the CLI version out of it. Anything under `.github/` resolves to `full`.
+An unreadable diff also resolves to `full` — the classifier fails open.
+
+The OS lists live in `.github/ci-matrices.json`, split into `host` (Linux) and `cross`
+(macOS, Windows), which `changes` merges on every event. The split exists so that
+narrowing pull requests to `host` later stays a one-line change to `matrix_scope`.
 
 ---
 
@@ -71,7 +113,7 @@ If any step fails, you MUST fix the issues before proceeding or reporting comple
   to commit hashes rather than pub.dev versions. To bump one, update its `ref` in
   `pubspec.yaml` — and for `cliweave`, the matching `dependency_overrides` entry too,
   which exists because `shipworld` declares its own `cliweave` dependency from pub.dev.
-- `tool/`: Repository-only validation, compiled-binary smoke checks, benchmarks, release driving, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`; `tool/release.dart` wraps the release commands so they can be driven from any worktree.
+- `tool/`: Repository-only validation, compiled-binary smoke checks, benchmarks, release driving, and e2e build helpers. Release and packaging operations invoke `shipworld` via `dart run shipworld:shipworld`; `tool/release.dart` wraps the release commands so they can be driven from any worktree. `tool/ci_scope.dart` is the exception to the rest of `tool/`: the `changes` job runs it directly (`dart tool/ci_scope.dart`) before any dependency is resolved, so it must import nothing outside the Dart SDK.
 - `homepage/`: Static React Router documentation and localized landing pages built with `@tinyrack/docs` and `@tinyrack/ui` (standalone pnpm project; reads the CLI version from `pubspec.yaml` at build time).
 
 ---
