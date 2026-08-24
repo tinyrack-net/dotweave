@@ -48,7 +48,7 @@ export function DotweaveHome({
           <ul className="dotweave-features">
             {features.map((feature) => (
               <li key={feature}>
-                <TRBadge uiSize="sm" variant="neutral">
+                <TRBadge uiSize="md" variant="neutral">
                   {feature}
                 </TRBadge>
               </li>
@@ -73,7 +73,7 @@ export function DotweaveHome({
           <TRTabs.Root
             className="dotweave-install"
             defaultValue={installTargets[0].value}
-            uiSize="sm"
+            uiSize="md"
           >
             <TRTabs.List aria-label={installLabel}>
               {installTargets.map((target) => (
