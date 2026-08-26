@@ -24,7 +24,7 @@
 .dotweave-home::before {
   background: radial-gradient(
     ellipse 42% 45% at 66% 28%,
-    color-mix(in srgb, var(--tinyrack-success) 14%, transparent),
+    color-mix(in srgb, var(--tinyrack-success-foreground) 14%, transparent),
     transparent 70%
   );
   content: "";
@@ -173,7 +173,7 @@
     dotweave-step-in var(--tinyrack-duration-slow) var(--tinyrack-ease-out) 1.8s
     both,
     dotweave-caret-blink 1.1s var(--tinyrack-ease-standard) 1.8s infinite;
-  background: var(--tinyrack-success);
+  background: var(--tinyrack-success-foreground);
   block-size: 1.1em;
   display: block;
   inline-size: 0.5em;
