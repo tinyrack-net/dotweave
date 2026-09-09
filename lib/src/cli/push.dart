@@ -22,8 +22,7 @@ String? _normalizeCommitMessage(String? value) {
 final Command<ApplicationContext> pushCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Mirror local config into the git-backed sync directory',
-    fullDescription:
-        'Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository. Pass --with-git to also commit the updated artifacts and push them to the configured git remote (customize the commit message with -m).',
+    fullDescription: 'Collect the current state of tracked local files and directories, then update the sync directory artifacts to match. Secret targets are encrypted before they are written into the repository. Pass --with-git to also commit the updated artifacts and push them to the configured git remote (customize the commit message with -m).',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

@@ -5,8 +5,9 @@ import 'package:dotweave/src/util/filesystem.dart';
 import 'package:dotweave/src/util/json_format.dart';
 import 'package:path/path.dart' as p;
 
-typedef ConfigMigrationFn =
-    Map<String, Object?> Function(Map<String, Object?> config);
+typedef ConfigMigrationFn = Map<String, Object?> Function(
+  Map<String, Object?> config,
+);
 
 typedef ConfigMigrationRegistry = Map<int, ConfigMigrationFn>;
 

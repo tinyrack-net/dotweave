@@ -47,12 +47,11 @@ class ShellCloseEvent {
 
 /// Spawns the shell with inherited stdio and completes with its close event;
 /// throws when spawning fails. Mirrors the Node `spawn` + error/close events.
-typedef ShellSpawn =
-    Future<ShellCloseEvent> Function(
-      String command,
-      List<String> args,
-      String directory,
-    );
+typedef ShellSpawn = Future<ShellCloseEvent> Function(
+  String command,
+  List<String> args,
+  String directory,
+);
 
 /// DI seams replacing the vitest module mocks of `#app/lib/env.ts`,
 /// `#app/config/runtime-env.ts`, and `node:child_process`.

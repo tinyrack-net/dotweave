@@ -45,8 +45,9 @@ enum ValidationTarget {
   }
 }
 
-typedef ValidationTaskRunner =
-    Future<ValidationTaskResult> Function(ValidationTask task);
+typedef ValidationTaskRunner = Future<ValidationTaskResult> Function(
+  ValidationTask task,
+);
 typedef ValidationLogger = void Function(String message);
 
 /// Runs a validation process with inherited stdio.

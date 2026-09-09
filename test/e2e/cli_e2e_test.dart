@@ -149,9 +149,8 @@ void main() {
 
       await ctx.writeIdentityFile(ageKeys.identity);
       await Directory(configDir).create(recursive: true);
-      await File(
-        p.join(configDir, 'config.toml'),
-      ).writeAsString('key = value\n');
+      await File(p.join(configDir, 'config.toml'))
+          .writeAsString('key = value\n');
 
       await ctx.runCli(['init']);
       await ctx.runCli(['track', configDir]);

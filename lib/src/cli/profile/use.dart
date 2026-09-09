@@ -7,8 +7,7 @@ import 'package:dotweave/src/services/profile.dart';
 final Command<ApplicationContext> profileUseCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Set or clear the active sync profile',
-    fullDescription:
-        'Write ~/.config/dotweave/settings.jsonc so plain push, pull, status, and doctor commands use the selected registered profile by default. Omit the profile name to clear the active profile.',
+    fullDescription: 'Write ~/.config/dotweave/settings.jsonc so plain push, pull, status, and doctor commands use the selected registered profile by default. Omit the profile name to clear the active profile.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

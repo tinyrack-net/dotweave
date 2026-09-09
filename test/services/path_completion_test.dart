@@ -88,12 +88,10 @@ void main() {
     test('completes nested directory paths', () async {
       final workspace = await _createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'workspace', 'project-a'),
-      ).create(recursive: true);
-      await Directory(
-        p.join(workspace, 'workspace', 'project-b'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, 'workspace', 'project-a'))
+          .create(recursive: true);
+      await Directory(p.join(workspace, 'workspace', 'project-b'))
+          .create(recursive: true);
 
       expect(await proposePathCompletions('workspace/', cwd: () => workspace), [
         'workspace/project-a/',
@@ -122,12 +120,10 @@ void main() {
         final workspace = await _createWorkspace();
         final homeDirectory = p.join(workspace, 'home');
 
-        await Directory(
-          p.join(homeDirectory, '.config', 'nvim'),
-        ).create(recursive: true);
-        await Directory(
-          p.join(homeDirectory, '.config', 'git'),
-        ).create(recursive: true);
+        await Directory(p.join(homeDirectory, '.config', 'nvim'))
+            .create(recursive: true);
+        await Directory(p.join(homeDirectory, '.config', 'git'))
+            .create(recursive: true);
 
         expect(
           await proposePathCompletions(

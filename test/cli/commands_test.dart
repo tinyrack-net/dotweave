@@ -416,19 +416,18 @@ Future<void> _writeManifestCommands(
   _Workspace workspace,
   Map<String, Object?> commands,
 ) async {
-  final manifest =
-      jsonDecode(await io.File(workspace.manifestPath).readAsString())
-          as Map<String, Object?>;
+  final manifest = jsonDecode(
+    await io.File(workspace.manifestPath).readAsString(),
+  ) as Map<String, Object?>;
   manifest['commands'] = commands;
-  await io.File(
-    workspace.manifestPath,
-  ).writeAsString(const JsonEncoder.withIndent('  ').convert(manifest));
+  await io.File(workspace.manifestPath)
+      .writeAsString(const JsonEncoder.withIndent('  ').convert(manifest));
 }
 
 Future<Map<String, Object?>> _manifestCommands(_Workspace workspace) async {
-  final manifest =
-      jsonDecode(await io.File(workspace.manifestPath).readAsString())
-          as Map<String, Object?>;
+  final manifest = jsonDecode(
+    await io.File(workspace.manifestPath).readAsString(),
+  ) as Map<String, Object?>;
   return (manifest['commands'] as Map<String, Object?>?) ?? {};
 }
 
@@ -483,9 +482,8 @@ void main() {
     test('initializes with force without a repository and treats an existing '
         'identity as reset', () async {
       final workspace = await _setUpWorkspace(initialize: false);
-      final previousIdentity = await io.File(
-        workspace.identityFile,
-      ).readAsString();
+      final previousIdentity = await io.File(workspace.identityFile)
+          .readAsString();
 
       final run = await _runCommand(initCommand, {'force': true}, [null]);
 
@@ -570,9 +568,8 @@ void main() {
 
         expect(run.error, isNull);
         expect(run.stdout, isNot(contains('Enter the age private key')));
-        final identityContents = await io.File(
-          workspace.identityFile,
-        ).readAsString();
+        final identityContents = await io.File(workspace.identityFile)
+            .readAsString();
         expect(identityContents, contains(importedKeys.identity));
         expect(identityContents, isNot(contains(workspace.identity)));
       },
@@ -621,9 +618,8 @@ void main() {
       );
       // The trimmed prompted key became the identity (force replaced the
       // pre-existing one).
-      final identityContents = await io.File(
-        workspace.identityFile,
-      ).readAsString();
+      final identityContents = await io.File(workspace.identityFile)
+          .readAsString();
       expect(identityContents, contains(promptedKeys.identity));
       expect(identityContents, isNot(contains(workspace.identity)));
     });
@@ -722,9 +718,8 @@ void main() {
         expect(help, contains('mode|platform=mode'));
         expect(help, contains('octal|platform=octal'));
         expect(
-          RegExp(
-            r'--repo-path|--secret|--normal|--ignore|--missing-ok',
-          ).hasMatch(help),
+          RegExp(r'--repo-path|--secret|--normal|--ignore|--missing-ok')
+              .hasMatch(help),
           isFalse,
         );
       },
@@ -777,9 +772,8 @@ void main() {
     test('omits absent optional fields from track output', () async {
       final workspace = await _setUpWorkspace();
 
-      await io.Directory(
-        workspace.homePath('.config/app'),
-      ).create(recursive: true);
+      await io.Directory(workspace.homePath('.config/app'))
+          .create(recursive: true);
 
       final run = await _runCommand(
         trackCommand,
@@ -868,9 +862,8 @@ void main() {
     test('passes platform-aware repo paths to track service', () async {
       final workspace = await _setUpWorkspace();
 
-      await io.Directory(
-        workspace.homePath('.config/app'),
-      ).create(recursive: true);
+      await io.Directory(workspace.homePath('.config/app'))
+          .create(recursive: true);
 
       final run = await _runCommand(
         trackCommand,
@@ -894,9 +887,8 @@ void main() {
     test('passes platform-aware modes to track service', () async {
       final workspace = await _setUpWorkspace();
 
-      await io.Directory(
-        workspace.homePath('.config/app'),
-      ).create(recursive: true);
+      await io.Directory(workspace.homePath('.config/app'))
+          .create(recursive: true);
 
       final run = await _runCommand(
         trackCommand,
@@ -916,9 +908,8 @@ void main() {
     test('passes local platform overrides to track service', () async {
       final workspace = await _setUpWorkspace();
 
-      await io.Directory(
-        workspace.homePath('.config/app'),
-      ).create(recursive: true);
+      await io.Directory(workspace.homePath('.config/app'))
+          .create(recursive: true);
 
       final run = await _runCommand(
         trackCommand,
@@ -942,9 +933,8 @@ void main() {
     test('rejects default local values before tracking', () async {
       final workspace = await _setUpWorkspace();
 
-      await io.Directory(
-        workspace.homePath('.config/app'),
-      ).create(recursive: true);
+      await io.Directory(workspace.homePath('.config/app'))
+          .create(recursive: true);
 
       final bareRun = await _runCommand(
         trackCommand,
@@ -1192,9 +1182,8 @@ void main() {
         expect(pushRun.stdout, contains('Push preview (dry run)'));
         // Dry run: the repository artifact was not updated.
         expect(
-          await io.File(
-            workspace.artifactPath('default', '.config/app.toml'),
-          ).readAsString(),
+          await io.File(workspace.artifactPath('default', '.config/app.toml'))
+              .readAsString(),
           'from-repo\n',
         );
 
@@ -1246,9 +1235,8 @@ void main() {
         }, []);
         expect(applied.error, isNull);
         expect(
-          await io.File(
-            workspace.artifactPath('default', '.config/app.toml'),
-          ).readAsString(),
+          await io.File(workspace.artifactPath('default', '.config/app.toml'))
+              .readAsString(),
           'updated\n',
         );
       },
@@ -1405,9 +1393,8 @@ void main() {
         final manifestProfile = await _runCommand(pushCommand, {}, []);
         expect(manifestProfile.error, isNull);
         expect(
-          await io.File(
-            workspace.artifactPath('work', '.config/work.toml'),
-          ).readAsString(),
+          await io.File(workspace.artifactPath('work', '.config/work.toml'))
+              .readAsString(),
           'work value\n',
         );
         final cliProfile = await _runCommand(pushCommand, {
@@ -1747,9 +1734,8 @@ void main() {
         expect(run.stdout, isNot(contains('Synced to git remote')));
         // The artifact was not written...
         expect(
-          await io.File(
-            workspace.artifactPath('default', '.config/app.toml'),
-          ).exists(),
+          await io.File(workspace.artifactPath('default', '.config/app.toml'))
+              .exists(),
           isFalse,
         );
         // ...and no commit was created in the freshly initialized sync repo.
@@ -1845,9 +1831,9 @@ void main() {
       // synchronized true default.
       await io.File(p.join(external, artifactRelative)).writeAsString('v3\n');
       final externalManifestFile = io.File(p.join(external, 'manifest.jsonc'));
-      final externalManifest =
-          jsonDecode(await externalManifestFile.readAsString())
-              as Map<String, Object?>;
+      final externalManifest = jsonDecode(
+        await externalManifestFile.readAsString(),
+      ) as Map<String, Object?>;
       externalManifest['commands'] = {
         'pull': {'withGit': false, 'yes': true},
       };
@@ -2134,9 +2120,8 @@ void main() {
       // `applyPullPlan` ran: the local change was reverted and the obsolete
       // file removed.
       expect(
-        await io.File(
-          workspace.homePath('.config/app/config.toml'),
-        ).readAsString(),
+        await io.File(workspace.homePath('.config/app/config.toml'))
+            .readAsString(),
         'from-repo\n',
       );
       expect(
@@ -2154,9 +2139,8 @@ void main() {
       expect(run.stdout, contains('Skipped pull changes'));
       // `applyPullPlan` did not run: everything stays as-is.
       expect(
-        await io.File(
-          workspace.homePath('.config/app/config.toml'),
-        ).readAsString(),
+        await io.File(workspace.homePath('.config/app/config.toml'))
+            .readAsString(),
         'local-change\n',
       );
       expect(
@@ -2176,9 +2160,8 @@ void main() {
       expect(run.stdout, contains('updated: 1 paths'));
       expect(run.stdout, contains('removed: 1 paths'));
       expect(
-        await io.File(
-          workspace.homePath('.config/app/config.toml'),
-        ).readAsString(),
+        await io.File(workspace.homePath('.config/app/config.toml'))
+            .readAsString(),
         'from-repo\n',
       );
     });
@@ -2197,9 +2180,8 @@ void main() {
         );
         // `applyPullPlan` did not run.
         expect(
-          await io.File(
-            workspace.homePath('.config/app/config.toml'),
-          ).readAsString(),
+          await io.File(workspace.homePath('.config/app/config.toml'))
+              .readAsString(),
           'local-change\n',
         );
       },

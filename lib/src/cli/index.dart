@@ -11,8 +11,7 @@ RouteMap<ApplicationContext> buildRootRoute() {
   return buildRouteMap(
     docs: RouteMapDocs(
       brief: 'A personal CLI tool for git-backed configuration sync.',
-      fullDescription:
-          'Manage tracked configuration files under your home directory, mirror them into a git-backed sync directory, and restore them later on other devices.',
+      fullDescription: 'Manage tracked configuration files under your home directory, mirror them into a git-backed sync directory, and restore them later on other devices.',
       hideRoute: {AppConstants.autocomplete.completeSubcommand: true},
     ),
     routes: {

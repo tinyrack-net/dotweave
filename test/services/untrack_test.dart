@@ -20,8 +20,9 @@ class MockedUntrackSeams {
   final List<RawSyncConfig> buildSyncConfigDocumentResults = [];
   final List<(String, RawSyncConfig)> writeValidatedSyncConfigCalls = [];
 
-  Future<void> Function(String syncDirectory) requireGitRepository =
-      (syncDirectory) async {};
+  Future<void> Function(String syncDirectory) requireGitRepository = (
+    syncDirectory,
+  ) async {};
   Future<ResolvedSyncConfig> Function(
     String syncDirectory,
     SyncConfigResolutionContext context,
@@ -326,9 +327,8 @@ void main() {
 
       await Directory(p.join(plainRoot, 'nested')).create(recursive: true);
       await File(p.join(plainRoot, 'settings.json')).writeAsString('{}\n');
-      await File(
-        p.join(plainRoot, 'nested', 'value.txt'),
-      ).writeAsString('hello\n');
+      await File(p.join(plainRoot, 'nested', 'value.txt'))
+          .writeAsString('hello\n');
       await writeArtifactFile(siblingPath, 'keep\n');
 
       mocked.resolveSyncPaths = () => syncPathsFor(workspace);

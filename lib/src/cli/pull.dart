@@ -29,8 +29,7 @@ void _logPullPlanChanges(
 final Command<ApplicationContext> pullCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Apply the git-backed sync directory to local config paths',
-    fullDescription:
-        'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally. Pass --with-git to first pull the latest artifacts from the configured git remote.',
+    fullDescription: 'Read tracked artifacts from the sync directory and materialize them back onto local paths under your home directory. Secret artifacts are decrypted with the configured age identity before they are written locally. Pass --with-git to first pull the latest artifacts from the configured git remote.',
   ),
   func: (context, flags, args) async {
     final defaults = (await loadSyncCommandDefaults())?.pull;

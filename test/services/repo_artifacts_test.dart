@@ -415,12 +415,10 @@ void main() {
         version: AppConstants.sync.configVersion,
       );
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work', '.config', 'app'),
-      ).create(recursive: true);
-      await File(
-        p.join(workspace, 'profiles', 'work', '.gitconfig'),
-      ).writeAsString('data');
+      await Directory(p.join(workspace, 'profiles', 'work', '.config', 'app'))
+          .create(recursive: true);
+      await File(p.join(workspace, 'profiles', 'work', '.gitconfig'))
+          .writeAsString('data');
       await File(
         p.join(
           workspace,
@@ -432,15 +430,12 @@ void main() {
         ),
       ).writeAsString('{}\n');
       await Directory(p.join(workspace, 'docs')).create(recursive: true);
-      await File(
-        p.join(workspace, 'docs', 'readme.md'),
-      ).writeAsString('support docs\n');
-      await Directory(
-        p.join(workspace, 'profiles', '.github'),
-      ).create(recursive: true);
-      await File(
-        p.join(workspace, 'profiles', '.github', 'workflow.yml'),
-      ).writeAsString('name\n');
+      await File(p.join(workspace, 'docs', 'readme.md'))
+          .writeAsString('support docs\n');
+      await Directory(p.join(workspace, 'profiles', '.github'))
+          .create(recursive: true);
+      await File(p.join(workspace, 'profiles', '.github', 'workflow.yml'))
+          .writeAsString('name\n');
 
       expect(await collectExistingArtifactKeys(workspace, config), {
         'work/.config/app/settings.json',

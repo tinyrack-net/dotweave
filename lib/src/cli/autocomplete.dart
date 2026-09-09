@@ -96,8 +96,7 @@ buildAutocompleteRoute() {
     autocompleteRoute: buildRouteMap(
       docs: const RouteMapDocs(
         brief: 'Print shell autocomplete scripts',
-        fullDescription:
-            'Emit shell-specific autocomplete scripts for use with eval-based shell setup.',
+        fullDescription: 'Emit shell-specific autocomplete scripts for use with eval-based shell setup.',
       ),
       routes: {
         'bash': _bashAutocompleteCommand,

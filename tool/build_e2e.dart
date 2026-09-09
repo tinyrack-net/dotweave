@@ -122,9 +122,8 @@ Future<String> ensureE2eBinary({
 
   await outputDirectory.create(recursive: true);
 
-  final lockHandle = await File(
-    p.join(outputDirectory.path, 'build.lock'),
-  ).open(mode: FileMode.write);
+  final lockHandle = await File(p.join(outputDirectory.path, 'build.lock'))
+      .open(mode: FileMode.write);
 
   await lockHandle.lock(FileLock.blockingExclusive);
 

@@ -93,15 +93,14 @@ void main() {
           },
           // The TS suite leaves `countDeletedLocalNodes` as a bare `vi.fn()`
           // (resolving `undefined`); Dart requires an `int`, so return 0.
-          countDeletedLocalNodes:
-              (
-                entry,
-                desiredKeys,
-                config,
-                existingKeys,
-                keyToLocalPath,
-                deletedKeys,
-              ) async => 0,
+          countDeletedLocalNodes: (
+            entry,
+            desiredKeys,
+            config,
+            existingKeys,
+            keyToLocalPath,
+            deletedKeys,
+          ) async => 0,
         ),
       );
 

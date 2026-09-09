@@ -103,9 +103,8 @@ void main() {
       await initializeSyncDirectory(
         InitRequest(recipients: [ageKeys.recipient]),
       );
-      await File(
-        p.join(xdgConfigHome, 'dotweave', 'repository', '.gitignore'),
-      ).writeAsString('*.dotweave.secret\n');
+      await File(p.join(xdgConfigHome, 'dotweave', 'repository', '.gitignore'))
+          .writeAsString('*.dotweave.secret\n');
       await trackTarget(
         TrackRequest(
           mode: const TrackModeValue('secret'),

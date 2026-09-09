@@ -183,9 +183,8 @@ void main() {
         'link${AppConstants.sync.symlinkArtifactSuffix}',
       );
       final targetDirLower = p.join(ctx.homeDir, 'target');
-      await File(
-        repoLinkArtifact,
-      ).writeAsString(targetDirLower.replaceAll('\\', '/'));
+      await File(repoLinkArtifact)
+          .writeAsString(targetDirLower.replaceAll('\\', '/'));
 
       // First pull - with the fix, it should say "Already up to date"
       // because it's case-insensitive

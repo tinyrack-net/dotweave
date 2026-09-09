@@ -33,14 +33,15 @@ class MockedSyncModeSeams {
 
   PlatformSyncMode Function(SyncMode mode) buildDefaultPlatformMode = (mode) =>
       PlatformSyncMode(defaultValue: mode);
-  PlatformStringValue Function(String repoPath) buildConfiguredHomeLocalPath =
-      (repoPath) => PlatformStringValue(defaultValue: '~/$repoPath');
+  PlatformStringValue Function(String repoPath) buildConfiguredHomeLocalPath = (
+    repoPath,
+  ) => PlatformStringValue(defaultValue: '~/$repoPath');
   String Function(String absolutePath, String rootPath, String description)
   buildRepoPathWithinRoot = (absolutePath, rootPath, description) =>
       throw StateError('buildRepoPathWithinRoot was not mocked');
-  Future<void> Function(String syncDirectory) requireGitRepository =
-      (syncDirectory) =>
-          throw StateError('requireGitRepository was not mocked');
+  Future<void> Function(String syncDirectory) requireGitRepository = (
+    syncDirectory,
+  ) => throw StateError('requireGitRepository was not mocked');
   String Function(String value, String? home) expandHomePath = (value, home) =>
       throw StateError('expandHomePath was not mocked');
   ResolvedSyncConfigEntry? Function(ResolvedSyncConfig config, String repoPath)
@@ -350,8 +351,11 @@ void main() {
         mocked.isExplicitLocalPath = (target) => true;
         mocked.expandHomePath = (value, home) =>
             nativePath('/tmp/home/.config/other/file');
-        mocked.buildRepoPathWithinRoot =
-            (absolutePath, rootPath, description) => '.config/other/file';
+        mocked.buildRepoPathWithinRoot = (
+          absolutePath,
+          rootPath,
+          description,
+        ) => '.config/other/file';
         mocked.getPathStats = (path) async => fileStats;
         mocked.findOwningSyncEntry = (config, repoPath) => null;
 
@@ -378,8 +382,11 @@ void main() {
       final mocked = MockedSyncModeSeams();
       mocked.isExplicitLocalPath = (target) => false;
       mocked.expandHomePath = (value, home) => '../outside';
-      mocked.tryBuildRepoPathWithinRoot =
-          (absolutePath, rootPath, description) => null;
+      mocked.tryBuildRepoPathWithinRoot = (
+        absolutePath,
+        rootPath,
+        description,
+      ) => null;
       mocked.tryNormalizeRepoPathInput = (value) => null;
 
       await expectLater(
@@ -408,8 +415,11 @@ void main() {
 
         mocked.isExplicitLocalPath = (target) => false;
         mocked.expandHomePath = (value, home) => '.gitconfig';
-        mocked.tryBuildRepoPathWithinRoot =
-            (absolutePath, rootPath, description) => null;
+        mocked.tryBuildRepoPathWithinRoot = (
+          absolutePath,
+          rootPath,
+          description,
+        ) => null;
         mocked.tryNormalizeRepoPathInput = (value) => '.gitconfig';
         mocked.resolveEntryRelativeRepoPath = (entry, repoPath) => null;
         mocked.getPathStats = (path) async => fileStats;
@@ -444,8 +454,11 @@ void main() {
         mocked.isExplicitLocalPath = (target) => false;
         mocked.expandHomePath = (value, home) =>
             '.config/app/nested/config.json';
-        mocked.tryBuildRepoPathWithinRoot =
-            (absolutePath, rootPath, description) => null;
+        mocked.tryBuildRepoPathWithinRoot = (
+          absolutePath,
+          rootPath,
+          description,
+        ) => null;
         mocked.tryNormalizeRepoPathInput = (value) =>
             '.config/app/nested/config.json';
         mocked.findOwningSyncEntry = (config, repoPath) => entry;
@@ -478,8 +491,11 @@ void main() {
       final mocked = MockedSyncModeSeams();
       mocked.isExplicitLocalPath = (target) => false;
       mocked.expandHomePath = (value, home) => '.config/other/file';
-      mocked.tryBuildRepoPathWithinRoot =
-          (absolutePath, rootPath, description) => null;
+      mocked.tryBuildRepoPathWithinRoot = (
+        absolutePath,
+        rootPath,
+        description,
+      ) => null;
       mocked.tryNormalizeRepoPathInput = (value) => '.config/other/file';
       mocked.findOwningSyncEntry = (config, repoPath) => null;
 
@@ -511,8 +527,11 @@ void main() {
       mocked.readSyncConfig = (syncDirectory, context) async => config;
       mocked.isExplicitLocalPath = (target) => false;
       mocked.expandHomePath = (value, home) => '.gitconfig';
-      mocked.tryBuildRepoPathWithinRoot =
-          (absolutePath, rootPath, description) => null;
+      mocked.tryBuildRepoPathWithinRoot = (
+        absolutePath,
+        rootPath,
+        description,
+      ) => null;
       mocked.tryNormalizeRepoPathInput = (value) => '.gitconfig';
       mocked.resolveEntryRelativeRepoPath = (entry, repoPath) => null;
       mocked.getPathStats = (path) async => fileStats;
@@ -553,8 +572,11 @@ void main() {
       mocked.readSyncConfig = (syncDirectory, context) async => config;
       mocked.isExplicitLocalPath = (target) => false;
       mocked.expandHomePath = (value, home) => '.gitconfig';
-      mocked.tryBuildRepoPathWithinRoot =
-          (absolutePath, rootPath, description) => null;
+      mocked.tryBuildRepoPathWithinRoot = (
+        absolutePath,
+        rootPath,
+        description,
+      ) => null;
       mocked.tryNormalizeRepoPathInput = (value) => '.gitconfig';
       mocked.resolveEntryRelativeRepoPath = (entry, repoPath) => null;
       mocked.getPathStats = (path) async => fileStats;
@@ -595,8 +617,11 @@ void main() {
         mocked.readSyncConfig = (syncDirectory, context) async => config;
         mocked.isExplicitLocalPath = (target) => false;
         mocked.expandHomePath = (value, home) => '.config/app/private.txt';
-        mocked.tryBuildRepoPathWithinRoot =
-            (absolutePath, rootPath, description) => null;
+        mocked.tryBuildRepoPathWithinRoot = (
+          absolutePath,
+          rootPath,
+          description,
+        ) => null;
         mocked.tryNormalizeRepoPathInput = (value) => '.config/app/private.txt';
         mocked.findOwningSyncEntry = (config, repoPath) => entry;
         mocked.resolveEntryRelativeRepoPath = (entry, repoPath) =>
@@ -663,8 +688,11 @@ void main() {
         mocked.readSyncConfig = (syncDirectory, context) async => config;
         mocked.isExplicitLocalPath = (target) => false;
         mocked.expandHomePath = (value, home) => '.config/app/notes.txt';
-        mocked.tryBuildRepoPathWithinRoot =
-            (absolutePath, rootPath, description) => null;
+        mocked.tryBuildRepoPathWithinRoot = (
+          absolutePath,
+          rootPath,
+          description,
+        ) => null;
         mocked.tryNormalizeRepoPathInput = (value) => '.config/app/notes.txt';
         mocked.findOwningSyncEntry = (config, repoPath) => entry;
         mocked.resolveEntryRelativeRepoPath = (entry, repoPath) => 'notes.txt';

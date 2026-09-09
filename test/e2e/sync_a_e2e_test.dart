@@ -44,30 +44,20 @@ void main() {
         contains('AGE-SECRET-KEY-'),
       );
 
-      final settings =
-          jsonDecode(
-                await File(
-                  p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'),
-                ).readAsString(),
-              )
-              as Map<String, Object?>;
+      final settings = jsonDecode(
+        await File(p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'))
+            .readAsString(),
+      ) as Map<String, Object?>;
 
       expect(settings, containsPair('activeProfile', 'default'));
       expect(settings, containsPair('version', 3));
       expect(settings, isNot(contains('age')));
 
-      final manifest =
-          jsonDecode(
-                await File(
-                  p.join(
-                    ctx.xdgDir,
-                    'dotweave',
-                    'repository',
-                    'manifest.jsonc',
-                  ),
-                ).readAsString(),
-              )
-              as Map<String, Object?>;
+      final manifest = jsonDecode(
+        await File(
+          p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'),
+        ).readAsString(),
+      ) as Map<String, Object?>;
       final age = manifest['age']! as Map<String, Object?>;
       final recipients = age['recipients']! as List<Object?>;
 
@@ -399,17 +389,14 @@ void main() {
       await File(keyFile).writeAsString('${ageKeys.identity}\n');
       await Directory(vividentDirectory).create(recursive: true);
       await Directory(secondHomeDirectory).create(recursive: true);
-      await File(
-        p.join(vividentDirectory, 'config.json'),
-      ).writeAsString('{"theme":"dark"}\n');
-      await File(
-        p.join(vividentDirectory, 'state.txt'),
-      ).writeAsString('window=main\n');
+      await File(p.join(vividentDirectory, 'config.json'))
+          .writeAsString('{"theme":"dark"}\n');
+      await File(p.join(vividentDirectory, 'state.txt'))
+          .writeAsString('window=main\n');
 
       await ctx.runCli(['init', sourceRepository]);
-      await File(
-        p.join(syncDirectory, '.gitignore'),
-      ).writeAsString('*.dotweave.secret\n');
+      await File(p.join(syncDirectory, '.gitignore'))
+          .writeAsString('*.dotweave.secret\n');
       await ctx.runCli(['track', vividentDirectory, '--mode', 'secret']);
       await ctx.runCli(['push']);
 
@@ -482,15 +469,13 @@ void main() {
       await ctx.runCli(['pull', '-y'], env: secondEnv);
 
       expect(
-        await File(
-          p.join(secondHomeDirectory, '.vivident', 'config.json'),
-        ).readAsString(),
+        await File(p.join(secondHomeDirectory, '.vivident', 'config.json'))
+            .readAsString(),
         '{"theme":"dark"}\n',
       );
       expect(
-        await File(
-          p.join(secondHomeDirectory, '.vivident', 'state.txt'),
-        ).readAsString(),
+        await File(p.join(secondHomeDirectory, '.vivident', 'state.txt'))
+            .readAsString(),
         'window=main\n',
       );
     });
@@ -641,9 +626,10 @@ void main() {
 
         final result = await ctx.runCli(['pull', '-y'], reject: false);
         final stderr = stripAnsi(result.stderr);
-        final siblingNames = await Directory(
-          configDir,
-        ).list().map((entity) => p.basename(entity.path)).toList();
+        final siblingNames = await Directory(configDir)
+            .list()
+            .map((entity) => p.basename(entity.path))
+            .toList();
 
         expect(result.exitCode, isNot(0));
         expect(

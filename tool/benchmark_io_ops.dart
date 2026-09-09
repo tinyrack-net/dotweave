@@ -416,9 +416,8 @@ Future<void> _benchRenameAndDelete(String scratchRoot) async {
     n,
     (_) async {
       for (var i = 0; i < n; i++) {
-        await File(
-          p.join(dirPath, 'v-$i.dat'),
-        ).rename(p.join(dirPath, 'v-$i.moved'));
+        await File(p.join(dirPath, 'v-$i.dat'))
+            .rename(p.join(dirPath, 'v-$i.moved'));
       }
     },
     setup: setup,
@@ -430,9 +429,8 @@ Future<void> _benchRenameAndDelete(String scratchRoot) async {
     n,
     (_) async {
       for (var i = 0; i < n; i++) {
-        File(
-          p.join(dirPath, 'v-$i.dat'),
-        ).renameSync(p.join(dirPath, 'v-$i.moved'));
+        File(p.join(dirPath, 'v-$i.dat'))
+            .renameSync(p.join(dirPath, 'v-$i.moved'));
       }
     },
     setup: setup,

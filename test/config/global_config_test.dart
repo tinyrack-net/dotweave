@@ -75,9 +75,8 @@ void main() {
     test('rejects settings.json files', () async {
       final filePath = p.join(dir.path, 'settings.jsonc');
 
-      await File(
-        p.join(dir.path, 'settings.json'),
-      ).writeAsString(jsonEncode({'activeProfile': 'work', 'version': 3}));
+      await File(p.join(dir.path, 'settings.json'))
+          .writeAsString(jsonEncode({'activeProfile': 'work', 'version': 3}));
 
       await expectLater(
         readGlobalDotweaveConfig(filePath),

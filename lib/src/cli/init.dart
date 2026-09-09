@@ -25,8 +25,7 @@ String _formatAgeSummary(InitResult result) {
 final Command<ApplicationContext> initCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Initialize the git-backed sync directory',
-    fullDescription:
-        'Create or connect the local dotweave repository under your dotweave app-data directory, then store the sync settings used by later pull and push operations. If local sync repository data already exists, init fails unless --force is provided. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.',
+    fullDescription: 'Create or connect the local dotweave repository under your dotweave app-data directory, then store the sync settings used by later pull and push operations. If local sync repository data already exists, init fails unless --force is provided. If you omit the repository argument, dotweave initializes a local git repository in the sync directory.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);
@@ -98,8 +97,7 @@ final Command<ApplicationContext> initCommand = buildCommand(
         FlagSet.one(
               BooleanFlag.optional<ApplicationContext>(
                 name: 'force',
-                brief:
-                    'Replace existing local sync repository, identity, and settings before initializing',
+                brief: 'Replace existing local sync repository, identity, and settings before initializing',
               ),
             )
             .and(

@@ -77,9 +77,8 @@ void main() {
       final keyPair = await createAgeKeyPair();
       final identityFile = p.join(workspace, 'keys.txt');
 
-      await File(
-        identityFile,
-      ).writeAsString('${keyPair.identity}\n${keyPair.identity}\n');
+      await File(identityFile)
+          .writeAsString('${keyPair.identity}\n${keyPair.identity}\n');
 
       expect(await readAgeRecipientsFromIdentityFile(identityFile), [
         keyPair.recipient,
@@ -162,9 +161,8 @@ void main() {
         final wrongIdentityFile = p.join(workspace, 'wrong.txt');
 
         await File(senderIdentityFile).writeAsString('${sender.identity}\n');
-        await File(
-          wrongIdentityFile,
-        ).writeAsString('${wrongIdentity.identity}\n');
+        await File(wrongIdentityFile)
+            .writeAsString('${wrongIdentity.identity}\n');
 
         final ciphertext = await encryptSecretFile(
           Uint8List.fromList(utf8.encode('secret')),

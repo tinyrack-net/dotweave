@@ -81,12 +81,10 @@ void main() {
     test('scans repository and builds snapshot', () async {
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
-      await File(
-        p.join(workspace, 'profiles', 'work', 'config.json'),
-      ).writeAsString('data');
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
+      await File(p.join(workspace, 'profiles', 'work', 'config.json'))
+          .writeAsString('data');
 
       final config = createConfig([
         createEntry(
@@ -117,9 +115,8 @@ void main() {
           'config.json',
         );
 
-        await Directory(
-          p.join(workspace, 'profiles', 'work'),
-        ).create(recursive: true);
+        await Directory(p.join(workspace, 'profiles', 'work'))
+            .create(recursive: true);
         await File(artifactPath).writeAsString('data');
         posixChmod(artifactPath, 0x1ED); // 0o755
 
@@ -143,9 +140,8 @@ void main() {
     test('handles directory entries', () async {
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work', 'dotconfig'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, 'profiles', 'work', 'dotconfig'))
+          .create(recursive: true);
 
       final config = createConfig([
         createEntry(
@@ -167,12 +163,10 @@ void main() {
 
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
-      await Link(
-        p.join(workspace, 'profiles', 'work', 'link'),
-      ).create('/target/path');
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
+      await Link(p.join(workspace, 'profiles', 'work', 'link'))
+          .create('/target/path');
 
       final config = createConfig([
         createEntry(localPath: '/home/user/link', repoPath: 'link'),
@@ -193,9 +187,8 @@ void main() {
       final identityFile = p.join(workspace, 'id.txt');
 
       await File(identityFile).writeAsString('$identity\n');
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
       await File(
         p.join(
           workspace,
@@ -236,12 +229,10 @@ void main() {
       () async {
         final workspace = await createWorkspace();
 
-        await Directory(
-          p.join(workspace, 'profiles', 'personal'),
-        ).create(recursive: true);
-        await File(
-          p.join(workspace, 'profiles', 'personal', 'personal.conf'),
-        ).writeAsString('data');
+        await Directory(p.join(workspace, 'profiles', 'personal'))
+            .create(recursive: true);
+        await File(p.join(workspace, 'profiles', 'personal', 'personal.conf'))
+            .writeAsString('data');
 
         final config = createConfig([
           createEntry(
@@ -260,18 +251,14 @@ void main() {
     test('handles multiple profile directories in the repository', () async {
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
-      await Directory(
-        p.join(workspace, 'profiles', 'default'),
-      ).create(recursive: true);
-      await File(
-        p.join(workspace, 'profiles', 'work', 'work.conf'),
-      ).writeAsString('data');
-      await File(
-        p.join(workspace, 'profiles', 'default', 'common.conf'),
-      ).writeAsString('data');
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
+      await Directory(p.join(workspace, 'profiles', 'default'))
+          .create(recursive: true);
+      await File(p.join(workspace, 'profiles', 'work', 'work.conf'))
+          .writeAsString('data');
+      await File(p.join(workspace, 'profiles', 'default', 'common.conf'))
+          .writeAsString('data');
 
       final config = createConfig([
         createEntry(localPath: '/home/user/work.conf', repoPath: 'work.conf'),
@@ -297,9 +284,8 @@ void main() {
       final workspace = await createWorkspace();
       final artifactPath = p.join(workspace, 'profiles', 'work', 'script.sh');
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
       await File(artifactPath).writeAsString('#!/bin/sh');
       posixChmod(artifactPath, 0x1ED); // 0o755
 
@@ -318,9 +304,8 @@ void main() {
     test('handles empty repository directory gracefully', () async {
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'default'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, 'profiles', 'default'))
+          .create(recursive: true);
 
       final config = createConfig(const []);
 
@@ -333,12 +318,10 @@ void main() {
         'plain', () async {
       final workspace = await createWorkspace();
 
-      await Directory(
-        p.join(workspace, 'profiles', 'work'),
-      ).create(recursive: true);
-      await File(
-        p.join(workspace, 'profiles', 'work', 'secret.conf'),
-      ).writeAsString('data');
+      await Directory(p.join(workspace, 'profiles', 'work'))
+          .create(recursive: true);
+      await File(p.join(workspace, 'profiles', 'work', 'secret.conf'))
+          .writeAsString('data');
 
       final config = createConfig([
         createEntry(

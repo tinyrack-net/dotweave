@@ -55,8 +55,9 @@ class MockedTrackSeams {
   final List<(String, RawSyncConfig)> writeValidatedSyncConfigCalls = [];
 
   Future<PathStats?> Function(String path) getPathStats = (path) async => null;
-  Future<void> Function(String syncDirectory) requireGitRepository =
-      (syncDirectory) async {};
+  Future<void> Function(String syncDirectory) requireGitRepository = (
+    syncDirectory,
+  ) async {};
   Future<ResolvedSyncConfig> Function(
     String syncDirectory,
     SyncConfigResolutionContext context,
@@ -65,20 +66,24 @@ class MockedTrackSeams {
       throw StateError('readSyncConfig was not mocked');
   PlatformSyncMode Function(SyncMode mode) buildDefaultPlatformMode = (mode) =>
       PlatformSyncMode(defaultValue: mode);
-  bool Function(String leftPath, String rightPath) doPathsOverlap =
-      (leftPath, rightPath) => false;
+  bool Function(String leftPath, String rightPath) doPathsOverlap = (
+    leftPath,
+    rightPath,
+  ) => false;
   String Function(String value) normalizeSyncProfileName = (value) => value;
   String Function(String value) normalizeSyncRepoPath = (value) => value;
-  String Function(String dotweaveHomeDirectory) resolveDefaultIdentityFile =
-      (dotweaveHomeDirectory) => userPath('/home/user/.ssh/id_rsa');
+  String Function(String dotweaveHomeDirectory) resolveDefaultIdentityFile = (
+    dotweaveHomeDirectory,
+  ) => userPath('/home/user/.ssh/id_rsa');
   String Function() resolveDotweaveHomeDirectory = () =>
       '/home/user/.config/dotweave';
 
   late String Function(String absolutePath, String rootPath, String description)
   buildRepoPathWithinRoot = (absolutePath, rootPath, description) =>
       absolutePath.substring(rootPath.length + 1).replaceAll(r'\', '/');
-  PlatformStringValue Function(String repoPath) buildConfiguredHomeLocalPath =
-      (repoPath) => PlatformStringValue(defaultValue: '~/$repoPath');
+  PlatformStringValue Function(String repoPath) buildConfiguredHomeLocalPath = (
+    repoPath,
+  ) => PlatformStringValue(defaultValue: '~/$repoPath');
 
   String? readEnvValue(String key) {
     if (key == 'HOME') {

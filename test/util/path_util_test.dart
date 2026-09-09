@@ -262,10 +262,9 @@ void main() {
 
       test('resolves relative target against baseDir', () {
         final expected = Platform.isWindows
-            ? resolve([
-                '/opt/app/venv',
-                '../bin/python3',
-              ]).replaceAll(r'\', '/').toLowerCase()
+            ? resolve(['/opt/app/venv', '../bin/python3'])
+                  .replaceAll(r'\', '/')
+                  .toLowerCase()
             : '/opt/app/bin/python3';
         expect(
           normalizeLinkTarget('../bin/python3', '/opt/app/venv'),
@@ -286,10 +285,9 @@ void main() {
 
       test('resolves dot-slash relative target against baseDir', () {
         final expected = Platform.isWindows
-            ? resolve([
-                '/home/user',
-                './script.sh',
-              ]).replaceAll(r'\', '/').toLowerCase()
+            ? resolve(['/home/user', './script.sh'])
+                  .replaceAll(r'\', '/')
+                  .toLowerCase()
             : '/home/user/script.sh';
         expect(normalizeLinkTarget('./script.sh', '/home/user'), expected);
       });
@@ -322,36 +320,32 @@ void main() {
         );
       });
 
-      test(
-        'falls back to parent realpath plus basename for missing windows targets with baseDir',
-        () {
-          String realpathSyncNative(String path) {
-            if (path == r'C:\Users\Me\missing.txt') {
-              throw Exception('missing target');
-            }
-
-            expect(path, r'C:\Users\Me');
-            return r'C:\USERS\Me';
+      test('falls back to parent realpath plus basename for missing windows targets with baseDir', () {
+        String realpathSyncNative(String path) {
+          if (path == r'C:\Users\Me\missing.txt') {
+            throw Exception('missing target');
           }
 
-          expect(
-            normalizeLinkTargetWithDependencies(
-              'missing.txt',
-              r'C:\Users\Me',
-              platform: 'win32',
-              isAbsolutePath: (path) =>
-                  RegExp(r'^[a-z]:', caseSensitive: false).hasMatch(path),
-              resolvePath: (paths) => paths.join(r'\'),
-              dirnamePath: (path) => path.substring(0, path.lastIndexOf(r'\')),
-              basenamePath: (path) =>
-                  path.substring(path.lastIndexOf(r'\') + 1),
-              joinPath: (paths) => paths.join(r'\'),
-              realpathSyncNative: realpathSyncNative,
-            ),
-            'c:/users/me/missing.txt',
-          );
-        },
-      );
+          expect(path, r'C:\Users\Me');
+          return r'C:\USERS\Me';
+        }
+
+        expect(
+          normalizeLinkTargetWithDependencies(
+            'missing.txt',
+            r'C:\Users\Me',
+            platform: 'win32',
+            isAbsolutePath: (path) =>
+                RegExp(r'^[a-z]:', caseSensitive: false).hasMatch(path),
+            resolvePath: (paths) => paths.join(r'\'),
+            dirnamePath: (path) => path.substring(0, path.lastIndexOf(r'\')),
+            basenamePath: (path) => path.substring(path.lastIndexOf(r'\') + 1),
+            joinPath: (paths) => paths.join(r'\'),
+            realpathSyncNative: realpathSyncNative,
+          ),
+          'c:/users/me/missing.txt',
+        );
+      });
 
       test('resolves windows root-relative targets before normalization', () {
         expect(

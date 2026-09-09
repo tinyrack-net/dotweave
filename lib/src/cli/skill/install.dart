@@ -20,8 +20,7 @@ String _formatInstallMessage(String action) {
 final Command<ApplicationContext> skillInstallCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Install the bundled dotweave agent skill',
-    fullDescription:
-        "Install Dotweave's bundled portable agent skill into the specified skills directory.",
+    fullDescription: "Install Dotweave's bundled portable agent skill into the specified skills directory.",
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

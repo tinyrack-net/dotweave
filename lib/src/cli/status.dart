@@ -109,8 +109,7 @@ void _logPullChanges(CliLogger logger, PullChanges changes) {
 final Command<ApplicationContext> statusCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Show planned push and pull changes for the current sync config',
-    fullDescription:
-        'Compare the tracked local files with the sync directory and report what push would write to the repository and what pull would write back locally.',
+    fullDescription: 'Compare the tracked local files with the sync directory and report what push would write to the repository and what pull would write back locally.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

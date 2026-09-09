@@ -114,9 +114,8 @@ Future<AgeKeyPair> writeAgeIdentityFile(
   final resolvedIdentity = await resolveAgeIdentity(identity);
 
   await Directory(p.dirname(identityFile)).create(recursive: true);
-  await File(
-    identityFile,
-  ).writeAsString(ensureTrailingNewline(resolvedIdentity.identity));
+  await File(identityFile)
+      .writeAsString(ensureTrailingNewline(resolvedIdentity.identity));
 
   return resolvedIdentity;
 }

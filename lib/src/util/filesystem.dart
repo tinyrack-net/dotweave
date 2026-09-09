@@ -521,9 +521,8 @@ Future<void> removePathAtomically(String targetPath) async {
 /// target file.
 Future<void> writeTextFileAtomically(String targetPath, String contents) async {
   await Directory(p.dirname(targetPath)).create(recursive: true);
-  final stagingDirectory = await Directory(
-    p.dirname(targetPath),
-  ).createTemp('.${p.basename(targetPath)}.dotweave-sync-');
+  final stagingDirectory = await Directory(p.dirname(targetPath))
+      .createTemp('.${p.basename(targetPath)}.dotweave-sync-');
   final stagedPath = p.join(stagingDirectory.path, p.basename(targetPath));
 
   try {

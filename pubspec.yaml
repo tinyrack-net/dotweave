@@ -4,7 +4,7 @@ description: >-
 version: 2.5.1
 publish_to: none
 environment:
-  sdk: ^3.12.0
+  sdk: ^3.13.0
 
 executables:
   dotweave: dotweave
@@ -13,32 +13,32 @@ dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
+      ref: 5da5311a53bc2cf401f4bc8efb97518adeeced32
       path: packages/cliweave
-  cryptography: ^2.7.0
+  cryptography: ^2.9.0
   dartage:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
+      ref: 5da5311a53bc2cf401f4bc8efb97518adeeced32
       path: packages/dartage
-  ffi: ^2.1.0
-  path: ^1.9.0
+  ffi: ^2.2.0
+  path: ^1.9.1
   win32: ^6.4.0
 
 dev_dependencies:
-  lints: ^6.0.0
+  lints: ^6.1.0
   shipworld:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
+      ref: 5da5311a53bc2cf401f4bc8efb97518adeeced32
       path: packages/shipworld
-  test: ^1.26.0
+  test: ^1.32.0
 
-# shipworld declares `cliweave: ^0.2.0` from pub.dev; this override keeps a
-# single git-sourced cliweave and is what makes resolution succeed.
+# shipworld declares a pub.dev cliweave range; this override keeps a single
+# git-sourced cliweave and is what makes resolution succeed.
 dependency_overrides:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 7e1b0065513936e801109f87af21b4afd9ea05ab
+      ref: 5da5311a53bc2cf401f4bc8efb97518adeeced32
       path: packages/cliweave

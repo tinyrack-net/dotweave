@@ -20,9 +20,8 @@ void main() {
 
   Future<List<Map<String, Object?>>> readManifestEntries() async {
     return parseManifestEntries(
-      await File(
-        p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'),
-      ).readAsString(),
+      await File(p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'))
+          .readAsString(),
     );
   }
 
@@ -40,9 +39,8 @@ void main() {
       final configFile = p.join(sshDirectory, 'config');
 
       await Directory(sshDirectory).create(recursive: true);
-      await File(
-        configFile,
-      ).writeAsString('Host example\n  HostName example.com\n');
+      await File(configFile)
+          .writeAsString('Host example\n  HostName example.com\n');
 
       await ctx.runCli(['init']);
       await ctx.runCli([

@@ -7,8 +7,7 @@ import 'package:dotweave/src/services/profile.dart';
 final Command<ApplicationContext> profileListCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Show configured and active sync profiles',
-    fullDescription:
-        'List the implicit default profile and manifest-registered profiles, and show which profile is active through ~/.config/dotweave/settings.jsonc.',
+    fullDescription: 'List the implicit default profile and manifest-registered profiles, and show which profile is active through ~/.config/dotweave/settings.jsonc.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

@@ -25,8 +25,9 @@ class MockedDoctorSeams {
       throw StateError('buildRepositorySnapshot was not mocked');
   Future<void> Function(String directory) verifyIsGitRepository = (directory) =>
       throw StateError('verifyIsGitRepository was not mocked');
-  Future<LoadedSyncConfig> Function(String syncDirectory) loadSyncConfig =
-      (syncDirectory) => throw StateError('loadSyncConfig was not mocked');
+  Future<LoadedSyncConfig> Function(String syncDirectory) loadSyncConfig = (
+    syncDirectory,
+  ) => throw StateError('loadSyncConfig was not mocked');
   Future<bool> Function(String path) pathExists = (path) =>
       throw StateError('pathExists was not mocked');
   SyncPaths Function() resolveSyncPaths = () => const SyncPaths(

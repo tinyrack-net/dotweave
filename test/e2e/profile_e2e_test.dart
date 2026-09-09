@@ -122,9 +122,8 @@ void main() {
       );
 
       final settings = readSettingsJson(
-        await File(
-          p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'),
-        ).readAsString(),
+        await File(p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'))
+            .readAsString(),
       );
 
       expect(settings['activeProfile'], 'work');
@@ -148,9 +147,8 @@ void main() {
         );
 
         final settings = readSettingsJson(
-          await File(
-            p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'),
-          ).readAsString(),
+          await File(p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'))
+              .readAsString(),
         );
 
         expect(settings['activeProfile'], isNull);
@@ -376,9 +374,8 @@ void main() {
 
       await ctx.writeIdentityFile(ageKeys.identity);
       await Directory(configDir).create(recursive: true);
-      await File(
-        p.join(configDir, 'config.toml'),
-      ).writeAsString('key = value\n');
+      await File(p.join(configDir, 'config.toml'))
+          .writeAsString('key = value\n');
 
       await ctx.runCli(['init']);
       await ctx.runCli(['track', configDir]);
@@ -422,9 +419,8 @@ void main() {
 
         await ctx.writeIdentityFile(ageKeys.identity);
         await Directory(configDir).create(recursive: true);
-        await File(
-          p.join(configDir, 'config.toml'),
-        ).writeAsString('token = secret\n');
+        await File(p.join(configDir, 'config.toml'))
+            .writeAsString('token = secret\n');
 
         await ctx.runCli(['init']);
         await ctx.runCli(['profile', 'add', 'work']);

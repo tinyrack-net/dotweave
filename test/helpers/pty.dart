@@ -127,9 +127,9 @@ String stripVtControlCharacters(String value) {
 
 /// Mirror of the TS `normalizeTerminalOutput`.
 String normalizeTerminalOutput(String value) {
-  return applyBackspaces(
-    stripVtControlCharacters(value),
-  ).replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+  return applyBackspaces(stripVtControlCharacters(value))
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n');
 }
 
 String _posixShellQuote(String value) {

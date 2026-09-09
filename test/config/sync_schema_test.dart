@@ -270,9 +270,8 @@ void main() {
       };
 
       await Directory(syncDirectory).create();
-      await File(
-        manifestPath,
-      ).writeAsString(const JsonEncoder.withIndent('  ').convert(manifest));
+      await File(manifestPath)
+          .writeAsString(const JsonEncoder.withIndent('  ').convert(manifest));
 
       await expectLater(
         readSyncConfig(

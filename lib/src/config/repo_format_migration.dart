@@ -7,11 +7,10 @@ export 'package:dotweave/src/config/sync_schema.dart' show ResolvedSyncConfig;
 /// repository from one format version to the next. Unlike config migrations
 /// (pure object transforms), these touch the filesystem, so they are async and
 /// receive the repository directory.
-typedef RepoFormatMigrationFn =
-    Future<void> Function(
-      String repositoryDirectory,
-      ResolvedSyncConfig config,
-    );
+typedef RepoFormatMigrationFn = Future<void> Function(
+  String repositoryDirectory,
+  ResolvedSyncConfig config,
+);
 
 typedef RepoFormatMigrationRegistry = Map<int, RepoFormatMigrationFn>;
 

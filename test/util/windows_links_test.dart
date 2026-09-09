@@ -53,180 +53,164 @@ void main() {
     });
   });
 
-  group(
-    'win32 links',
-    () {
-      late Directory workspace;
+  group('win32 links', () {
+    late Directory workspace;
 
-      setUp(() async {
-        workspace = await Directory.systemTemp.createTemp('dotweave-links-');
-      });
+    setUp(() async {
+      workspace = await Directory.systemTemp.createTemp('dotweave-links-');
+    });
 
-      tearDown(() async {
-        try {
-          await workspace.delete(recursive: true);
-        } on FileSystemException {
-          // Best-effort cleanup.
-        }
-      });
-
-      Future<String> createTargetDirectory() async {
-        final target = Directory(p.join(workspace.path, 'target-dir'));
-        await target.create(recursive: true);
-        await File(
-          p.join(target.path, 'payload.txt'),
-        ).writeAsString('payload\n');
-
-        return target.path;
+    tearDown(() async {
+      try {
+        await workspace.delete(recursive: true);
+      } on FileSystemException {
+        // Best-effort cleanup.
       }
+    });
 
-      test(
-        'junction create/read/delete round-trip preserves the target',
-        () async {
-          final targetPath = await createTargetDirectory();
-          final junctionPath = p.join(workspace.path, 'junction');
+    Future<String> createTargetDirectory() async {
+      final target = Directory(p.join(workspace.path, 'target-dir'));
+      await target.create(recursive: true);
+      await File(p.join(target.path, 'payload.txt')).writeAsString('payload\n');
 
-          win32_links.createJunction(junctionPath, targetPath);
+      return target.path;
+    }
 
-          expect(
-            await FileSystemEntity.type(junctionPath, followLinks: false),
-            FileSystemEntityType.link,
-          );
-          expect(
-            await File(p.join(junctionPath, 'payload.txt')).readAsString(),
-            'payload\n',
-          );
+    test(
+      'junction create/read/delete round-trip preserves the target',
+      () async {
+        final targetPath = await createTargetDirectory();
+        final junctionPath = p.join(workspace.path, 'junction');
 
-          final reparseData = win32_links.readReparsePoint(junctionPath);
-          expect(reparseData.isMountPoint, true);
-          expect(reparseData.substituteName, '\\??\\$targetPath');
-          expect(reparseData.printName, targetPath);
-          expect(await readLinkTarget(junctionPath), targetPath);
-
-          win32_links.deleteLinkNode(junctionPath);
-
-          expect(
-            await FileSystemEntity.type(junctionPath, followLinks: false),
-            FileSystemEntityType.notFound,
-          );
-          expect(
-            await File(p.join(targetPath, 'payload.txt')).readAsString(),
-            'payload\n',
-          );
-        },
-      );
-
-      test('directory symlinks store relative targets verbatim', () async {
-        await createTargetDirectory();
-        final linkPath = p.join(workspace.path, 'dir-link');
-
-        win32_links.createSymbolicLink('target-dir', linkPath, directory: true);
+        win32_links.createJunction(junctionPath, targetPath);
 
         expect(
-          await FileSystemEntity.type(linkPath, followLinks: false),
+          await FileSystemEntity.type(junctionPath, followLinks: false),
           FileSystemEntityType.link,
         );
         expect(
-          await File(p.join(linkPath, 'payload.txt')).readAsString(),
+          await File(p.join(junctionPath, 'payload.txt')).readAsString(),
           'payload\n',
         );
 
-        final reparseData = win32_links.readReparsePoint(linkPath);
-        expect(reparseData.isSymlink, true);
-        expect(reparseData.isRelative, true);
-        expect(reparseData.substituteName, 'target-dir');
-        expect(await readLinkTarget(linkPath), 'target-dir');
+        final reparseData = win32_links.readReparsePoint(junctionPath);
+        expect(reparseData.isMountPoint, true);
+        expect(reparseData.substituteName, '\\??\\$targetPath');
+        expect(reparseData.printName, targetPath);
+        expect(await readLinkTarget(junctionPath), targetPath);
 
-        win32_links.deleteLinkNode(linkPath);
-        expect(await pathExists(p.join(workspace.path, 'target-dir')), true);
-      });
-
-      test(
-        'file symlinks resolve through the stored relative target',
-        () async {
-          final filePath = p.join(workspace.path, 'value.txt');
-          await File(filePath).writeAsString('value\n');
-          final linkPath = p.join(workspace.path, 'file-link');
-
-          win32_links.createSymbolicLink(
-            'value.txt',
-            linkPath,
-            directory: false,
-          );
-
-          expect(await File(linkPath).readAsString(), 'value\n');
-          expect(await readLinkTarget(linkPath), 'value.txt');
-
-          win32_links.deleteLinkNode(linkPath);
-          expect(await File(filePath).readAsString(), 'value\n');
-        },
-      );
-
-      test('readReparsePoint rejects nodes without reparse data', () async {
-        final filePath = p.join(workspace.path, 'plain.txt');
-        await File(filePath).writeAsString('plain\n');
+        win32_links.deleteLinkNode(junctionPath);
 
         expect(
-          () => win32_links.readReparsePoint(filePath),
-          throwsA(
-            isA<FileSystemException>().having(
-              isInvalidArgument,
-              'isInvalidArgument',
-              true,
-            ),
-          ),
+          await FileSystemEntity.type(junctionPath, followLinks: false),
+          FileSystemEntityType.notFound,
         );
-      });
-
-      test(
-        'deleteLinkNode refuses to delete non-reparse directories',
-        () async {
-          final targetPath = await createTargetDirectory();
-
-          expect(
-            () => win32_links.deleteLinkNode(targetPath),
-            throwsA(
-              isA<FileSystemException>().having(
-                (error) => error.osError?.errorCode,
-                'osError.errorCode',
-                4390,
-              ),
-            ),
-          );
-          expect(
-            await File(p.join(targetPath, 'payload.txt')).readAsString(),
-            'payload\n',
-          );
-        },
-      );
-
-      test(
-        'createSymlink with an explicit junction type stores absolute targets',
-        () async {
-          final targetPath = await createTargetDirectory();
-          final junctionPath = p.join(workspace.path, 'typed-junction');
-
-          await createSymlink('target-dir', junctionPath, SymlinkType.junction);
-
-          final reparseData = win32_links.readReparsePoint(junctionPath);
-          expect(reparseData.isMountPoint, true);
-          expect(await readLinkTarget(junctionPath), targetPath);
-
-          win32_links.deleteLinkNode(junctionPath);
-          expect(await pathExists(targetPath), true);
-        },
-      );
-
-      test('createJunction rejects relative targets', () {
         expect(
-          () => win32_links.createJunction(
-            p.join(workspace.path, 'bad-junction'),
-            r'..\relative-target',
-          ),
-          throwsArgumentError,
+          await File(p.join(targetPath, 'payload.txt')).readAsString(),
+          'payload\n',
         );
-      });
-    },
-    skip: Platform.isWindows ? false : 'Windows-only Win32 link tests',
-  );
+      },
+    );
+
+    test('directory symlinks store relative targets verbatim', () async {
+      await createTargetDirectory();
+      final linkPath = p.join(workspace.path, 'dir-link');
+
+      win32_links.createSymbolicLink('target-dir', linkPath, directory: true);
+
+      expect(
+        await FileSystemEntity.type(linkPath, followLinks: false),
+        FileSystemEntityType.link,
+      );
+      expect(
+        await File(p.join(linkPath, 'payload.txt')).readAsString(),
+        'payload\n',
+      );
+
+      final reparseData = win32_links.readReparsePoint(linkPath);
+      expect(reparseData.isSymlink, true);
+      expect(reparseData.isRelative, true);
+      expect(reparseData.substituteName, 'target-dir');
+      expect(await readLinkTarget(linkPath), 'target-dir');
+
+      win32_links.deleteLinkNode(linkPath);
+      expect(await pathExists(p.join(workspace.path, 'target-dir')), true);
+    });
+
+    test('file symlinks resolve through the stored relative target', () async {
+      final filePath = p.join(workspace.path, 'value.txt');
+      await File(filePath).writeAsString('value\n');
+      final linkPath = p.join(workspace.path, 'file-link');
+
+      win32_links.createSymbolicLink('value.txt', linkPath, directory: false);
+
+      expect(await File(linkPath).readAsString(), 'value\n');
+      expect(await readLinkTarget(linkPath), 'value.txt');
+
+      win32_links.deleteLinkNode(linkPath);
+      expect(await File(filePath).readAsString(), 'value\n');
+    });
+
+    test('readReparsePoint rejects nodes without reparse data', () async {
+      final filePath = p.join(workspace.path, 'plain.txt');
+      await File(filePath).writeAsString('plain\n');
+
+      expect(
+        () => win32_links.readReparsePoint(filePath),
+        throwsA(
+          isA<FileSystemException>().having(
+            isInvalidArgument,
+            'isInvalidArgument',
+            true,
+          ),
+        ),
+      );
+    });
+
+    test('deleteLinkNode refuses to delete non-reparse directories', () async {
+      final targetPath = await createTargetDirectory();
+
+      expect(
+        () => win32_links.deleteLinkNode(targetPath),
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.osError?.errorCode,
+            'osError.errorCode',
+            4390,
+          ),
+        ),
+      );
+      expect(
+        await File(p.join(targetPath, 'payload.txt')).readAsString(),
+        'payload\n',
+      );
+    });
+
+    test(
+      'createSymlink with an explicit junction type stores absolute targets',
+      () async {
+        final targetPath = await createTargetDirectory();
+        final junctionPath = p.join(workspace.path, 'typed-junction');
+
+        await createSymlink('target-dir', junctionPath, SymlinkType.junction);
+
+        final reparseData = win32_links.readReparsePoint(junctionPath);
+        expect(reparseData.isMountPoint, true);
+        expect(await readLinkTarget(junctionPath), targetPath);
+
+        win32_links.deleteLinkNode(junctionPath);
+        expect(await pathExists(targetPath), true);
+      },
+    );
+
+    test('createJunction rejects relative targets', () {
+      expect(
+        () => win32_links.createJunction(
+          p.join(workspace.path, 'bad-junction'),
+          r'..\relative-target',
+        ),
+        throwsArgumentError,
+      );
+    });
+  }, skip: Platform.isWindows ? false : 'Windows-only Win32 link tests');
 }
