@@ -78,6 +78,7 @@ void main() {
       ).readAsStringSync();
 
       expect(action, contains('sdk: 3.13.2'));
+      expect(action, contains('problem-matcher: false'));
       expect(workflow, isNot(contains('3.13.2')));
 
       final pubspec = File(p.join(root, 'pubspec.yaml')).readAsStringSync();

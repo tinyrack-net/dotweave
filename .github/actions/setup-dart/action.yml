@@ -11,6 +11,9 @@ runs:
       uses: dart-lang/setup-dart@v1
       with:
         sdk: 3.13.2
+        # setup-dart resolves its matcher path against the outer composite
+        # action directory when nested, so registration fails before CI runs.
+        problem-matcher: false
 
     # setup-dart exports PUB_CACHE on every host, including Windows, where it
     # resolves to C:\Users\runneradmin/.pub-cache, so one POSIX-shaped path
