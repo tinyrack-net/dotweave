@@ -129,9 +129,8 @@ void main() {
       final envB = machineB.env;
 
       await Directory(p.join(homeB, '.agents')).create(recursive: true);
-      await File(
-        p.join(homeB, '.agents', 'note.md'),
-      ).writeAsString('# real note (machine B)\n');
+      await File(p.join(homeB, '.agents', 'note.md'))
+          .writeAsString('# real note (machine B)\n');
 
       await ctx.runCli(['init', remote, '--key-file', keyFile], env: envB);
       final pull = await ctx.runCli(['pull', '-y'], env: envB);
@@ -163,9 +162,8 @@ void main() {
       await ctx.writeIdentityFile(ageKeys.identity);
       await File(keyFile).writeAsString('${ageKeys.identity}\n');
       await Directory(agentsSkills).create(recursive: true);
-      await File(
-        p.join(agentsSkills, 's.md'),
-      ).writeAsString('skill (machine A)\n');
+      await File(p.join(agentsSkills, 's.md'))
+          .writeAsString('skill (machine A)\n');
       await Directory(p.join(ctx.homeDir, '.claude')).create(recursive: true);
       await createSymlink(p.join('..', '.agents', 'skills'), claudeSkills);
 
@@ -193,12 +191,10 @@ void main() {
       final homeB = machineB.homeB;
       final envB = machineB.env;
 
-      await Directory(
-        p.join(homeB, '.agents', 'skills'),
-      ).create(recursive: true);
-      await File(
-        p.join(homeB, '.agents', 'skills', 's.md'),
-      ).writeAsString('skill (machine B)\n');
+      await Directory(p.join(homeB, '.agents', 'skills'))
+          .create(recursive: true);
+      await File(p.join(homeB, '.agents', 'skills', 's.md'))
+          .writeAsString('skill (machine B)\n');
 
       await ctx.runCli(['init', remote, '--key-file', keyFile], env: envB);
       final pull = await ctx.runCli(['pull', '-y'], env: envB);
@@ -281,9 +277,8 @@ void main() {
       final envB = machineB.env;
 
       await Directory(p.join(homeB, '.agents')).create(recursive: true);
-      await File(
-        p.join(homeB, '.agents', 'AGENTS.md'),
-      ).writeAsString('# agents (machine B)\n');
+      await File(p.join(homeB, '.agents', 'AGENTS.md'))
+          .writeAsString('# agents (machine B)\n');
 
       await ctx.runCli(['init', remote, '--key-file', keyFile], env: envB);
       final pull = await ctx.runCli(['pull', '-y'], env: envB);

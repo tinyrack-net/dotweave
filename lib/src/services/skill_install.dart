@@ -85,9 +85,8 @@ Future<SkillInstallResult> installDotweaveSkill(
     );
   }
 
-  await Directory(
-    p.join(request.directory, 'dotweave'),
-  ).create(recursive: true);
+  await Directory(p.join(request.directory, 'dotweave'))
+      .create(recursive: true);
   await writeTextFileAtomically(targetPath, dotweaveSkillContent);
 
   return SkillInstallResult(

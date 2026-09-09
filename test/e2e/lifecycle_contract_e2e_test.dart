@@ -160,9 +160,8 @@ void main() {
         'editor = vim\n',
       );
       expect(
-        await File(
-          p.join(second.homeDir, '.config', 'portable', 'token.env'),
-        ).readAsString(),
+        await File(p.join(second.homeDir, '.config', 'portable', 'token.env'))
+            .readAsString(),
         'TOKEN=portable\n',
       );
     });

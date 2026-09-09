@@ -52,9 +52,8 @@ void main() {
   test('checks the complete Dotweave binary contract', () async {
     final root = await Directory.systemTemp.createTemp('dotweave-smoke-');
     addTearDown(() => root.delete(recursive: true));
-    await File(
-      p.join(root.path, 'pubspec.yaml'),
-    ).writeAsString('name: dotweave\nversion: 2.0.0\n');
+    await File(p.join(root.path, 'pubspec.yaml'))
+        .writeAsString('name: dotweave\nversion: 2.0.0\n');
     final executor = _SmokeExecutor();
 
     await performSmoke(

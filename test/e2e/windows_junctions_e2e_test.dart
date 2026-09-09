@@ -102,9 +102,8 @@ void main() {
         );
         final relativeTarget = p.relative(targetDir, from: p.dirname(linkPath));
 
-        await File(
-          repoLinkArtifact,
-        ).writeAsString(relativeTarget.replaceAll(r'\', '/'));
+        await File(repoLinkArtifact)
+            .writeAsString(relativeTarget.replaceAll(r'\', '/'));
 
         // 3. Pull - should match the absolute local junction with the
         // relative repo target and report "Already up to date" because they

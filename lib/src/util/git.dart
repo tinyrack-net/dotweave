@@ -29,12 +29,11 @@ class GitExecFileException implements Exception {
   String toString() => message;
 }
 
-typedef GitExecFileAsync =
-    Future<GitCommandResult> Function(
-      String file,
-      List<String> args, {
-      String? cwd,
-    });
+typedef GitExecFileAsync = Future<GitCommandResult> Function(
+  String file,
+  List<String> args, {
+  String? cwd,
+});
 
 /// Mirrors the Node spawn child: output streams plus a future that completes
 /// with the exit code (null when the child closed without one) or errors when
@@ -47,12 +46,11 @@ class GitStreamingChild {
   final Future<int?> result;
 }
 
-typedef GitSpawn =
-    GitStreamingChild Function(
-      String command,
-      List<String> args, {
-      String? cwd,
-    });
+typedef GitSpawn = GitStreamingChild Function(
+  String command,
+  List<String> args, {
+  String? cwd,
+});
 
 class GitCommandDependencies {
   const GitCommandDependencies({required this.execFileAsync});
@@ -68,8 +66,10 @@ class StreamingGitCommandDependencies {
 
 /// Runs a git command with the child inheriting this process's terminal and
 /// completes with its exit code, or errors when spawning fails.
-typedef GitInteractiveRun =
-    Future<int> Function(List<String> args, {String? cwd});
+typedef GitInteractiveRun = Future<int> Function(
+  List<String> args, {
+  String? cwd,
+});
 
 class InteractiveGitCommandDependencies {
   const InteractiveGitCommandDependencies({required this.runInteractive});

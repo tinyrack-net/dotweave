@@ -8,14 +8,13 @@ import 'package:cliweave/cliweave.dart';
 import 'package:dotweave/src/config/sync_schema.dart';
 import 'package:dotweave/src/services/sync_context.dart';
 
-final FlagBinding<String?, ApplicationContext>
-profileFlag = ParsedFlag.optional<String, ApplicationContext>(
-  name: 'profile',
-  brief:
-      "Use a registered profile layer for this command (add non-default profiles with 'dotweave profile add')",
-  parse: stringParser,
-  placeholder: 'profile',
-);
+final FlagBinding<String?, ApplicationContext> profileFlag =
+    ParsedFlag.optional<String, ApplicationContext>(
+      name: 'profile',
+      brief: "Use a registered profile layer for this command (add non-default profiles with 'dotweave profile add')",
+      parse: stringParser,
+      placeholder: 'profile',
+    );
 
 Future<SyncCommandDefaults?> loadSyncCommandDefaults() async {
   final paths = resolveSyncPaths();

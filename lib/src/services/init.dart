@@ -424,9 +424,9 @@ Future<InitResult> initializeSyncDirectory(
     final syncDirectoryExists = await pathExists(syncDirectory);
 
     if (syncDirectoryExists) {
-      final entries = await Directory(
-        syncDirectory,
-      ).list(followLinks: false).toList();
+      final entries = await Directory(syncDirectory)
+          .list(followLinks: false)
+          .toList();
 
       if (entries.isNotEmpty) {
         throw DotweaveError(

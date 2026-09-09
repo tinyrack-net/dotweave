@@ -32,9 +32,8 @@ void main() {
         // Prompting is for the one case where dotweave cannot proceed without
         // input: an existing repository whose artifacts need a key to read.
         expect(
-          (await plan(
-            repository: 'git@example.com:me/dotfiles.git',
-          )).shouldPrompt,
+          (await plan(repository: 'git@example.com:me/dotfiles.git'))
+              .shouldPrompt,
           isTrue,
         );
 

@@ -44,9 +44,8 @@ void main() {
 
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(sharedDirectory).create(recursive: true);
-      await File(
-        p.join(sharedDirectory, 'secrets.zsh'),
-      ).writeAsString('export TOKEN=work\n');
+      await File(p.join(sharedDirectory, 'secrets.zsh'))
+          .writeAsString('export TOKEN=work\n');
       await File(workFile).writeAsString('[include]\npath=~/.gitconfig.work\n');
 
       setEnvironment(homeDirectory, xdgConfigHome);
@@ -228,12 +227,10 @@ void main() {
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
         await Directory(vividentDirectory).create(recursive: true);
-        await File(
-          p.join(vividentDirectory, 'config.json'),
-        ).writeAsString('{"theme":"dark"}\n');
-        await File(
-          p.join(vividentDirectory, 'state.txt'),
-        ).writeAsString('window=main\n');
+        await File(p.join(vividentDirectory, 'config.json'))
+            .writeAsString('{"theme":"dark"}\n');
+        await File(p.join(vividentDirectory, 'state.txt'))
+            .writeAsString('window=main\n');
 
         setEnvironment(homeDirectory, xdgConfigHome);
 
@@ -244,9 +241,8 @@ void main() {
             recipients: [ageKeys.recipient],
           ),
         );
-        await File(
-          p.join(syncDirectory, '.gitignore'),
-        ).writeAsString('*.dotweave.secret\n');
+        await File(p.join(syncDirectory, '.gitignore'))
+            .writeAsString('*.dotweave.secret\n');
 
         await trackTarget(
           TrackRequest(
@@ -518,9 +514,8 @@ void main() {
 
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(sharedDirectory).create(recursive: true);
-      await File(
-        p.join(sharedDirectory, 'secrets.zsh'),
-      ).writeAsString('export TOKEN=work\n');
+      await File(p.join(sharedDirectory, 'secrets.zsh'))
+          .writeAsString('export TOKEN=work\n');
 
       setEnvironment(homeDirectory, xdgConfigHome);
       final cwd = homeDirectory;
@@ -1125,12 +1120,10 @@ void main() {
 
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(nestedDirectory).create(recursive: true);
-      await File(
-        p.join(appDirectory, 'settings.json'),
-      ).writeAsString('{"theme":"dark"}\n');
-      await File(
-        p.join(nestedDirectory, 'theme.json'),
-      ).writeAsString('{"accent":"blue"}\n');
+      await File(p.join(appDirectory, 'settings.json'))
+          .writeAsString('{"theme":"dark"}\n');
+      await File(p.join(nestedDirectory, 'theme.json'))
+          .writeAsString('{"accent":"blue"}\n');
 
       await initializeSyncDirectory(
         InitRequest(
@@ -1448,9 +1441,8 @@ void main() {
       expect(result.plainFileCount, 2);
       expect(result.deletedArtifactCount, 0);
       expect(
-        await File(
-          p.join(repositoryZshDirectory, 'platform.wsl.zsh'),
-        ).readAsString(),
+        await File(p.join(repositoryZshDirectory, 'platform.wsl.zsh'))
+            .readAsString(),
         'wsl platform\n',
       );
       expect(
@@ -1644,9 +1636,8 @@ void main() {
 
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(zshDirectory).create(recursive: true);
-      await File(
-        p.join(zshDirectory, 'platform.zsh'),
-      ).writeAsString('wsl platform\n');
+      await File(p.join(zshDirectory, 'platform.zsh'))
+          .writeAsString('wsl platform\n');
       await File(p.join(zshDirectory, 'other.zsh')).writeAsString('other\n');
 
       await initializeSyncDirectory(
@@ -1693,9 +1684,8 @@ void main() {
         'zsh',
       );
       await Directory(repositoryZshDirectory).create(recursive: true);
-      await File(
-        p.join(repositoryZshDirectory, 'platform.zsh'),
-      ).writeAsString('stale\n');
+      await File(p.join(repositoryZshDirectory, 'platform.zsh'))
+          .writeAsString('stale\n');
 
       mockCurrentPlatformKey(PlatformKey.wsl);
       final status = await getStatus();
@@ -1773,15 +1763,12 @@ void main() {
         'zsh',
       );
       await Directory(repositoryZshDirectory).create(recursive: true);
-      await File(
-        p.join(repositoryZshDirectory, 'platform.zsh'),
-      ).writeAsString('default artifact\n');
-      await File(
-        p.join(repositoryZshDirectory, 'platform.wsl.zsh'),
-      ).writeAsString('wsl artifact\n');
-      await File(
-        p.join(repositoryZshDirectory, 'other.zsh'),
-      ).writeAsString('other\n');
+      await File(p.join(repositoryZshDirectory, 'platform.zsh'))
+          .writeAsString('default artifact\n');
+      await File(p.join(repositoryZshDirectory, 'platform.wsl.zsh'))
+          .writeAsString('wsl artifact\n');
+      await File(p.join(repositoryZshDirectory, 'other.zsh'))
+          .writeAsString('other\n');
 
       mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pullChanges(const PullRequest(dryRun: false));
@@ -1860,9 +1847,8 @@ void main() {
       final wslArtifact = p.join(workZshDirectory, 'platform.wsl.zsh');
 
       await Directory(workZshDirectory).create(recursive: true);
-      await File(
-        defaultArtifact,
-      ).writeAsString('stale work default artifact\n');
+      await File(defaultArtifact)
+          .writeAsString('stale work default artifact\n');
 
       mockCurrentPlatformKey(PlatformKey.wsl);
       final result = await pushChanges(
@@ -1973,12 +1959,10 @@ void main() {
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(linuxAppDirectory).create(recursive: true);
       await Directory(winAppDirectory).create(recursive: true);
-      await File(
-        p.join(linuxAppDirectory, 'settings.json'),
-      ).writeAsString('linux\n');
-      await File(
-        p.join(winAppDirectory, 'settings.json'),
-      ).writeAsString('windows\n');
+      await File(p.join(linuxAppDirectory, 'settings.json'))
+          .writeAsString('linux\n');
+      await File(p.join(winAppDirectory, 'settings.json'))
+          .writeAsString('windows\n');
 
       await initializeSyncDirectory(
         InitRequest(

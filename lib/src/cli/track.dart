@@ -16,8 +16,7 @@ import 'package:dotweave/src/util/error.dart';
 final Command<ApplicationContext> trackCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Track local files or directories for syncing',
-    fullDescription:
-        'Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If a target is already tracked, specified manifest fields are updated and unspecified fields are preserved.',
+    fullDescription: 'Register a file or directory inside your home directory so dotweave can mirror it into the sync directory. If a target is already tracked, specified manifest fields are updated and unspecified fields are preserved.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);
@@ -132,8 +131,7 @@ final Command<ApplicationContext> trackCommand = buildCommand(
             .and(
               ParsedFlag.variadic<String, ApplicationContext>(
                 name: 'profile',
-                brief:
-                    "Restrict syncing to registered profiles (add non-default profiles with 'dotweave profile add')",
+                brief: "Restrict syncing to registered profiles (add non-default profiles with 'dotweave profile add')",
                 parse: stringParser,
                 placeholder: 'profile',
               ),
@@ -167,8 +165,7 @@ final Command<ApplicationContext> trackCommand = buildCommand(
             }),
     positional: PositionalSet.array(
       Positional.required<String, ApplicationContext>(
-        brief:
-            'Local files or directories under your home directory to track, including cwd-relative paths or repository paths inside tracked directories',
+        brief: 'Local files or directories under your home directory to track, including cwd-relative paths or repository paths inside tracked directories',
         parse: stringParser,
         placeholder: 'target',
         proposeCompletions: (context, partial) =>

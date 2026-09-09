@@ -151,9 +151,8 @@ void main() {
         setEnvironment(homeDirectory, xdgConfigHome);
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
-        await Directory(
-          p.join(homeDirectory, '.config'),
-        ).create(recursive: true);
+        await Directory(p.join(homeDirectory, '.config'))
+            .create(recursive: true);
 
         await initializeSyncDirectory(
           InitRequest(
@@ -277,9 +276,8 @@ void main() {
         setEnvironment(homeDirectory, xdgConfigHome);
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
-        await Directory(
-          p.join(homeDirectory, '.config'),
-        ).create(recursive: true);
+        await Directory(p.join(homeDirectory, '.config'))
+            .create(recursive: true);
         await File(linkTarget).writeAsString('target\n');
 
         await initializeSyncDirectory(
@@ -321,9 +319,8 @@ void main() {
 
         mockCurrentPlatformKey(PlatformKey.linux);
         await Directory(replacementPath).create(recursive: true);
-        await File(
-          p.join(replacementPath, 'owned.txt'),
-        ).writeAsString('owned\n');
+        await File(p.join(replacementPath, 'owned.txt'))
+            .writeAsString('owned\n');
         await pushChanges(const PushRequest(dryRun: false));
 
         final artifactPath = p.join(
@@ -844,9 +841,8 @@ void main() {
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
         await Directory(childDirectory).create(recursive: true);
-        await File(
-          p.join(childDirectory, 'settings.json'),
-        ).writeAsString('{"stale":true}\n');
+        await File(p.join(childDirectory, 'settings.json'))
+            .writeAsString('{"stale":true}\n');
         await File(replacementFile).writeAsString('replacement file\n');
 
         await initializeSyncDirectory(
@@ -962,9 +958,8 @@ void main() {
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
         await Directory(childDirectory).create(recursive: true);
-        await File(
-          p.join(childDirectory, 'settings.json'),
-        ).writeAsString('{"stale":true}\n');
+        await File(p.join(childDirectory, 'settings.json'))
+            .writeAsString('{"stale":true}\n');
         await File(linkTarget).writeAsString('replacement link target\n');
         await createSymlink('.overlap-link-target', replacementLink);
 
@@ -1131,9 +1126,8 @@ void main() {
           await writeIdentityFile(xdgConfigHome, ageKeys.identity);
           await Directory(sshDirectory).create(recursive: true);
           await File(keyFile).writeAsString('fake-private-key\n');
-          await File(
-            configFile,
-          ).writeAsString('Host *\n  AddKeysToAgent yes\n');
+          await File(configFile)
+              .writeAsString('Host *\n  AddKeysToAgent yes\n');
 
           await initializeSyncDirectory(
             InitRequest(

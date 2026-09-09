@@ -1559,9 +1559,8 @@ void main() {
 
       await writeIdentityFile(xdgConfigHome, ageKeys.identity);
       await Directory(childDirectory).create(recursive: true);
-      await File(
-        p.join(parentDirectory, 'default.txt'),
-      ).writeAsString('default dir\n');
+      await File(p.join(parentDirectory, 'default.txt'))
+          .writeAsString('default dir\n');
       await File(childFile).writeAsString('{"profile":"work"}\n');
       await File(linkTarget).writeAsString('replacement link target\n');
 
@@ -1688,9 +1687,8 @@ void main() {
 
       await File(parentDirectory).delete();
       await Directory(childDirectory).create(recursive: true);
-      await File(
-        childFile,
-      ).writeAsString('{"profile":"work","updated":true}\n');
+      await File(childFile)
+          .writeAsString('{"profile":"work","updated":true}\n');
 
       final explicitWorkResult = await pushChanges(
         const PushRequest(dryRun: false, profile: 'work'),

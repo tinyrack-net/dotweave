@@ -424,9 +424,8 @@ _createPowerShellShim() async {
   final binary = await resolveE2eBinary();
 
   if (Platform.isWindows) {
-    await File(
-      p.join(binDirectory, 'dotweave.cmd'),
-    ).writeAsString(['@echo off', '"$binary" %*'].join('\r\n'));
+    await File(p.join(binDirectory, 'dotweave.cmd'))
+        .writeAsString(['@echo off', '"$binary" %*'].join('\r\n'));
   } else {
     final shimPath = p.join(binDirectory, 'dotweave');
 
@@ -490,12 +489,10 @@ void main() {
       completionFixtureDirectory = (await Directory.systemTemp.createTemp(
         'dotweave-autocomplete-',
       )).path;
-      await File(
-        p.join(completionFixtureDirectory, 'file-alpha.txt'),
-      ).writeAsString('');
-      await Directory(
-        p.join(completionFixtureDirectory, 'folder-beta'),
-      ).create();
+      await File(p.join(completionFixtureDirectory, 'file-alpha.txt'))
+          .writeAsString('');
+      await Directory(p.join(completionFixtureDirectory, 'folder-beta'))
+          .create();
     });
 
     tearDownAll(() async {
@@ -595,17 +592,13 @@ void main() {
       }
     });
 
-    test(
-      'populates bash completions from the emitted script',
-      () async {
-        final result = await _runBashCompletion(['dotweave', 'aut'], 1);
+    test('populates bash completions from the emitted script', () async {
+      final result = await _runBashCompletion(['dotweave', 'aut'], 1);
 
-        expect(result.exitCode, 0);
-        expect(result.stdout.split('\n'), contains('autocomplete '));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('bash', isBashAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('autocomplete '));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('bash', isBashAvailable));
 
     test('offers root subcommands when bash completes the command token '
         'itself', () async {
@@ -627,39 +620,31 @@ void main() {
       skip: _skipForShell('bash', isBashAvailable),
     );
 
-    test(
-      'populates bash path completions for track targets',
-      () async {
-        final result = await _runBashCompletion(
-          ['dotweave', 'track', 'fi'],
-          2,
-          cwd: completionFixtureDirectory,
-        );
+    test('populates bash path completions for track targets', () async {
+      final result = await _runBashCompletion(
+        ['dotweave', 'track', 'fi'],
+        2,
+        cwd: completionFixtureDirectory,
+      );
 
-        expect(result.exitCode, 0);
-        expect(result.stdout.split('\n'), contains('file-alpha.txt '));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('bash', isBashAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('file-alpha.txt '));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('bash', isBashAvailable));
 
-    test(
-      'populates bash flag completions after a track target',
-      () async {
-        final result = await _runBashCompletion(
-          ['dotweave', 'track', 'file-alpha.txt', '-'],
-          3,
-          cwd: completionFixtureDirectory,
-        );
+    test('populates bash flag completions after a track target', () async {
+      final result = await _runBashCompletion(
+        ['dotweave', 'track', 'file-alpha.txt', '-'],
+        3,
+        cwd: completionFixtureDirectory,
+      );
 
-        expect(result.exitCode, 0);
-        expect(
-          result.stdout.split('\n'),
-          containsAll(['--mode ', '--profile ', '--repo ']),
-        );
-      },
-      skip: _skipForShell('bash', isBashAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(
+        result.stdout.split('\n'),
+        containsAll(['--mode ', '--profile ', '--repo ']),
+      );
+    }, skip: _skipForShell('bash', isBashAvailable));
 
     test(
       'adds a trailing space for unique zsh subcommand completions',
@@ -683,75 +668,59 @@ void main() {
       skip: _skipForShell('zsh', isZshAvailable),
     );
 
-    test(
-      'populates fish root completions from a prefix',
-      () async {
-        _requireSelectedShellAvailability('fish', isFishAvailable);
+    test('populates fish root completions from a prefix', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
 
-        final result = await _runFishCompletion('dotweave pr');
+      final result = await _runFishCompletion('dotweave pr');
 
+      expect(result.exitCode, 0);
+      expect(_completionNames(result.stdout), contains('profile'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('fish', isFishAvailable));
+
+    test('isolates concurrent fish completion state', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
+
+      final results = await Future.wait([
+        for (var invocation = 0; invocation < 8; invocation++)
+          _runFishCompletion('dotweave pr'),
+      ]);
+
+      for (final result in results) {
         expect(result.exitCode, 0);
         expect(_completionNames(result.stdout), contains('profile'));
         expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('fish', isFishAvailable),
-    );
+      }
+    }, skip: _skipForShell('fish', isFishAvailable));
 
-    test(
-      'isolates concurrent fish completion state',
-      () async {
-        _requireSelectedShellAvailability('fish', isFishAvailable);
+    test('populates fish path completions for track targets', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
 
-        final results = await Future.wait([
-          for (var invocation = 0; invocation < 8; invocation++)
-            _runFishCompletion('dotweave pr'),
-        ]);
+      final result = await _runFishCompletion(
+        'dotweave track fi',
+        cwd: completionFixtureDirectory,
+      );
 
-        for (final result in results) {
-          expect(result.exitCode, 0);
-          expect(_completionNames(result.stdout), contains('profile'));
-          expect(_cleanShellStderr(result.stderr), '');
-        }
-      },
-      skip: _skipForShell('fish', isFishAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(_completionNames(result.stdout), contains('file-alpha.txt'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('fish', isFishAvailable));
 
-    test(
-      'populates fish path completions for track targets',
-      () async {
-        _requireSelectedShellAvailability('fish', isFishAvailable);
+    test('populates fish flag completions after a track target', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
 
-        final result = await _runFishCompletion(
-          'dotweave track fi',
-          cwd: completionFixtureDirectory,
-        );
+      final result = await _runFishCompletion(
+        'dotweave track file-alpha.txt -',
+        cwd: completionFixtureDirectory,
+      );
 
-        expect(result.exitCode, 0);
-        expect(_completionNames(result.stdout), contains('file-alpha.txt'));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('fish', isFishAvailable),
-    );
-
-    test(
-      'populates fish flag completions after a track target',
-      () async {
-        _requireSelectedShellAvailability('fish', isFishAvailable);
-
-        final result = await _runFishCompletion(
-          'dotweave track file-alpha.txt -',
-          cwd: completionFixtureDirectory,
-        );
-
-        expect(result.exitCode, 0);
-        expect(
-          _completionNames(result.stdout),
-          containsAll(['--mode', '--profile', '--repo']),
-        );
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('fish', isFishAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(
+        _completionNames(result.stdout),
+        containsAll(['--mode', '--profile', '--repo']),
+      );
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('fish', isFishAvailable));
 
     test(
       'proposes root subcommands when COMP_LINE has a trailing space',
@@ -785,50 +754,38 @@ void main() {
       },
     );
 
-    test(
-      'populates PowerShell root completions from a prefix',
-      () async {
-        _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+    test('populates PowerShell root completions from a prefix', () async {
+      _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
 
-        final result = await _runPowerShellCompletion('dotweave p');
+      final result = await _runPowerShellCompletion('dotweave p');
 
-        expect(result.exitCode, 0);
-        expect(_powerShellLines(result.stdout), contains('profile'));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('powershell', isPowerShellAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(_powerShellLines(result.stdout), contains('profile'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('powershell', isPowerShellAvailable));
 
-    test(
-      'populates PowerShell subcommand completions from a prefix',
-      () async {
-        _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+    test('populates PowerShell subcommand completions from a prefix', () async {
+      _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
 
-        final result = await _runPowerShellCompletion('dotweave tr');
+      final result = await _runPowerShellCompletion('dotweave tr');
 
-        expect(result.exitCode, 0);
-        expect(_powerShellLines(result.stdout), contains('track'));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('powershell', isPowerShellAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(_powerShellLines(result.stdout), contains('track'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('powershell', isPowerShellAvailable));
 
-    test(
-      'populates PowerShell path completions for track targets',
-      () async {
-        _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+    test('populates PowerShell path completions for track targets', () async {
+      _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
 
-        final result = await _runPowerShellCompletion(
-          'dotweave track fi',
-          cwd: completionFixtureDirectory,
-        );
+      final result = await _runPowerShellCompletion(
+        'dotweave track fi',
+        cwd: completionFixtureDirectory,
+      );
 
-        expect(result.exitCode, 0);
-        expect(_powerShellLines(result.stdout), contains('file-alpha.txt'));
-        expect(_cleanShellStderr(result.stderr), '');
-      },
-      skip: _skipForShell('powershell', isPowerShellAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(_powerShellLines(result.stdout), contains('file-alpha.txt'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('powershell', isPowerShellAvailable));
 
     test(
       'populates PowerShell flag completions after a track target',

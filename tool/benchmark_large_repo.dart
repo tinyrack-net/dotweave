@@ -109,9 +109,10 @@ Future<void> _copyDirectory(String source, String destination) async {
 
 int _touchFraction(String root, double fraction, {int seed = 7}) {
   final random = Random(seed);
-  final files = Directory(
-    root,
-  ).listSync(recursive: true).whereType<File>().toList();
+  final files = Directory(root)
+      .listSync(recursive: true)
+      .whereType<File>()
+      .toList();
   var touched = 0;
   for (final file in files) {
     if (random.nextDouble() < fraction) {

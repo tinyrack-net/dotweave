@@ -140,9 +140,8 @@ void main() {
       final filePath = p.join(sourceDirectory, 'nested', 'value.txt');
       final linkPath = p.join(sourceDirectory, 'nested', 'value-link');
 
-      await Directory(
-        p.join(sourceDirectory, 'nested'),
-      ).create(recursive: true);
+      await Directory(p.join(sourceDirectory, 'nested'))
+          .create(recursive: true);
       await File(filePath).writeAsString('payload\n');
       if (!Platform.isWindows) {
         posixChmod(filePath, 0x1ED); // 0o755
@@ -152,9 +151,8 @@ void main() {
       await copyFilesystemNode(sourceDirectory, targetDirectory);
 
       expect(
-        await File(
-          p.join(targetDirectory, 'nested', 'value.txt'),
-        ).readAsString(),
+        await File(p.join(targetDirectory, 'nested', 'value.txt'))
+            .readAsString(),
         'payload\n',
       );
       expect(

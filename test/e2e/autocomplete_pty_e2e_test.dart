@@ -102,9 +102,8 @@ _createTestShellDirectory(List<String> rcLines, String rcFileName) async {
   ).writeAsString(['#!/usr/bin/env bash', 'exec $cliCommand "\$@"'].join('\n'));
   await _makeExecutable(shimPath);
 
-  await File(
-    p.join(configDirectory, rcFileName),
-  ).writeAsString(rcLines.join('\n'));
+  await File(p.join(configDirectory, rcFileName))
+      .writeAsString(rcLines.join('\n'));
 
   return (binDirectory: binDirectory, configDirectory: configDirectory);
 }
@@ -118,9 +117,8 @@ _createPowerShellPtyDirectory() async {
   final binary = await resolveE2eBinary();
 
   await Directory(binDirectory).create(recursive: true);
-  await File(
-    p.join(binDirectory, 'dotweave.cmd'),
-  ).writeAsString(['@echo off', '"$binary" %*'].join('\r\n'));
+  await File(p.join(binDirectory, 'dotweave.cmd'))
+      .writeAsString(['@echo off', '"$binary" %*'].join('\r\n'));
 
   return (binDirectory: binDirectory, configDirectory: configDirectory);
 }
@@ -156,9 +154,8 @@ void main() {
       fishFixtureDirectory = (await Directory.systemTemp.createTemp(
         'dotweave-autocomplete-fish-pty-',
       )).path;
-      await File(
-        p.join(fishFixtureDirectory, 'file-alpha.txt'),
-      ).writeAsString('');
+      await File(p.join(fishFixtureDirectory, 'file-alpha.txt'))
+          .writeAsString('');
     });
 
     tearDownAll(() async {
@@ -410,85 +407,77 @@ void main() {
     );
   }, skip: !_shouldRunPtyShell('bash', isBashAvailable));
 
-  group(
-    'autocomplete powershell pty e2e',
-    () {
-      late String powerShellBinDirectory;
-      late String powerShellConfigDirectory;
-      late String powerShellFixtureDirectory;
-      late String systemPath;
+  group('autocomplete powershell pty e2e', () {
+    late String powerShellBinDirectory;
+    late String powerShellConfigDirectory;
+    late String powerShellFixtureDirectory;
+    late String systemPath;
 
-      setUpAll(() async {
-        _requireSelectedPtyShellAvailability(
-          'powershell',
-          isPowerShellAvailable,
-        );
+    setUpAll(() async {
+      _requireSelectedPtyShellAvailability('powershell', isPowerShellAvailable);
 
-        systemPath = Platform.environment['PATH'] ?? '';
+      systemPath = Platform.environment['PATH'] ?? '';
 
-        final directories = await _createPowerShellPtyDirectory();
+      final directories = await _createPowerShellPtyDirectory();
 
-        powerShellBinDirectory = directories.binDirectory;
-        powerShellConfigDirectory = directories.configDirectory;
-        powerShellFixtureDirectory = (await Directory.systemTemp.createTemp(
-          'dotweave-autocomplete-powershell-pty-fixture-',
-        )).path;
-        await File(
-          p.join(powerShellFixtureDirectory, 'file-alpha.txt'),
-        ).writeAsString('');
-      });
+      powerShellBinDirectory = directories.binDirectory;
+      powerShellConfigDirectory = directories.configDirectory;
+      powerShellFixtureDirectory = (await Directory.systemTemp.createTemp(
+        'dotweave-autocomplete-powershell-pty-fixture-',
+      )).path;
+      await File(p.join(powerShellFixtureDirectory, 'file-alpha.txt'))
+          .writeAsString('');
+    });
 
-      tearDownAll(() async {
-        await removeE2eWorkspace(powerShellConfigDirectory);
-        await removeE2eWorkspace(powerShellFixtureDirectory);
-      });
+    tearDownAll(() async {
+      await removeE2eWorkspace(powerShellConfigDirectory);
+      await removeE2eWorkspace(powerShellFixtureDirectory);
+    });
 
-      Future<PtySession> createPowerShellSession() {
-        return startPtySession(
-          args: ['-NoLogo', '-NoProfile', '-NoExit'],
-          cwd: powerShellFixtureDirectory,
-          env: {
-            'FORCE_COLOR': '0',
-            'NO_COLOR': '1',
-            'PATH': [powerShellBinDirectory, systemPath].join(_pathDelimiter),
-          },
-          file: powerShellPath ?? 'pwsh',
-        );
+    Future<PtySession> createPowerShellSession() {
+      return startPtySession(
+        args: ['-NoLogo', '-NoProfile', '-NoExit'],
+        cwd: powerShellFixtureDirectory,
+        env: {
+          'FORCE_COLOR': '0',
+          'NO_COLOR': '1',
+          'PATH': [powerShellBinDirectory, systemPath].join(_pathDelimiter),
+        },
+        file: powerShellPath ?? 'pwsh',
+      );
+    }
+
+    Future<void> configurePowerShellSession(PtySession session) async {
+      session.write(
+        '${[r"$ErrorActionPreference = 'Stop'", 'Set-PSReadLineOption -PredictionSource None', 'Set-PSReadLineOption -EditMode Windows', "function global:prompt { 'PROMPT> ' }", r'. ([scriptblock]::Create(((dotweave autocomplete powershell) '
+            '-join [Environment]::NewLine)))'].join('; ')}\r',
+      );
+      await session.waitFor('PROMPT> ', const Duration(seconds: 15));
+      session.clearOutput();
+    }
+
+    test('lists root subcommands in interactive PowerShell', () async {
+      if (Platform.isWindows) {
+        return;
       }
 
-      Future<void> configurePowerShellSession(PtySession session) async {
-        session.write(
-          '${[r"$ErrorActionPreference = 'Stop'", 'Set-PSReadLineOption -PredictionSource None', 'Set-PSReadLineOption -EditMode Windows', "function global:prompt { 'PROMPT> ' }", r'. ([scriptblock]::Create(((dotweave autocomplete powershell) '
-              '-join [Environment]::NewLine)))'].join('; ')}\r',
+      final session = await createPowerShellSession();
+
+      try {
+        await configurePowerShellSession(session);
+
+        session.write('dotweave p\t');
+
+        final output = await session.waitFor(
+          'profile',
+          const Duration(seconds: 10),
         );
-        await session.waitFor('PROMPT> ', const Duration(seconds: 15));
-        session.clearOutput();
+
+        expect(output, contains('profile'));
+      } finally {
+        session.close();
+        await session.waitForExit();
       }
-
-      test('lists root subcommands in interactive PowerShell', () async {
-        if (Platform.isWindows) {
-          return;
-        }
-
-        final session = await createPowerShellSession();
-
-        try {
-          await configurePowerShellSession(session);
-
-          session.write('dotweave p\t');
-
-          final output = await session.waitFor(
-            'profile',
-            const Duration(seconds: 10),
-          );
-
-          expect(output, contains('profile'));
-        } finally {
-          session.close();
-          await session.waitForExit();
-        }
-      });
-    },
-    skip: !_shouldRunPtyShell('powershell', isPowerShellAvailable),
-  );
+    });
+  }, skip: !_shouldRunPtyShell('powershell', isPowerShellAvailable));
 }

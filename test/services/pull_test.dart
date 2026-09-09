@@ -283,15 +283,14 @@ void main() {
             buildRepositorySnapshot: (syncDirectory, config) async => {},
             collectChangedLocalPaths: (entry, materialization, config) async =>
                 changedLocalPathsQueue.removeAt(0),
-            countDeletedLocalNodes:
-                (
-                  entry,
-                  desiredKeys,
-                  config,
-                  existingKeys,
-                  keyToLocalPath,
-                  deletedKeys,
-                ) async => 0,
+            countDeletedLocalNodes: (
+              entry,
+              desiredKeys,
+              config,
+              existingKeys,
+              keyToLocalPath,
+              deletedKeys,
+            ) async => 0,
           ),
         );
 
@@ -392,15 +391,14 @@ void main() {
           buildRepositorySnapshot: (syncDirectory, config) async => {},
           collectChangedLocalPaths: (entry, materialization, config) async =>
               [],
-          countDeletedLocalNodes:
-              (
-                entry,
-                desiredKeys,
-                config,
-                existingKeys,
-                keyToLocalPath,
-                deletedKeys,
-              ) async => 0,
+          countDeletedLocalNodes: (
+            entry,
+            desiredKeys,
+            config,
+            existingKeys,
+            keyToLocalPath,
+            deletedKeys,
+          ) async => 0,
           loadSyncConfig: (syncDirectory, {profile}) async => LoadedSyncConfig(
             effectiveConfig: config,
             fullConfig: ResolvedSyncConfig(

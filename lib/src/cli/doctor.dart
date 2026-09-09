@@ -44,8 +44,7 @@ final Command<ApplicationContext> doctorCommand = buildCommand(
   docs: const CommandDocs(
     brief:
         'Check sync directory, config, age identity, and tracked local paths',
-    fullDescription:
-        'Run health checks for the local sync setup, including repository availability, config validity, age identity configuration, and whether tracked local paths still exist where dotweave expects them.',
+    fullDescription: 'Run health checks for the local sync setup, including repository availability, config validity, age identity configuration, and whether tracked local paths still exist where dotweave expects them.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);

@@ -659,9 +659,8 @@ void main() {
 
           await initializeRepository(repositoryPath);
           await _configureGitIdentity(repositoryPath);
-          await File(
-            p.join(repositoryPath, 'tracked.txt'),
-          ).writeAsString('hi\n');
+          await File(p.join(repositoryPath, 'tracked.txt'))
+              .writeAsString('hi\n');
 
           expect(
             await commitAllChanges(repositoryPath, 'first commit'),
@@ -740,9 +739,8 @@ void main() {
           await _runGit(['clone', barePath, producerPath]);
           await _runGit(['clone', barePath, consumerPath]);
           await _configureGitIdentity(producerPath);
-          await File(
-            p.join(producerPath, 'shared.txt'),
-          ).writeAsString('shared\n');
+          await File(p.join(producerPath, 'shared.txt'))
+              .writeAsString('shared\n');
           await commitAllChanges(producerPath, 'producer commit');
           await pushToRemote(producerPath);
 

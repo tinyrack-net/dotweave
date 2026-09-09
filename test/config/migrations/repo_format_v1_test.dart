@@ -15,9 +15,8 @@ void main() {
   final suffix = AppConstants.sync.symlinkArtifactSuffix;
 
   setUp(() async {
-    repoDir = (await Directory.systemTemp.createTemp(
-      'dotweave-repo-format-',
-    )).path;
+    repoDir = (await Directory.systemTemp.createTemp('dotweave-repo-format-'))
+        .path;
   });
 
   tearDown(() async {
@@ -71,9 +70,8 @@ void main() {
 
       // Metadata files are regular files, not symlinks.
       expect(
-        (await getPathStats(
-          p.join(profileDir, 'note.md$suffix'),
-        ))!.isSymbolicLink,
+        (await getPathStats(p.join(profileDir, 'note.md$suffix')))!
+            .isSymbolicLink,
         isFalse,
       );
 

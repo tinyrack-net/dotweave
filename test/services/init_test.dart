@@ -201,18 +201,13 @@ void main() {
 
       expect(result.generatedIdentity, false);
       expect(
-        await File(
-          p.join(xdgConfigHome, 'dotweave', 'keys.txt'),
-        ).readAsString(),
+        await File(p.join(xdgConfigHome, 'dotweave', 'keys.txt'))
+            .readAsString(),
         '${ageKeys.identity}\n',
       );
-      final manifest =
-          jsonDecode(
-                await File(
-                  p.join(syncDirectory, 'manifest.jsonc'),
-                ).readAsString(),
-              )
-              as Map<String, Object?>;
+      final manifest = jsonDecode(
+        await File(p.join(syncDirectory, 'manifest.jsonc')).readAsString(),
+      ) as Map<String, Object?>;
       final age = manifest['age'] as Map<String, Object?>;
       expect(
         age['recipients'],
@@ -250,15 +245,13 @@ void main() {
         completion(contains('"version": 3')),
       );
       await expectLater(
-        File(
-          p.join(dotweaveHome, 'repository', 'manifest.jsonc'),
-        ).readAsString(),
+        File(p.join(dotweaveHome, 'repository', 'manifest.jsonc'))
+            .readAsString(),
         completion(contains('"version": 9')),
       );
       await expectLater(
-        File(
-          p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'),
-        ).readAsString(),
+        File(p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'))
+            .readAsString(),
         throwsA(anything),
       );
     });
@@ -454,9 +447,8 @@ void main() {
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
         await Directory(syncDirectory).create(recursive: true);
-        await File(
-          p.join(syncDirectory, 'placeholder.txt'),
-        ).writeAsString('keep\n');
+        await File(p.join(syncDirectory, 'placeholder.txt'))
+            .writeAsString('keep\n');
 
         final env = buildEnvironment(homeDirectory, xdgConfigHome);
 
@@ -474,9 +466,9 @@ void main() {
           ),
           throwsA(
             predicate(
-              (error) => RegExp(
-                r'Sync directory already exists and is not empty',
-              ).hasMatch(error.toString()),
+              (error) =>
+                  RegExp(r'Sync directory already exists and is not empty')
+                      .hasMatch(error.toString()),
             ),
           ),
         );
@@ -521,14 +513,12 @@ void main() {
       ).writeAsString(
         '${const JsonEncoder.withIndent('  ').convert({'activeProfile': 'old-profile', 'version': 3})}\n',
       );
-      await File(
-        p.join(syncDirectory, 'local-only.txt'),
-      ).writeAsString('remove me\n');
+      await File(p.join(syncDirectory, 'local-only.txt'))
+          .writeAsString('remove me\n');
 
       await runGit(['init', '-b', 'main', sourceRepository], workspace);
-      await File(
-        p.join(sourceRepository, 'remote-only.txt'),
-      ).writeAsString('cloned\n');
+      await File(p.join(sourceRepository, 'remote-only.txt'))
+          .writeAsString('cloned\n');
       await runGit(['add', 'remote-only.txt'], sourceRepository);
       await runGit(['commit', '-m', 'add remote marker'], sourceRepository);
 
@@ -544,9 +534,8 @@ void main() {
 
       expect(result.gitAction, 'cloned');
       expect(result.gitSource, sourceRepository);
-      final remoteOnly = await File(
-        p.join(syncDirectory, 'remote-only.txt'),
-      ).readAsString();
+      final remoteOnly = await File(p.join(syncDirectory, 'remote-only.txt'))
+          .readAsString();
       expect(remoteOnly.replaceAll('\r\n', '\n'), 'cloned\n');
       await expectLater(
         File(p.join(syncDirectory, 'local-only.txt')).readAsString(),
@@ -562,9 +551,8 @@ void main() {
       );
       expect(
         jsonDecode(
-          await File(
-            p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'),
-          ).readAsString(),
+          await File(p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'))
+              .readAsString(),
         ),
         allOf(
           containsPair('activeProfile', 'default'),
@@ -655,9 +643,8 @@ void main() {
       expect(newIdentity, isNot(contains(oldAgeKeys.identity)));
       expect(
         jsonDecode(
-          await File(
-            p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'),
-          ).readAsString(),
+          await File(p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'))
+              .readAsString(),
         ),
         allOf(
           containsPair('activeProfile', 'default'),
@@ -677,9 +664,8 @@ void main() {
 
         await writeIdentityFile(xdgConfigHome, ageKeys.identity);
         await Directory(syncDirectory).create(recursive: true);
-        await File(
-          p.join(syncDirectory, 'placeholder.txt'),
-        ).writeAsString('remove\n');
+        await File(p.join(syncDirectory, 'placeholder.txt'))
+            .writeAsString('remove\n');
 
         final env = buildEnvironment(homeDirectory, xdgConfigHome);
         final result = await initializeSyncDirectory(
@@ -752,9 +738,8 @@ void main() {
         AgeConfig(recipients: [ageKeys.recipient]),
       );
 
-      await File(
-        p.join(sourceRepository, 'manifest.jsonc'),
-      ).writeAsString(formatSyncConfig(initialConfig));
+      await File(p.join(sourceRepository, 'manifest.jsonc'))
+          .writeAsString(formatSyncConfig(initialConfig));
       await runGit(['add', 'manifest.jsonc'], sourceRepository);
       await runGit([
         'commit',
@@ -777,16 +762,14 @@ void main() {
       expect(result.alreadyInitialized, false);
       expect(result.generatedIdentity, false);
       expect(
-        await File(
-          p.join(xdgConfigHome, 'dotweave', 'keys.txt'),
-        ).readAsString(),
+        await File(p.join(xdgConfigHome, 'dotweave', 'keys.txt'))
+            .readAsString(),
         '${ageKeys.identity}\n',
       );
       expect(
         jsonDecode(
-          await File(
-            p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'),
-          ).readAsString(),
+          await File(p.join(xdgConfigHome, 'dotweave', 'settings.jsonc'))
+              .readAsString(),
         ),
         allOf(
           containsPair('activeProfile', 'default'),
@@ -809,9 +792,8 @@ void main() {
         AgeConfig(recipients: [ageKeys.recipient]),
       );
 
-      await File(
-        p.join(sourceRepository, 'manifest.jsonc'),
-      ).writeAsString(formatSyncConfig(initialConfig));
+      await File(p.join(sourceRepository, 'manifest.jsonc'))
+          .writeAsString(formatSyncConfig(initialConfig));
       await runGit(['add', 'manifest.jsonc'], sourceRepository);
       await runGit([
         'commit',
@@ -834,9 +816,9 @@ void main() {
         ),
         throwsA(
           predicate(
-            (error) => RegExp(
-              r'Existing repository setup requires an age private key',
-            ).hasMatch(error.toString()),
+            (error) =>
+                RegExp(r'Existing repository setup requires an age private key')
+                    .hasMatch(error.toString()),
           ),
         ),
       );
@@ -855,9 +837,8 @@ void main() {
         AgeConfig(recipients: [ageKeys.recipient]),
       );
 
-      await File(
-        p.join(sourceRepository, 'manifest.json'),
-      ).writeAsString(formatSyncConfig(initialConfig));
+      await File(p.join(sourceRepository, 'manifest.json'))
+          .writeAsString(formatSyncConfig(initialConfig));
       await runGit(['add', 'manifest.json'], sourceRepository);
       await runGit([
         'commit',

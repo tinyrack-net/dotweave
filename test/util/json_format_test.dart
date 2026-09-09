@@ -39,9 +39,8 @@ void main() {
         ],
       };
 
-      final golden = File(
-        'test/fixtures/golden/pretty-json.json',
-      ).readAsBytesSync();
+      final golden = File('test/fixtures/golden/pretty-json.json')
+          .readAsBytesSync();
 
       expect(utf8.encode(formatJsonPretty(value)), golden);
     });

@@ -200,18 +200,17 @@ void main() {
       await chmod(keyFile, '600');
 
       await ctx.runCli(['init']);
-      await File(
-        p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'),
-      ).writeAsString(
-        formatManifestWithEntries(ageKeys.recipient, const [
-          SyncConfigEntry(
-            kind: 'file',
-            localPath: PlatformStringValue(defaultValue: '~/.ssh/id_rsa'),
-            mode: PlatformSyncMode(defaultValue: 'normal'),
-            permission: PlatformPermission(defaultValue: '0600'),
-          ),
-        ]),
-      );
+      await File(p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'))
+          .writeAsString(
+            formatManifestWithEntries(ageKeys.recipient, const [
+              SyncConfigEntry(
+                kind: 'file',
+                localPath: PlatformStringValue(defaultValue: '~/.ssh/id_rsa'),
+                mode: PlatformSyncMode(defaultValue: 'normal'),
+                permission: PlatformPermission(defaultValue: '0600'),
+              ),
+            ]),
+          );
       await ctx.runCli(['push']);
       await chmod(keyFile, '644');
 

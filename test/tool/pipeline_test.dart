@@ -13,16 +13,12 @@ import 'package:test/test.dart';
 void main() {
   final root = _repoRoot();
   // Normalised so the line anchors below survive a CRLF checkout.
-  final workflow = File(
-    p.join(root, '.github', 'workflows', 'pipeline.yml'),
-  ).readAsStringSync().replaceAll('\r\n', '\n');
-  final matrices =
-      jsonDecode(
-            File(
-              p.join(root, '.github', 'ci-matrices.json'),
-            ).readAsStringSync(),
-          )
-          as Map<String, dynamic>;
+  final workflow = File(p.join(root, '.github', 'workflows', 'pipeline.yml'))
+      .readAsStringSync()
+      .replaceAll('\r\n', '\n');
+  final matrices = jsonDecode(
+    File(p.join(root, '.github', 'ci-matrices.json')).readAsStringSync(),
+  ) as Map<String, dynamic>;
 
   group('quality gate', () {
     test('accepts a skipped job but not a skipped scope', () {
@@ -81,14 +77,14 @@ void main() {
         p.join(root, '.github', 'actions', 'setup-dart', 'action.yml'),
       ).readAsStringSync();
 
-      expect(action, contains('sdk: 3.12.2'));
-      expect(workflow, isNot(contains('3.12.2')));
+      expect(action, contains('sdk: 3.13.2'));
+      expect(workflow, isNot(contains('3.13.2')));
 
       final pubspec = File(p.join(root, 'pubspec.yaml')).readAsStringSync();
       final constraint = RegExp(r'sdk:\s*\^(\d+)\.(\d+)\.').firstMatch(pubspec);
       expect(constraint, isNotNull, reason: 'pubspec must pin an SDK range');
       expect(int.parse(constraint!.group(1)!), 3);
-      expect(int.parse(constraint.group(2)!), lessThanOrEqualTo(12));
+      expect(int.parse(constraint.group(2)!), lessThanOrEqualTo(13));
     });
   });
 
@@ -238,9 +234,8 @@ void main() {
       // this pins is the other direction: a label that stops being used has
       // to stop being declared, or the config outlives the runner bump that
       // motivated it.
-      final config = File(
-        p.join(root, '.github', 'actionlint.yaml'),
-      ).readAsStringSync();
+      final config = File(p.join(root, '.github', 'actionlint.yaml'))
+          .readAsStringSync();
 
       final used = <String>{
         for (final name in const ['test', 'autocomplete', 'package'])

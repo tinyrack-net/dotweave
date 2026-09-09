@@ -687,9 +687,8 @@ Future<Set<String>> collectExistingArtifactKeys(
   if ((await getPathStats(profilesDirectory))?.isDirectory == true) {
     for (final entry in await listDirectoryEntries(profilesDirectory)) {
       try {
-        if ((await getPathStats(
-              p.join(profilesDirectory, entry.name),
-            ))?.isDirectory ??
+        if ((await getPathStats(p.join(profilesDirectory, entry.name)))
+                ?.isDirectory ??
             false) {
           artifactProfiles.add(normalizeSyncProfileName(entry.name));
         }

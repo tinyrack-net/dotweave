@@ -254,45 +254,41 @@ void main() {
       },
     );
 
-    test(
-      'ignores non-executable file permission drift without explicit permission',
-      () async {
-        if (Platform.isWindows) {
-          return;
-        }
+    test('ignores non-executable file permission drift without explicit permission', () async {
+      if (Platform.isWindows) {
+        return;
+      }
 
-        final workspace = await createWorkspace();
-        final configFile = p.join(workspace, '.config', 'app', 'config.json');
+      final workspace = await createWorkspace();
+      final configFile = p.join(workspace, '.config', 'app', 'config.json');
 
-        await Directory(
-          p.join(workspace, '.config', 'app'),
-        ).create(recursive: true);
-        await File(configFile).writeAsString('{"version":1}\n');
-        posixChmod(configFile, 0x180); // 0o600
+      await Directory(p.join(workspace, '.config', 'app'))
+          .create(recursive: true);
+      await File(configFile).writeAsString('{"version":1}\n');
+      posixChmod(configFile, 0x180); // 0o600
 
-        final entry = createEntry(
-          'file',
-          configFile,
-          '.config/app/config.json',
-          'normal',
-        );
+      final entry = createEntry(
+        'file',
+        configFile,
+        '.config/app/config.json',
+        'normal',
+      );
 
-        expect(
-          await collectChangedLocalPaths(
-            entry,
-            FileEntryMaterialization(
-              desiredKeys: {'.config/app/config.json'},
-              node: FileSnapshotNode(
-                contents: bufferFrom('{"version":1}\n'),
-                executable: false,
-                secret: false,
-              ),
+      expect(
+        await collectChangedLocalPaths(
+          entry,
+          FileEntryMaterialization(
+            desiredKeys: {'.config/app/config.json'},
+            node: FileSnapshotNode(
+              contents: bufferFrom('{"version":1}\n'),
+              executable: false,
+              secret: false,
             ),
           ),
-          <String>[],
-        );
-      },
-    );
+        ),
+        <String>[],
+      );
+    });
 
     test('reports executable-bit drift without explicit permission', () async {
       if (Platform.isWindows) {
@@ -302,9 +298,8 @@ void main() {
       final workspace = await createWorkspace();
       final scriptFile = p.join(workspace, '.local', 'bin', 'tool');
 
-      await Directory(
-        p.join(workspace, '.local', 'bin'),
-      ).create(recursive: true);
+      await Directory(p.join(workspace, '.local', 'bin'))
+          .create(recursive: true);
       await File(scriptFile).writeAsString('#!/bin/sh\n');
       posixChmod(scriptFile, 0x1A4); // 0o644
 
@@ -487,25 +482,28 @@ void main() {
         '.config/zsh/platform.wsl.zsh',
         'normal',
       );
-      final materialization =
-          buildEntryMaterialization(rootEntry, <String, SnapshotNode>{
-            buildDirectoryKey('.config/zsh'): const DirectorySnapshotNode(),
-            '.config/zsh/platform.zsh': FileSnapshotNode(
-              contents: bufferFrom('default artifact\n'),
-              executable: false,
-              secret: false,
-            ),
-            '.config/zsh/platform.wsl.zsh': FileSnapshotNode(
-              contents: bufferFrom('wsl artifact\n'),
-              executable: false,
-              secret: false,
-            ),
-            '.config/zsh/other.zsh': FileSnapshotNode(
-              contents: bufferFrom('other\n'),
-              executable: false,
-              secret: false,
-            ),
-          }, createConfig([rootEntry, childEntry]));
+      final materialization = buildEntryMaterialization(
+        rootEntry,
+        <String, SnapshotNode>{
+          buildDirectoryKey('.config/zsh'): const DirectorySnapshotNode(),
+          '.config/zsh/platform.zsh': FileSnapshotNode(
+            contents: bufferFrom('default artifact\n'),
+            executable: false,
+            secret: false,
+          ),
+          '.config/zsh/platform.wsl.zsh': FileSnapshotNode(
+            contents: bufferFrom('wsl artifact\n'),
+            executable: false,
+            secret: false,
+          ),
+          '.config/zsh/other.zsh': FileSnapshotNode(
+            contents: bufferFrom('other\n'),
+            executable: false,
+            secret: false,
+          ),
+        },
+        createConfig([rootEntry, childEntry]),
+      );
 
       expect(materialization.type, 'directory');
       expect(materialization.desiredKeys, {
@@ -541,25 +539,28 @@ void main() {
           wsl: '.config/zsh/platform.wsl.zsh',
         ),
       );
-      final materialization =
-          buildEntryMaterialization(rootEntry, <String, SnapshotNode>{
-            buildDirectoryKey('.config/zsh'): const DirectorySnapshotNode(),
-            '.config/zsh/platform.mac.zsh': FileSnapshotNode(
-              contents: bufferFrom('mac artifact\n'),
-              executable: false,
-              secret: false,
-            ),
-            '.config/zsh/platform.wsl.zsh': FileSnapshotNode(
-              contents: bufferFrom('wsl artifact\n'),
-              executable: false,
-              secret: false,
-            ),
-            '.config/zsh/other.zsh': FileSnapshotNode(
-              contents: bufferFrom('other\n'),
-              executable: false,
-              secret: false,
-            ),
-          }, createConfig([rootEntry, childEntry]));
+      final materialization = buildEntryMaterialization(
+        rootEntry,
+        <String, SnapshotNode>{
+          buildDirectoryKey('.config/zsh'): const DirectorySnapshotNode(),
+          '.config/zsh/platform.mac.zsh': FileSnapshotNode(
+            contents: bufferFrom('mac artifact\n'),
+            executable: false,
+            secret: false,
+          ),
+          '.config/zsh/platform.wsl.zsh': FileSnapshotNode(
+            contents: bufferFrom('wsl artifact\n'),
+            executable: false,
+            secret: false,
+          ),
+          '.config/zsh/other.zsh': FileSnapshotNode(
+            contents: bufferFrom('other\n'),
+            executable: false,
+            secret: false,
+          ),
+        },
+        createConfig([rootEntry, childEntry]),
+      );
 
       expect(materialization.desiredKeys, {
         buildDirectoryKey('.config/zsh'),
@@ -583,9 +584,8 @@ void main() {
         final childFile = p.join(childDirectory, 'plugin.zsh');
 
         await Directory(childDirectory).create(recursive: true);
-        await File(
-          parentFile,
-        ).writeAsString('source ~/.zsh/plugins/plugin.zsh\n');
+        await File(parentFile)
+            .writeAsString('source ~/.zsh/plugins/plugin.zsh\n');
         await File(childFile).writeAsString('echo plugin\n');
 
         final rootEntry = createEntry(

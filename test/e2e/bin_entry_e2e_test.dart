@@ -109,28 +109,18 @@ void main() {
       expect(result.exitCode, 0);
       expect(stripAnsi(result.stdout), contains('Sync directory initialized'));
 
-      final settings =
-          jsonDecode(
-                await File(
-                  p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'),
-                ).readAsString(),
-              )
-              as Map<String, Object?>;
+      final settings = jsonDecode(
+        await File(p.join(ctx.xdgDir, 'dotweave', 'settings.jsonc'))
+            .readAsString(),
+      ) as Map<String, Object?>;
       expect(settings, containsPair('activeProfile', 'default'));
       expect(settings, containsPair('version', 3));
 
-      final manifest =
-          jsonDecode(
-                await File(
-                  p.join(
-                    ctx.xdgDir,
-                    'dotweave',
-                    'repository',
-                    'manifest.jsonc',
-                  ),
-                ).readAsString(),
-              )
-              as Map<String, Object?>;
+      final manifest = jsonDecode(
+        await File(
+          p.join(ctx.xdgDir, 'dotweave', 'repository', 'manifest.jsonc'),
+        ).readAsString(),
+      ) as Map<String, Object?>;
       expect(manifest, containsPair('entries', isEmpty));
       expect(manifest, containsPair('version', 9));
     });

@@ -108,10 +108,16 @@ final class _Win32FileAttributeData extends Struct {
   external int nFileSizeLow;
 }
 
-typedef _GetFileAttributesExWNative =
-    Int32 Function(Pointer<Utf16>, Int32, Pointer<_Win32FileAttributeData>);
-typedef _GetFileAttributesExWDart =
-    int Function(Pointer<Utf16>, int, Pointer<_Win32FileAttributeData>);
+typedef _GetFileAttributesExWNative = Int32 Function(
+  Pointer<Utf16>,
+  Int32,
+  Pointer<_Win32FileAttributeData>,
+);
+typedef _GetFileAttributesExWDart = int Function(
+  Pointer<Utf16>,
+  int,
+  Pointer<_Win32FileAttributeData>,
+);
 typedef _GetLastErrorNative = Uint32 Function();
 typedef _GetLastErrorDart = int Function();
 

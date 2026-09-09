@@ -300,9 +300,9 @@ Future<void> _stageAndReplacePath(
   );
   final stagingDirectory = await tracePhase(
     'stage.createTemp',
-    () => Directory(
-      _resolveStagingParentDirectory(targetPath),
-    ).createTemp('.${p.basename(targetPath)}.dotweave-sync-'),
+    () =>
+        Directory(_resolveStagingParentDirectory(targetPath))
+            .createTemp('.${p.basename(targetPath)}.dotweave-sync-'),
   );
   final stagedPath = p.join(stagingDirectory.path, p.basename(targetPath));
 

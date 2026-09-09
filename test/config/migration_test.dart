@@ -19,9 +19,8 @@ void main() {
       'dotweave-migration-test-',
     );
     final filePath = p.join(tempDir!.path, 'config.json');
-    await File(
-      filePath,
-    ).writeAsString(const JsonEncoder.withIndent('  ').convert(content));
+    await File(filePath)
+        .writeAsString(const JsonEncoder.withIndent('  ').convert(content));
     return filePath;
   }
 

@@ -16,6 +16,5 @@ linter:
     - only_throw_errors
     - prefer_final_locals
     - require_trailing_commas
-    - unnecessary_await_in_return
     - unnecessary_lambdas
     - use_super_parameters

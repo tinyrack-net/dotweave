@@ -131,9 +131,8 @@ Future<({String repoZshDir, String zshDir})> setUpWorkspace(
     ),
   );
 
-  await File(
-    p.join(xdgConfigHome, 'dotweave', 'repository', 'manifest.jsonc'),
-  ).writeAsString(jsonStringify(manifest(ageKeys.recipient)));
+  await File(p.join(xdgConfigHome, 'dotweave', 'repository', 'manifest.jsonc'))
+      .writeAsString(jsonStringify(manifest(ageKeys.recipient)));
 
   final repositoryZshDirectory = p.join(
     xdgConfigHome,
@@ -146,15 +145,12 @@ Future<({String repoZshDir, String zshDir})> setUpWorkspace(
   );
 
   await Directory(repositoryZshDirectory).create(recursive: true);
-  await File(
-    p.join(repositoryZshDirectory, 'platform.mac.zsh'),
-  ).writeAsString('mac artifact\n');
-  await File(
-    p.join(repositoryZshDirectory, 'platform.wsl.zsh'),
-  ).writeAsString('wsl artifact\n');
-  await File(
-    p.join(repositoryZshDirectory, 'other.zsh'),
-  ).writeAsString('other\n');
+  await File(p.join(repositoryZshDirectory, 'platform.mac.zsh'))
+      .writeAsString('mac artifact\n');
+  await File(p.join(repositoryZshDirectory, 'platform.wsl.zsh'))
+      .writeAsString('wsl artifact\n');
+  await File(p.join(repositoryZshDirectory, 'other.zsh'))
+      .writeAsString('other\n');
 
   return (repoZshDir: repositoryZshDirectory, zshDir: zshDirectory);
 }
@@ -215,22 +211,19 @@ void main() {
       },
     );
 
-    test(
-      'a directory parent is what adopts the foreign platform artifact',
-      () async {
-        // The control: with no directory entry covering `.config/zsh`, nothing
-        // claims `platform.wsl.zsh` and nothing is materialized. The leak was the
-        // parent adopting a path the child entry only owns on another platform.
-        final workspace = await setUpWorkspace(
-          buildManifestWithoutDirectoryParent,
-        );
+    test('a directory parent is what adopts the foreign platform artifact', () async {
+      // The control: with no directory entry covering `.config/zsh`, nothing
+      // claims `platform.wsl.zsh` and nothing is materialized. The leak was the
+      // parent adopting a path the child entry only owns on another platform.
+      final workspace = await setUpWorkspace(
+        buildManifestWithoutDirectoryParent,
+      );
 
-        mockCurrentPlatformKey(PlatformKey.mac);
-        await pullChanges(const PullRequest(dryRun: false));
+      mockCurrentPlatformKey(PlatformKey.mac);
+      await pullChanges(const PullRequest(dryRun: false));
 
-        expectPathAbsent(p.join(workspace.zshDir, 'platform.wsl.zsh'));
-      },
-    );
+      expectPathAbsent(p.join(workspace.zshDir, 'platform.wsl.zsh'));
+    });
 
     test(
       'pull on mac applies the mac variant under the local filename',
@@ -267,15 +260,13 @@ void main() {
       // A local file whose repository path belongs to another platform's
       // override is not this machine's to store there.
       expect(
-        await File(
-          p.join(workspace.repoZshDir, 'platform.wsl.zsh'),
-        ).readAsString(),
+        await File(p.join(workspace.repoZshDir, 'platform.wsl.zsh'))
+            .readAsString(),
         'wsl artifact\n',
       );
       expect(
-        await File(
-          p.join(workspace.repoZshDir, 'platform.mac.zsh'),
-        ).readAsString(),
+        await File(p.join(workspace.repoZshDir, 'platform.mac.zsh'))
+            .readAsString(),
         'local mac\n',
       );
     });
@@ -294,9 +285,8 @@ void main() {
       // erasing the other machine's configuration from the repository.
       expect(result.deletedArtifactCount, 0);
       expect(
-        await File(
-          p.join(workspace.repoZshDir, 'platform.wsl.zsh'),
-        ).readAsString(),
+        await File(p.join(workspace.repoZshDir, 'platform.wsl.zsh'))
+            .readAsString(),
         'wsl artifact\n',
       );
     });

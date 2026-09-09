@@ -31,9 +31,8 @@ void main() {
       final fileNames = List.generate(fileCount, (i) => 'file-$i.txt');
 
       for (final fileName in fileNames) {
-        await File(
-          p.join(appDirectory, fileName),
-        ).writeAsString('content for $fileName\n');
+        await File(p.join(appDirectory, fileName))
+            .writeAsString('content for $fileName\n');
       }
 
       final ageKeys = await ctx.createAgeKeyPair();
@@ -52,9 +51,8 @@ void main() {
       // Modify some files locally to trigger updates during pull later
       for (var i = 0; i < 20; i += 1) {
         final fileName = fileNames[i];
-        await File(
-          p.join(appDirectory, fileName),
-        ).writeAsString('modified content $i\n');
+        await File(p.join(appDirectory, fileName))
+            .writeAsString('modified content $i\n');
       }
 
       // Push again (updates)
@@ -73,9 +71,8 @@ void main() {
       // Verify all files are restored correctly
       for (var i = 0; i < fileCount; i += 1) {
         final fileName = fileNames[i];
-        final content = await File(
-          p.join(appDirectory, fileName),
-        ).readAsString();
+        final content = await File(p.join(appDirectory, fileName))
+            .readAsString();
         if (i < 20) {
           expect(content, 'modified content $i\n');
         } else {

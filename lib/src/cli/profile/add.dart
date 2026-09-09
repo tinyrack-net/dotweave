@@ -7,8 +7,7 @@ import 'package:dotweave/src/services/profile.dart';
 final Command<ApplicationContext> profileAddCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Add a sync profile',
-    fullDescription:
-        'Register a non-default profile in manifest.jsonc so entries can be assigned to it and it can be selected with profile use.',
+    fullDescription: 'Register a non-default profile in manifest.jsonc so entries can be assigned to it and it can be selected with profile use.',
   ),
   func: (context, flags, args) async {
     final logger = loggerFor(context);
