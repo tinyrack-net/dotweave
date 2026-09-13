@@ -199,6 +199,29 @@ void main() {
         session.close();
       }
     });
+
+    test('completes a partial long flag in interactive fish', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createFishSession();
+
+      try {
+        await session.waitFor('PROMPT> ');
+
+        session.write('dotweave push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
   }, skip: !_shouldRunPtyShell('fish', isFishAvailable));
 
   group('autocomplete zsh pty e2e', () {
@@ -305,6 +328,29 @@ void main() {
         }
       },
     );
+
+    test('completes a partial long flag in interactive zsh', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createZshSession();
+
+      try {
+        await sourceZshConfig(session);
+
+        session.write('dotweave push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
   }, skip: !_shouldRunPtyShell('zsh', isZshAvailable));
 
   group('autocomplete bash pty e2e', () {
@@ -405,6 +451,29 @@ void main() {
         }
       },
     );
+
+    test('completes a partial long flag in interactive bash', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createBashSession();
+
+      try {
+        await session.waitFor('PROMPT> ');
+
+        session.write('dotweave push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
   }, skip: !_shouldRunPtyShell('bash', isBashAvailable));
 
   group('autocomplete powershell pty e2e', () {
