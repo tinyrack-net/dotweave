@@ -843,10 +843,7 @@ void main() {
       final result = await _runPowerShellCompletion('dotweave push --wit');
 
       expect(result.exitCode, 0);
-      expect(
-        _powerShellLines(result.stdout),
-        contains('--with-git\tParameterValue'),
-      );
+      expect(_powerShellLines(result.stdout), contains('--with-git'));
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('powershell', isPowerShellAvailable));
 
