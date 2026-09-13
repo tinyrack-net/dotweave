@@ -30,9 +30,6 @@ import '../helpers/pty.dart'
         zshPath;
 import '../helpers/sync_fixture.dart' show stripAnsi;
 
-const String _completeCommand =
-    r'env -u COMP_LINE dotweave __complete "${inputs[@]}"';
-
 final List<String> _rootCommandNames = [
   'autocomplete',
   ...rootCommandRoutes.keys,
@@ -257,8 +254,7 @@ Future<CliRunResult> _execShell(
 }
 
 Future<CliRunResult> _runBashCompletion(
-  List<String> words,
-  int currentWordIndex, {
+  String commandLine, {
   String? cwd,
 }) async {
   final configDirectory = await _createRealpathTempDirectory(
@@ -284,8 +280,7 @@ Future<CliRunResult> _runBashCompletion(
           'set -euo pipefail',
           _exportPathCommand(binDirectory),
           r'eval "$(dotweave autocomplete bash)"',
-          'COMP_WORDS=(${words.map(_shellQuote).join(' ')})',
-          'COMP_CWORD=$currentWordIndex',
+          'COMP_LINE=${_shellQuote(commandLine)}',
           '__dotweave_complete',
           r'printf "%s\n" "${COMPREPLY[@]}"',
         ].join('; '),
@@ -299,8 +294,7 @@ Future<CliRunResult> _runBashCompletion(
 }
 
 Future<CliRunResult> _runZshCompletion(
-  List<String> words,
-  int currentWord, {
+  String commandLine, {
   String? cwd,
 }) async {
   final configDirectory = await _createRealpathTempDirectory(
@@ -352,8 +346,7 @@ Future<CliRunResult> _runZshCompletion(
           'function compdef() { :; }',
           compaddMock,
           r'eval "$(dotweave autocomplete zsh)"',
-          'words=(${words.map(_shellQuote).join(' ')})',
-          'CURRENT=$currentWord',
+          'BUFFER=${_shellQuote(commandLine)}',
           '__dotweave_complete',
         ].join('; '),
       ],
@@ -385,6 +378,7 @@ Future<CliRunResult> _runFishCompletion(
     return await _execShell(
       fishPath ?? 'fish',
       [
+        '--no-config',
         '-c',
         [
           'set -gx PATH '
@@ -513,7 +507,11 @@ void main() {
 
       expect(result.exitCode, 0);
       expect(result.stdout, contains('__dotweave_complete() {'));
-      expect(result.stdout, contains(_completeCommand));
+      expect(
+        result.stdout,
+        contains(r'env COMP_LINE="${COMP_LINE-}" dotweave __complete'),
+      );
+      expect(result.stdout, isNot(contains(r'"${inputs[@]}"')));
       expect(
         result.stdout,
         contains(
@@ -530,7 +528,11 @@ void main() {
 
       expect(result.exitCode, 0);
       expect(result.stdout, contains('autoload -Uz compinit'));
-      expect(result.stdout, contains(_completeCommand));
+      expect(
+        result.stdout,
+        contains(r'env COMP_LINE="${BUFFER-}" dotweave __complete'),
+      );
+      expect(result.stdout, isNot(contains(r'"${inputs[@]}"')));
       expect(result.stdout, contains('compdef __dotweave_complete dotweave'));
       expect(_cleanShellStderr(result.stderr), '');
     });
@@ -540,7 +542,11 @@ void main() {
 
       expect(result.exitCode, 0);
       expect(result.stdout, contains('function __dotweave_complete'));
-      expect(result.stdout, contains('command dotweave __complete'));
+      expect(result.stdout, contains('set -lx COMP_LINE (commandline -b)'));
+      expect(
+        result.stdout,
+        contains('command dotweave __complete 2>/dev/null'),
+      );
       expect(result.stdout, contains('complete -c dotweave -f'));
       expect(_cleanShellStderr(result.stderr), '');
     });
@@ -548,7 +554,10 @@ void main() {
     test(
       'normalizes __complete input when the command name is included',
       () async {
-        final result = await _runCli(['__complete', 'dotweave', 'aut']);
+        final result = await _runCli(
+          ['__complete'],
+          env: {'COMP_LINE': 'dotweave aut'},
+        );
 
         expect(result.exitCode, 0);
         expect(result.stdout.trim().split('\t').first, 'autocomplete');
@@ -559,12 +568,11 @@ void main() {
     test(
       'completes track targets and flags after an existing target',
       () async {
-        final result = await _runCli([
-          '__complete',
-          'track',
-          'file-alpha.txt',
-          '',
-        ], cwd: completionFixtureDirectory);
+        final result = await _runCli(
+          ['__complete'],
+          env: {'COMP_LINE': 'dotweave track file-alpha.txt '},
+          cwd: completionFixtureDirectory,
+        );
 
         expect(result.exitCode, 0);
         expect(
@@ -580,9 +588,12 @@ void main() {
       },
     );
 
-    test('completes with-git and never exposes git-action', () async {
+    test('completes partial long flags and never exposes git-action', () async {
       for (final command in ['pull', 'push']) {
-        final result = await _runCli(['__complete', command, '-']);
+        final result = await _runCli(
+          ['__complete'],
+          env: {'COMP_LINE': 'dotweave $command --wit'},
+        );
         final names = _completionNames(result.stdout);
 
         expect(result.exitCode, 0);
@@ -593,16 +604,15 @@ void main() {
     });
 
     test('populates bash completions from the emitted script', () async {
-      final result = await _runBashCompletion(['dotweave', 'aut'], 1);
+      final result = await _runBashCompletion('dotweave aut');
 
       expect(result.exitCode, 0);
       expect(result.stdout.split('\n'), contains('autocomplete '));
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('bash', isBashAvailable));
 
-    test('offers root subcommands when bash completes the command token '
-        'itself', () async {
-      final result = await _runBashCompletion(['dotweave'], 0);
+    test('offers root subcommands when bash starts a new argument', () async {
+      final result = await _runBashCompletion('dotweave ');
 
       expect(result.exitCode, 0);
       expect(result.stdout.split('\n'), containsAll(_bashRootCommandNames));
@@ -611,7 +621,7 @@ void main() {
     test(
       'adds a trailing space for unique bash subcommand completions',
       () async {
-        final result = await _runBashCompletion(['dotweave', 'pro'], 1);
+        final result = await _runBashCompletion('dotweave pro');
 
         expect(result.exitCode, 0);
         expect(result.stdout.split('\n'), contains('profile '));
@@ -622,8 +632,7 @@ void main() {
 
     test('populates bash path completions for track targets', () async {
       final result = await _runBashCompletion(
-        ['dotweave', 'track', 'fi'],
-        2,
+        'dotweave track fi',
         cwd: completionFixtureDirectory,
       );
 
@@ -634,8 +643,7 @@ void main() {
 
     test('populates bash flag completions after a track target', () async {
       final result = await _runBashCompletion(
-        ['dotweave', 'track', 'file-alpha.txt', '-'],
-        3,
+        'dotweave track file-alpha.txt -',
         cwd: completionFixtureDirectory,
       );
 
@@ -646,10 +654,18 @@ void main() {
       );
     }, skip: _skipForShell('bash', isBashAvailable));
 
+    test('completes partial long flags in bash', () async {
+      final result = await _runBashCompletion('dotweave push --wit');
+
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('--with-git '));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('bash', isBashAvailable));
+
     test(
       'adds a trailing space for unique zsh subcommand completions',
       () async {
-        final result = await _runZshCompletion(['dotweave', 'pro'], 2);
+        final result = await _runZshCompletion('dotweave pro');
 
         expect(result.exitCode, 0);
         expect(result.stdout.split('\n'), contains('profile'));
@@ -657,16 +673,20 @@ void main() {
       skip: _skipForShell('zsh', isZshAvailable),
     );
 
-    test(
-      'offers root subcommands when zsh completes the command token itself',
-      () async {
-        final result = await _runZshCompletion(['dotweave'], 1);
+    test('offers root subcommands when zsh starts a new argument', () async {
+      final result = await _runZshCompletion('dotweave ');
 
-        expect(result.exitCode, 0);
-        expect(result.stdout.split('\n'), containsAll(_rootCommandNames));
-      },
-      skip: _skipForShell('zsh', isZshAvailable),
-    );
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), containsAll(_rootCommandNames));
+    }, skip: _skipForShell('zsh', isZshAvailable));
+
+    test('completes partial long flags in zsh', () async {
+      final result = await _runZshCompletion('dotweave push --wit');
+
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('zsh', isZshAvailable));
 
     test('populates fish root completions from a prefix', () async {
       _requireSelectedShellAvailability('fish', isFishAvailable);
@@ -722,11 +742,21 @@ void main() {
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('fish', isFishAvailable));
 
+    test('completes partial long flags in fish', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
+
+      final result = await _runFishCompletion('dotweave push --wit');
+
+      expect(result.exitCode, 0);
+      expect(_completionNames(result.stdout), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('fish', isFishAvailable));
+
     test(
       'proposes root subcommands when COMP_LINE has a trailing space',
       () async {
         final result = await _runCli(
-          ['__complete', 'dotweave', ''],
+          ['__complete'],
           env: {'COMP_LINE': 'dotweave '},
         );
 
@@ -740,7 +770,7 @@ void main() {
       'proposes subcommand completions when COMP_LINE targets a command',
       () async {
         final result = await _runCli(
-          ['__complete', 'dotweave', 'track', ''],
+          ['__complete'],
           env: {'COMP_LINE': 'dotweave track '},
           cwd: completionFixtureDirectory,
         );
@@ -806,6 +836,16 @@ void main() {
       },
       skip: _skipForShell('powershell', isPowerShellAvailable),
     );
+
+    test('completes partial long flags in PowerShell', () async {
+      _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+
+      final result = await _runPowerShellCompletion('dotweave push --wit');
+
+      expect(result.exitCode, 0);
+      expect(_powerShellLines(result.stdout), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('powershell', isPowerShellAvailable));
 
     test(
       'shows bash, zsh, fish, and PowerShell autocomplete subcommands',

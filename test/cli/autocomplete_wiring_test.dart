@@ -14,24 +14,40 @@ void main() {
       expect(completionScripts.completeSubcommand, '__complete');
     });
 
-    test('every shell script invokes `dotweave __complete`', () {
-      expect(
-        completionScripts.bash,
-        contains('env -u COMP_LINE dotweave __complete "\${inputs[@]}"'),
-      );
-      expect(
-        completionScripts.zsh,
-        contains('env -u COMP_LINE dotweave __complete "\${inputs[@]}"'),
-      );
-      expect(completionScripts.fish, contains('command dotweave __complete'));
-      // PowerShell passes the raw line through COMP_LINE rather than as
-      // arguments, because PowerShell 5.1 drops empty string arguments.
-      expect(completionScripts.powershell, contains(r'& dotweave __complete'));
-      expect(
-        completionScripts.powershell,
-        contains(r'$env:COMP_LINE = $commandLine'),
-      );
-    });
+    test(
+      'every shell script passes the raw line without forwarding tokens',
+      () {
+        expect(
+          completionScripts.bash,
+          contains(r'env COMP_LINE="${COMP_LINE-}" dotweave __complete'),
+        );
+        expect(completionScripts.bash, isNot(contains(r'"${inputs[@]}"')));
+        expect(
+          completionScripts.zsh,
+          contains(r'env COMP_LINE="${BUFFER-}" dotweave __complete'),
+        );
+        expect(completionScripts.zsh, isNot(contains(r'"${inputs[@]}"')));
+        expect(
+          completionScripts.fish,
+          contains('set -lx COMP_LINE (commandline -b)'),
+        );
+        expect(
+          completionScripts.fish,
+          contains('command dotweave __complete 2>/dev/null'),
+        );
+        expect(completionScripts.fish, isNot(contains(r'$tokens')));
+        // PowerShell passes the raw line through COMP_LINE rather than as
+        // arguments, because PowerShell 5.1 drops empty string arguments.
+        expect(
+          completionScripts.powershell,
+          contains(r'& dotweave __complete'),
+        );
+        expect(
+          completionScripts.powershell,
+          contains(r'$env:COMP_LINE = $commandLine'),
+        );
+      },
+    );
 
     test('registers completers under the dotweave command name', () {
       expect(completionScripts.bash, contains('__dotweave_complete() {'));
