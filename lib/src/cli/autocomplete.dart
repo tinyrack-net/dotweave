@@ -8,6 +8,7 @@ import 'package:dotweave/src/config/constants.dart';
 /// they call are dotweave's.
 final CompletionScripts completionScripts = CompletionScripts(
   executableName: AppConstants.autocomplete.cliCommandName,
+  aliases: const ['dw'],
   completeSubcommand: AppConstants.autocomplete.completeSubcommand,
 );
 

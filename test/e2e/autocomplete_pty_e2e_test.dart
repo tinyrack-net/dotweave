@@ -145,6 +145,7 @@ void main() {
       await File(p.join(fishConfigDirectory, 'config.fish')).writeAsString(
         [
           "function fish_prompt; printf 'PROMPT> '; end",
+          'alias dw=dotweave',
           'dotweave autocomplete fish | source',
         ].join('\n'),
       );
@@ -211,6 +212,55 @@ void main() {
         await session.waitFor('PROMPT> ');
 
         session.write('dotweave push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
+
+    test(
+      'lists root subcommands through an alias in interactive fish',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+
+        final session = await createFishSession();
+
+        try {
+          await session.waitFor('PROMPT> ');
+
+          session.write('dw p\t');
+
+          final output = await session.waitFor(
+            'profile',
+            const Duration(seconds: 10),
+          );
+
+          expect(output, contains('profile'));
+        } finally {
+          session.close();
+        }
+      },
+    );
+
+    test('completes a partial long flag through an alias in fish', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createFishSession();
+
+      try {
+        await session.waitFor('PROMPT> ');
+
+        session.write('dw push --wit\t');
 
         final output = await session.waitFor(
           '--with-git',
@@ -415,6 +465,7 @@ void main() {
       final directories = await _createTestShellDirectory([
         r'eval "$(dotweave autocomplete bash)"',
         "PS1='PROMPT> '",
+        'alias dw=dotweave',
       ], '.bashrc');
 
       bashBinDirectory = directories.binDirectory;
@@ -523,6 +574,58 @@ void main() {
         session.close();
       }
     });
+
+    test(
+      'lists root subcommands through an alias in interactive bash',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+
+        final session = await createBashSession();
+
+        try {
+          await session.waitFor('PROMPT> ');
+
+          session.write('dw \t\t');
+
+          for (final commandName in _rootCommandNames) {
+            await session.waitFor(commandName, const Duration(seconds: 10));
+          }
+
+          final output = session.getOutput();
+
+          for (final commandName in _ptyRootSmokeCommandNames) {
+            expect(output, contains(commandName));
+          }
+        } finally {
+          session.close();
+        }
+      },
+    );
+
+    test('completes a partial long flag through an alias in bash', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createBashSession();
+
+      try {
+        await session.waitFor('PROMPT> ');
+
+        session.write('dw push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
   }, skip: !_shouldRunPtyShell('bash', isBashAvailable));
 
   group('autocomplete powershell pty e2e', () {
@@ -567,7 +670,7 @@ void main() {
 
     Future<void> configurePowerShellSession(PtySession session) async {
       session.write(
-        '${[r"$ErrorActionPreference = 'Stop'", 'Set-PSReadLineOption -PredictionSource None', 'Set-PSReadLineOption -EditMode Windows', "function global:prompt { 'PROMPT> ' }", r'. ([scriptblock]::Create(((dotweave autocomplete powershell) '
+        '${[r"$ErrorActionPreference = 'Stop'", 'Set-PSReadLineOption -PredictionSource None', 'Set-PSReadLineOption -EditMode Windows', "function global:prompt { 'PROMPT> ' }", 'Set-Alias dw dotweave', r'. ([scriptblock]::Create(((dotweave autocomplete powershell) '
             '-join [Environment]::NewLine)))'].join('; ')}\r',
       );
       await session.waitFor('PROMPT> ', const Duration(seconds: 15));
@@ -597,5 +700,56 @@ void main() {
         await session.waitForExit();
       }
     });
+
+    test('lists root subcommands through an alias in PowerShell', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createPowerShellSession();
+
+      try {
+        await configurePowerShellSession(session);
+
+        session.write('dw p\t');
+
+        final output = await session.waitFor(
+          'profile',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('profile'));
+      } finally {
+        session.close();
+        await session.waitForExit();
+      }
+    });
+
+    test(
+      'completes a partial long flag through an alias in PowerShell',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+
+        final session = await createPowerShellSession();
+
+        try {
+          await configurePowerShellSession(session);
+
+          session.write('dw push --wit\t');
+
+          final output = await session.waitFor(
+            '--with-git',
+            const Duration(seconds: 10),
+          );
+
+          expect(output, contains('--with-git'));
+        } finally {
+          session.close();
+          await session.waitForExit();
+        }
+      },
+    );
   }, skip: !_shouldRunPtyShell('powershell', isPowerShellAvailable));
 }

@@ -13,7 +13,7 @@ dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: d8c16aad1a87401b2c9a009e4ea239102962fcca
+      ref: 69e604ad7e0d948d06ffa5171e1a7aa191e8351e
       path: packages/cliweave
   cryptography: ^2.9.0
   dartage:
@@ -40,5 +40,5 @@ dependency_overrides:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: d8c16aad1a87401b2c9a009e4ea239102962fcca
+      ref: 69e604ad7e0d948d06ffa5171e1a7aa191e8351e
       path: packages/cliweave
