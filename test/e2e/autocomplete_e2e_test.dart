@@ -443,6 +443,7 @@ Future<CliRunResult> _runPowerShellCompletion(
     r"$ErrorActionPreference = 'Stop'",
     '\$env:PATH = ${_psString(shim.binDirectory)} + '
         '${_psString(_pathDelimiter)} + \$env:PATH',
+    'Set-Alias dw dotweave',
     r'. ([scriptblock]::Create(((dotweave autocomplete powershell) -join '
         '[Environment]::NewLine)))',
     '\$line = ${_psString(commandLine)}',
@@ -516,7 +517,7 @@ void main() {
         result.stdout,
         contains(
           'complete -o default -o nospace -F __dotweave_complete '
-          'dotweave',
+          'dotweave dw',
         ),
       );
       expect(result.stdout, isNot(contains('Setup Instructions')));
@@ -533,7 +534,10 @@ void main() {
         contains(r'env COMP_LINE="${BUFFER-}" dotweave __complete'),
       );
       expect(result.stdout, isNot(contains(r'"${inputs[@]}"')));
-      expect(result.stdout, contains('compdef __dotweave_complete dotweave'));
+      expect(
+        result.stdout,
+        contains('compdef __dotweave_complete dotweave dw'),
+      );
       expect(_cleanShellStderr(result.stderr), '');
     });
 
@@ -548,6 +552,7 @@ void main() {
         contains('command dotweave __complete 2>/dev/null'),
       );
       expect(result.stdout, contains('complete -c dotweave -f'));
+      expect(result.stdout, contains('complete -c dw -w dotweave'));
       expect(_cleanShellStderr(result.stderr), '');
     });
 
@@ -641,6 +646,14 @@ void main() {
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('bash', isBashAvailable));
 
+    test('completes root subcommands through the dw alias in bash', () async {
+      final result = await _runBashCompletion('dw aut');
+
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('autocomplete '));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('bash', isBashAvailable));
+
     test('populates bash flag completions after a track target', () async {
       final result = await _runBashCompletion(
         'dotweave track file-alpha.txt -',
@@ -685,6 +698,14 @@ void main() {
 
       expect(result.exitCode, 0);
       expect(result.stdout.split('\n'), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('zsh', isZshAvailable));
+
+    test('completes root subcommands through the dw alias in zsh', () async {
+      final result = await _runZshCompletion('dw aut');
+
+      expect(result.exitCode, 0);
+      expect(result.stdout.split('\n'), contains('autocomplete'));
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('zsh', isZshAvailable));
 
@@ -749,6 +770,16 @@ void main() {
 
       expect(result.exitCode, 0);
       expect(_completionNames(result.stdout), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('fish', isFishAvailable));
+
+    test('completes root subcommands through the dw alias in fish', () async {
+      _requireSelectedShellAvailability('fish', isFishAvailable);
+
+      final result = await _runFishCompletion('dw pr');
+
+      expect(result.exitCode, 0);
+      expect(_completionNames(result.stdout), contains('profile'));
       expect(_cleanShellStderr(result.stderr), '');
     }, skip: _skipForShell('fish', isFishAvailable));
 
@@ -841,6 +872,30 @@ void main() {
       _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
 
       final result = await _runPowerShellCompletion('dotweave push --wit');
+
+      expect(result.exitCode, 0);
+      expect(_powerShellLines(result.stdout), contains('--with-git'));
+      expect(_cleanShellStderr(result.stderr), '');
+    }, skip: _skipForShell('powershell', isPowerShellAvailable));
+
+    test(
+      'completes root subcommands through the dw alias in PowerShell',
+      () async {
+        _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+
+        final result = await _runPowerShellCompletion('dw p');
+
+        expect(result.exitCode, 0);
+        expect(_powerShellLines(result.stdout), contains('profile'));
+        expect(_cleanShellStderr(result.stderr), '');
+      },
+      skip: _skipForShell('powershell', isPowerShellAvailable),
+    );
+
+    test('completes long flags through the dw alias in PowerShell', () async {
+      _requireSelectedShellAvailability('powershell', isPowerShellAvailable);
+
+      final result = await _runPowerShellCompletion('dw push --wit');
 
       expect(result.exitCode, 0);
       expect(_powerShellLines(result.stdout), contains('--with-git'));

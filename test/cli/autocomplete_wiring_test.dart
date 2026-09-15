@@ -11,6 +11,7 @@ void main() {
   group('dotweave completion script wiring', () {
     test('generates scripts bound to the dotweave executable', () {
       expect(completionScripts.executableName, 'dotweave');
+      expect(completionScripts.aliases, ['dw']);
       expect(completionScripts.completeSubcommand, '__complete');
     });
 
@@ -49,16 +50,17 @@ void main() {
       },
     );
 
-    test('registers completers under the dotweave command name', () {
+    test('registers completers under the dotweave and dw command names', () {
       expect(completionScripts.bash, contains('__dotweave_complete() {'));
       expect(
         completionScripts.zsh,
-        contains('compdef __dotweave_complete dotweave'),
+        contains('compdef __dotweave_complete dotweave dw'),
       );
       expect(completionScripts.fish, contains('complete -c dotweave -f'));
+      expect(completionScripts.fish, contains('complete -c dw -w dotweave'));
       expect(
         completionScripts.powershell,
-        contains('Register-ArgumentCompleter -Native -CommandName dotweave'),
+        contains('Register-ArgumentCompleter -Native -CommandName dotweave,dw'),
       );
     });
   });

@@ -61,11 +61,11 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/cliweave"
-      ref: d8c16aad1a87401b2c9a009e4ea239102962fcca
-      resolved-ref: d8c16aad1a87401b2c9a009e4ea239102962fcca
+      ref: "69e604ad7e0d948d06ffa5171e1a7aa191e8351e"
+      resolved-ref: "69e604ad7e0d948d06ffa5171e1a7aa191e8351e"
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
-    version: "0.3.2"
+    version: "0.4.0"
   collection:
     dependency: transitive
     description:
