@@ -241,6 +241,7 @@ void main() {
         "zstyle ':completion:*' menu no",
         "PROMPT='PROMPT> '",
         r'eval "$(dotweave autocomplete zsh)"',
+        'alias dw=dotweave',
       ], '.zshrc');
 
       shellBinDirectory = directories.binDirectory;
@@ -340,6 +341,54 @@ void main() {
         await sourceZshConfig(session);
 
         session.write('dotweave push --wit\t');
+
+        final output = await session.waitFor(
+          '--with-git',
+          const Duration(seconds: 10),
+        );
+
+        expect(output, contains('--with-git'));
+      } finally {
+        session.close();
+      }
+    });
+
+    test(
+      'lists root subcommands through an alias in interactive zsh',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+
+        final session = await createZshSession();
+
+        try {
+          await sourceZshConfig(session);
+
+          session.write('dw \t\t');
+
+          final output = await _waitForPtyRootSmokeCommands(session);
+
+          for (final commandName in _ptyRootSmokeCommandNames) {
+            expect(output, contains(commandName));
+          }
+        } finally {
+          session.close();
+        }
+      },
+    );
+
+    test('completes a partial long flag through an alias in zsh', () async {
+      if (Platform.isWindows) {
+        return;
+      }
+
+      final session = await createZshSession();
+
+      try {
+        await sourceZshConfig(session);
+
+        session.write('dw push --wit\t');
 
         final output = await session.waitFor(
           '--with-git',
